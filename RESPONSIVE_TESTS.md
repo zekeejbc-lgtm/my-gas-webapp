@@ -10,8 +10,6 @@ All tests were executed with the updated HTML/CSS and should be repeated after f
 5. Clear the field (Escape or blur) and confirm the list hides while the “No officers found” message appears when searching nonsense text.
 6. Open the announcements modal and manual attendance modal from the search results; both should fit the screen height with internal scrolling only.
 7. From the menu, open the homepage panel; project cards should display as a single column grid with balanced margins.
-8. Verify the contact grid shows two frosted cards (developer + report issues) stacked vertically with centered logos and buttons.
-9. Tap the Facebook and Email buttons — each should open in a new tab (Gmail compose for email) without breaking layout, then press Back to Login and confirm the login panel is displayed.
 
 ## 768px (tablet portrait)
 1. On the main menu, ensure the avatar row aligns side-by-side with breathing room and the card retains rounded corners.
@@ -30,7 +28,6 @@ All tests were executed with the updated HTML/CSS and should be repeated after f
 2. Inspect the project gallery; multiple cards should render in a row via the CSS grid with uniform spacing.
 3. Open attendance transparency; table columns should stay left-aligned and readable without stretching excessively.
 4. Refresh the page to confirm returning users auto-load when `getSession` is available (if testing in Apps Script) without exposing console errors.
-5. Open a project card to review the modal layout; on desktop the image/text should sit side-by-side, ESC/backdrop closes the dialog, and focus returns to the triggering card.
 
 ## QRScanner.html specific checks
 - At 360px, confirm the scanner container remains centered, the YSP logo/heading/subtitle stay aligned, buttons stack full-width, and there is no blank space below the card.

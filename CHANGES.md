@@ -5,8 +5,6 @@
 - Replaced ad-hoc inline styles with utility classes (`.form-stack`, `.panel-actions`, `.media-stack`, `.info-grid`, `.directory-result`) that keep avatars, cards, and action groups aligned across breakpoints.
 - Upgraded the officer search field into an accessible combobox: keyboard navigation highlights `.suggestion-item`s, ARIA attributes stay in sync, and empty states show friendly messaging.
 - Updated the QR session bootstrapper to call `getSession()` safely (with failure logging) so returning users can be restored when the backend supports it.
-- Rebuilt the homepage panel with a `.homepage-overview` summary card, responsive `.contact-grid`, and Facebook/Gmail buttons that launch sanitized links while polished project modals share ESC/backdrop dismissal.
-- Pointed the homepage back button to the login panel so visitors can exit the main menu without detouring through the dashboard.
 
 ## QRScanner.html
 - Restyled the scanner shell with a frosted header, descriptive subtitle, and centered action group while the gradient backdrop now includes a soft overlay to remove dead space.
@@ -21,4 +19,4 @@
 
 
 ## REPORT.md
-- Updated feature breakdowns, CSS analysis, and visual previews to describe the new panel structure, keyboard-enabled suggestions, flip-camera support, session persistence, and the refreshed homepage/contact experience.
+- Updated feature breakdowns, CSS analysis, and visual previews to describe the new panel structure, keyboard-enabled suggestions, flip-camera support, and session persistence.

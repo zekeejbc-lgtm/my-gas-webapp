@@ -6,11 +6,11 @@
 - Login captures username/password, calls `checkLogin`, stores the authenticated user in `appState`, fetches avatar/profile, and assembles a role-aware menu (home, QR tools, announcements, etc.).
 - Guest login skips authentication and opens the homepage in read-only mode.
 - Search panel filters officer records in-memory (`appState.officerData`) with live suggestions, keyboard-accessible navigation (Arrow keys/Enter/Escape), and status messaging before opening a manual attendance modal wired to the backend.
-- Homepage pulls rich content (mission, vision, projects), renders it inside a frosted overview card, surfaces a contact grid with a dedicated developer card plus a separate issue-report card (Facebook + Gmail launchers), and presents polished project modals for each card.
+- Homepage pulls rich content (mission, vision, projects) and presents modal details per project card.
 - Announcements list renders cards with mark-read and modal view actions, includes creator-only modal for creating announcements.
 - Attendance transparency fetches per-user records and renders a table summarizing events, time in/out, and inferred status.
 - Feedback, access logs, and profile panels load corresponding datasets on demand with table/card layouts.
-- Modal helper renders a single reusable dialog (`#modal-root`) for announcements, QR code display, manual attendance, etc., now with frosted-glass styling, ESC/backdrop dismissal, and automatic focus hand-off to the close button.
+- Modal helper renders a single reusable dialog (`#modal-root`) for announcements, QR code display, manual attendance, etc., while headings/ARIA wiring keep focus trapped until closure.
 
 ### Frontend ↔ backend touchpoints
 - Authentication & session: `checkLogin({ username, password })` persists the last user in `PropertiesService`, and `getSession()` bootstraps returning visitors when available.
@@ -29,7 +29,6 @@
 - Form-heavy sections adopt `.form-stack` and `.panel-actions`, ensuring inputs/buttons share consistent spacing while button rows automatically stack on phones.
 - The suggestions list is now a styled `.suggestions-list`/`.suggestion-item` component that hides via the `hidden` attribute, highlights the active option, and syncs `aria-activedescendant` as the user navigates with the keyboard.
 - Utility classes like `.media-stack`, `.info-grid`, `.directory-result`, and `.panel-divider` replace prior inline style clusters so avatar rows, profile cards, and action grids remain balanced as breakpoints change.
-- Homepage-specific `.homepage-overview`, `.contact-grid`, `.contact-card`, and `.contact-btn` utilities center the logos, split developer vs. issue-report content into separate frosted cards, and ensure the new Gmail/Facebook buttons behave like standard 44px touch targets.
 - Media queries at 1024px, 820px, 600px, and 420px adjust padding, border radii, and layout direction while `prefers-reduced-motion` disables the gradient animation for accessibility.
 
 ## 2. QRScanner.html
@@ -75,7 +74,7 @@
 ### SearchPage panels
 - **Login panel:** Frosted panel header stacks the YSP crest, Lexend headline, and a muted subtitle above a compact `.form-stack` with username/password fields. Primary and secondary actions sit in a centered button group, and the status line fades in directly beneath the form.
 - **Main menu / dashboard:** Panel header greets the user by name, while the `.media-stack` pairs the avatar with detail text and unread badge. Below a translucent divider, the dynamic menu renders as vertical button groups that stay centered yet stretch full-width on phones.
-- **Homepage panel:** `.panel-body` widens to 840px for longform content. Mission/vision/objectives sit inside the `.homepage-overview` card, the project grid collapses to a single column on phones, and a new `.contact-grid` splits the developer bio from the issue-report card with Facebook + Gmail buttons that stay centered with the crest.
+- **Homepage panel:** `.panel-body` widens to 840px for longform content. Mission text lives in a card, followed by a responsive project grid that collapses to one column on mobile and a developer contact card anchored by evenly spaced paragraphs.
 - **Announcements panel:** Filter row keeps the dropdown and “Create Announcement” button aligned on a single row (wrapping gracefully when space is tight). Announcement cards inherit the frosted style with bold titles, timestamp metadata, and in-card action buttons.
 - **Feedback panel:** The feedback container sits inside the panel body with consistent padding; entries render in stacked cards or the fallback table, and the back button shares the standardized `.panel-actions` alignment.
 - **Access logs panel:** Logs appear inside the card body with uniform spacing and muted metadata while the header subtitle reiterates accountability messaging.
