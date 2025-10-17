@@ -37,13 +37,32 @@ function _timeString() {
 // ---------- doGet (serves the main html) ----------
 function doGet(e) {
   try {
-    Logger.log("doGet: serving HTML: %s", FRONTEND_HTML);
-  return HtmlService.createHtmlOutputFromFile('SearchPage') // your integrated file name
-      .setTitle("YSPT Officer Directory - Tagum")
+    const requestedPage = (e && e.parameter && e.parameter.page ? String(e.parameter.page) : "").toLowerCase();
+    const targetFile = requestedPage === "qrscanner" ? "QRScanner" : FRONTEND_HTML;
+    Logger.log("doGet: serving HTML: %s", targetFile);
+    const output = HtmlService.createHtmlOutputFromFile(targetFile)
+      .setTitle(targetFile === "QRScanner" ? "YSPT QR Attendance Scanner" : "YSPT Officer Directory - Tagum")
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
+    if (targetFile === "QRScanner") {
+      output.setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
+    }
+    return output;
   } catch (err) {
     Logger.log("doGet Error: " + err);
     return HtmlService.createHtmlOutput("<pre>Error serving page: " + err.toString() + "</pre>");
+  }
+}
+
+function getQrScannerUrl() {
+  try {
+    const baseUrl = ScriptApp.getService().getUrl();
+    if (!baseUrl) {
+      return null;
+    }
+    return baseUrl + "?page=qrscanner";
+  } catch (err) {
+    Logger.log("getQrScannerUrl error: " + err);
+    return null;
   }
 }
 
@@ -57,6 +76,8 @@ function checkLogin(credentials) {
     if (!credentials || !credentials.username || !credentials.password) {
       return { success: false, message: "Missing username or password." };
     }
+    const userProps = PropertiesService.getUserProperties();
+    userProps.deleteProperty('YSP_CURRENT_USER');
     const sh = _sheet("User Profiles");
     const data = sh.getDataRange().getValues();
     if (data.length < 2) return { success: false, message: "No user profiles found." };
@@ -76,6 +97,7 @@ function checkLogin(credentials) {
         };
         // log access
         logAccess({ idCode: user.idCode, name: user.name });
+        userProps.setProperty('YSP_CURRENT_USER', JSON.stringify({ user }));
         Logger.log("checkLogin success for %s (%s)", user.name, user.idCode);
         return { success: true, user: user };
       }
@@ -84,6 +106,21 @@ function checkLogin(credentials) {
   } catch (err) {
     Logger.log("checkLogin error: " + err);
     return { success: false, message: "Server error during login." };
+  }
+}
+
+function getSession() {
+  try {
+    const userProps = PropertiesService.getUserProperties();
+    const raw = userProps.getProperty('YSP_CURRENT_USER');
+    if (!raw) {
+      return { success: false, user: null };
+    }
+    const parsed = JSON.parse(raw);
+    return { success: true, user: parsed.user || null };
+  } catch (err) {
+    Logger.log('getSession error: ' + err);
+    return { success: false, user: null };
   }
 }
 
