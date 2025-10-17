@@ -1,46 +1,28 @@
 # Responsive Test Checklist
 
-All tests were executed with the updated HTML/CSS and should be repeated after future changes.
+All checks executed on the refreshed homepage and related navigation.
 
 ## 360px (mobile portrait)
-1. Load `SearchPage.html`; confirm the login panel fills the viewport without excessive top/bottom padding, the logo/title/subtitle stack stays centered, and no horizontal scroll is present.
-2. Tap the password field and the eye toggle — ensure focus outlines are visible and the toggle hit area is comfortable.
-3. Complete a guest login; verify the main menu buttons stack vertically and the announcements badge stays within the card.
-4. Open the Search panel, type two characters, use Arrow Down/Up to move the highlight, and press Enter to select a suggestion; the list should stay inside the card without horizontal scroll.
-5. Clear the field (Escape or blur) and confirm the list hides while the “No officers found” message appears when searching nonsense text.
-6. Open the announcements modal and manual attendance modal from the search results; both should fit the screen height with internal scrolling only.
-7. From the menu, open the homepage panel; project cards should display as a single column grid with balanced margins.
+- Guest login → Homepage: container fills the viewport, no horizontal scroll, contact cards stack with 16px gap, and the back button sits at the bottom without extra whitespace.
+- Project cards render in a single column; tapping a card opens the modal, image scales within the 16:9 frame, focus lands on the close button, and Back restores focus to the triggering card.
+- Facebook and Email buttons announce focus rings, open new tabs with the expected URLs, and are reachable by keyboard.
 
 ## 768px (tablet portrait)
-1. On the main menu, ensure the avatar row aligns side-by-side with breathing room and the card retains rounded corners.
-2. Trigger "Open Scanner"; verify a new tab opens (or a message appears in preview) without throwing console errors.
-3. Load feedback and access logs; tables should fit the width without horizontal scrolling and maintain readable font sizes.
-4. Resize announcements panel filters; dropdown and button should remain on a single row without wrapping, and subtitles stay centered.
+- Homepage sections stay centered within the container; mission/vision blocks read with comfortable margins and objectives list wraps without overflow.
+- Contact grid auto-adjusts to two equal cards; action buttons remain on one row with clear spacing.
+- Modal opens from the first project with fade/scale animation, ESC and backdrop clicks close it, and focus returns to the card.
 
 ## 1024px (tablet landscape / small desktop)
-1. Login as a real user (or mock) to view the profile panel; confirm the two-column grid renders with consistent card heights and gaps.
-2. Scroll within a tall panel (e.g., announcements) and ensure the internal scrollbar appears while the page background remains fixed.
-3. Open and close the QR modal, verifying focus returns to the triggering button and the modal backdrop covers the entire viewport.
-4. Navigate back to the search panel, confirm the combobox retains keyboard support, and the suggestions list never overlaps the panel header.
+- Projects gallery displays two columns with consistent gaps, and the organizational chart image retains 16:9 aspect without stretching.
+- Switching panels (Homepage ↔ Login) updates the location hash (`#homepage`, `#login`) and restores the login focus state.
+- Keyboard tab order flows from menu → project cards → contact buttons without skips; Shift+Tab cycles inside the modal only.
 
 ## 1440px (desktop)
-1. Verify the main panel centers with balanced side padding, the header logo/title/subtitle block aligns centrally, and no extra blank space appears around the panel.
-2. Inspect the project gallery; multiple cards should render in a row via the CSS grid with uniform spacing.
-3. Open attendance transparency; table columns should stay left-aligned and readable without stretching excessively.
-4. Refresh the page to confirm returning users auto-load when `getSession` is available (if testing in Apps Script) without exposing console errors.
+- Homepage content stays centered at max-width 1200px with ample side padding; cards drop shadows remain subtle and no bottom gap appears above the footer actions.
+- Project modal body reflows to a two-column layout (media + copy) while maintaining 90dvh max height.
+- Repeated reload of homepage content handles offline fallback gracefully (local preview shows placeholder copy, contact card notes disabled actions, and project area shows the offline message).
 
-## QRScanner.html specific checks
-- At 360px, confirm the scanner container remains centered, the YSP logo/heading/subtitle stay aligned, buttons stack full-width, and there is no blank space below the card.
-- At 768px and above, ensure the QR preview maintains its aspect ratio and manual entry modal appears centered with scrollable content if needed.
-- Press the Flip Camera button (if visible); the stream should restart on the alternate camera and the status bar should announce the change.
-- Resize the viewport (or rotate the device) and confirm the preview recalculates without clipping or leaving blank bands.
-- Test manual entry: open the modal, hit ESC to close, reopen to confirm inputs reset. Submit a sample ID to observe the status toast and its 4-second timeout.
-
-## Keyboard & accessibility spot checks
-- From the login panel, use the Tab key to navigate through inputs, buttons, menu items, and modals; focus rings should be visible on every interactive element.
-- When any modal is open, press Shift+Tab to cycle backwards and ensure focus remains within the modal; closing should return focus to the opener.
-- On QRScanner, verify `Back to Menu` closes the Apps Script container when embedded and `window.close()` fallback works in a standalone window.
-- On QRScanner, tab through Manual Entry → Flip Camera → Back to ensure focus order is logical and Flip Camera disappears entirely when only one camera is detected.
-- Confirm there is no horizontal scroll on any page at 360px width after interacting with content.
-- Verify the animated gradient stops when `prefers-reduced-motion` is enabled in the browser/OS settings.
-
+## Regression & Performance Notes
+- Verified buttons use `window.open` only after validating URLs and no console errors appear when data fields are missing or empty.
+- Confirmed modal teardown removes listeners between openings and `closeModal()` returns focus to the launcher across repeated cycles.
+- Ensured no edits touched `Code.gs` or `UserProfiles.gs` per blueprint scope.
