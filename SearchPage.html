@@ -549,6 +549,7 @@
     const homepagePanel = $('#homepage-panel');
     const homepageContent = $('#homepage-content');
     const projectGallery = $('#project-gallery');
+    const homepageContacts = $('#homepage-contacts');
 
     const searchPanel = $('#search-panel');
     const searchInput = $('#search-input');
@@ -567,7 +568,11 @@
     const attendanceTransPanel = $('#attendance-trans-panel');
     const attendanceTable = $('#attendance-table');
 
+
     const modalRoot = $('#modal-root');
+    let activeEscListener = null;
+    const attrEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeAttr = value => String(value ?? '').replace(/[&<>"']/g, ch => attrEscapeMap[ch] || ch);
 
     // Utilities
     function switchPanels(targetId){
@@ -603,13 +608,18 @@
     }
 
     // modal helper
-    function showModal({title='', bodyHtml='', footerHtml=''}){
+    function showModal({title='', bodyHtml='', footerHtml='', modalClass=''}){
+      if(activeEscListener){
+        document.removeEventListener('keydown', activeEscListener);
+        activeEscListener = null;
+      }
+      const extraClass = modalClass ? ' ' + modalClass : '';
       modalRoot.innerHTML = `
         <div class="modal-backdrop" id="modal-backdrop">
-          <div class="modal" role="dialog" aria-modal="true">
+          <div class="modal${extraClass}" role="dialog" aria-modal="true">
             <div class="modal-header">
               <h3 style="margin:0;font-family:Lexend">${title}</h3>
-              <div class="close-x" id="modal-close">✕</div>
+              <button type="button" class="close-x" id="modal-close" aria-label="Close">✕</button>
             </div>
             <div class="modal-body">${bodyHtml}</div>
             <div class="modal-footer" style="margin-top:10px">${footerHtml}</div>
@@ -617,10 +627,26 @@
         </div>
       `;
       modalRoot.style.display = 'block';
-      $('#modal-close').onclick = closeModal;
-      document.getElementById('modal-backdrop').onclick = (e) => { if(e.target.id === 'modal-backdrop') closeModal(); };
+      const backdrop = document.getElementById('modal-backdrop');
+      const closeBtn = $('#modal-close');
+      if(closeBtn){
+        closeBtn.onclick = closeModal;
+        setTimeout(() => closeBtn.focus(), 0);
+      }
+      if(backdrop){
+        backdrop.onclick = (e) => { if(e.target === backdrop) closeModal(); };
+      }
+      activeEscListener = (e) => { if(e.key === 'Escape') closeModal(); };
+      document.addEventListener('keydown', activeEscListener);
     }
-    function closeModal(){ modalRoot.innerHTML=''; modalRoot.style.display='none'; }
+    function closeModal(){
+      modalRoot.innerHTML='';
+      modalRoot.style.display='none';
+      if(activeEscListener){
+        document.removeEventListener('keydown', activeEscListener);
+        activeEscListener = null;
+      }
+    }
 
     // ---------------- Login flow ----------------
     function handleLogin(){
@@ -814,46 +840,87 @@
     }
 
     // ---------------- Homepage ----------------
+
+
     function loadHomepage(){
       homepageContent.innerHTML = 'Loading...';
       projectGallery.innerHTML = '';
+      if(homepageContacts){ homepageContacts.innerHTML = ''; }
       if(!window.google || !google.script){
         homepageContent.innerHTML = '<p>Local preview: homepage backend not available.</p>';
+        if(homepageContacts){
+          homepageContacts.innerHTML = '<div class="contact-card accent"><p class="text-muted">Contact links available when connected to Apps Script.</p></div>';
+        }
+        projectGallery.innerHTML = '<p class="text-muted">Projects load once connected.</p>';
         return;
       }
       google.script.run.withSuccessHandler(res => {
-        if(!res || !res.success){ homepageContent.innerHTML = '<p>Could not load homepage content.</p>'; return; }
+        if(!res || !res.success){
+          homepageContent.innerHTML = '<p>Could not load homepage content.</p>';
+          if(homepageContacts){ homepageContacts.innerHTML = '<div class="contact-card accent"><p class="text-muted">Contact information temporarily unavailable.</p></div>'; }
+          projectGallery.innerHTML = '<p class="text-muted">Projects unavailable.</p>';
+          return;
+        }
         const content = res.data || {};
-        // content mapping expected: mission, vision, objectives, orgChartUrl, facebookUrl, email, founderName, aboutYSP, projects: [{imageUrl,description},...]
-        let html = '';
-        if(content.aboutYSP) html += `<div style="margin-bottom:8px">${content.aboutYSP}</div>`;
-        if(content.mission) html += `<h3 style="margin:8px 0 0 0">Mission</h3><p style="text-align:justify">${content.mission}</p>`;
-        if(content.vision) html += `<h3 style="margin:8px 0 0 0">Vision</h3><p style="text-align:justify">${content.vision}</p>`;
-        if(content.objectives) html += `<h3 style="margin:8px 0 0 0">Objectives</h3><p style="text-align:justify">${content.objectives}</p>`;
-        if(content.orgChartUrl) html += `<h3 style="margin:8px 0 0 0">Organizational Chart</h3><img src="${content.orgChartUrl}" style="width:100%;border-radius:10px;margin-top:6px" alt="Org Chart">`;
-        if(content.founderName) html += `<p style="margin-top:10px"><strong>Founder:</strong> ${content.founderName}</p>`;
-        if(content.email) html += `<p style="margin-top:6px"><a href="mailto:${content.email}">${content.email}</a></p>`;
-        if(content.facebookUrl) html += `<p style="margin-top:6px"><a href="${content.facebookUrl}" target="_blank" rel="noopener noreferrer">Facebook</a></p>`;
-        homepageContent.innerHTML = html || '<p>No homepage content yet.</p>';
-
-        // projects
+        const overviewParts = [];
+        const makeSection = (title, markup) => { overviewParts.push(`<div class="homepage-section-block"><h3>${title}</h3>${markup}</div>`); };
+        if(content.aboutYSP){ overviewParts.push(`<p class="homepage-lede">${content.aboutYSP}</p>`); }
+        if(content.mission){ makeSection('Mission', `<p>${content.mission}</p>`); }
+        if(content.vision){ makeSection('Vision', `<p>${content.vision}</p>`); }
+        if(content.objectives){ makeSection('Objectives', `<p>${content.objectives}</p>`); }
+        if(content.orgChartUrl){ makeSection('Organizational Chart', `<img src="${content.orgChartUrl}" alt="Organizational Chart">`); }
+        if(content.founderName){ overviewParts.push(`<p class="homepage-lede"><strong>Founder:</strong> ${content.founderName}</p>`); }
+        homepageContent.innerHTML = overviewParts.length ? overviewParts.join('') : '<p class="text-muted">No homepage content yet.</p>';
+        if(homepageContacts){
+          const cards = [];
+          cards.push(`<div class="contact-card"><h3>Web App Developer</h3><p><strong>Ezequiel John B. Crisostomo</strong></p><p>Membership and Internal Affairs Officer</p><p>Facebook/Messenger: Ezequiel Crisostomo</p></div>`);
+          const contactActions = [];
+          if(content.facebookUrl){
+            const safeFb = escapeAttr(content.facebookUrl);
+            contactActions.push(`<a class="contact-btn secondary" href="${safeFb}" target="_blank" rel="noopener noreferrer">Open Facebook Page</a>`);
+          }
+          if(content.email){
+            const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(content.email);
+            const safeGmail = escapeAttr(gmailUrl);
+            contactActions.push(`<a class="contact-btn primary" href="${safeGmail}" target="_blank" rel="noopener noreferrer">Email YSP Tagum</a>`);
+          }
+          const actionsHtml = contactActions.length ? `<div class="contact-actions">${contactActions.join('')}</div>` : '<p class="text-muted">Contact links coming soon.</p>';
+          cards.push(`<div class="contact-card accent"><h3>Report Issues</h3><p>Report issues via the YSP Facebook page or email.</p>${actionsHtml}</div>`);
+          homepageContacts.innerHTML = cards.join('');
+        }
         if(content.projects && content.projects.length){
           projectGallery.innerHTML = '';
           content.projects.forEach((p, i) => {
-            const card = document.createElement('div'); card.className = 'project-card';
-            card.innerHTML = `<img src="${p.imageUrl || 'https://via.placeholder.com/600x350'}" alt="project image"><p>${p.description || ''}</p>`;
-            card.addEventListener('click', () => {
+            const cardTitle = p.title || `Project ${i+1}`;
+            const safeTitle = escapeAttr(cardTitle);
+            const imageUrl = p.imageUrl || 'https://via.placeholder.com/720x420';
+            const safeImage = escapeAttr(imageUrl);
+            const rawPreview = (p.description || '').trim();
+            const previewSnippet = rawPreview ? escapeAttr(rawPreview.split(/\n+/)[0]) : 'Tap to preview details.';
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            card.innerHTML = `<figure class="project-card__media"><img src="${safeImage}" alt="${safeTitle}"><figcaption>${safeTitle}</figcaption></figure><p>${previewSnippet}</p>`;
+            card.setAttribute('role','button');
+            card.setAttribute('tabindex','0');
+            const closeId = `close-project-btn-${i}`;
+            const openProject = () => {
+              const descriptionText = rawPreview || 'Details coming soon.';
+              const descriptionHtml = descriptionText.split(/\n+/).map(line => `<p>${escapeAttr(line)}</p>`).join('') || '<p>Details coming soon.</p>';
+              const modalImage = escapeAttr(p.imageUrl || 'https://via.placeholder.com/960x540');
               showModal({
-                title: `Project ${i+1}`,
-                bodyHtml: `<div style="text-align:left"><img src="${p.imageUrl || 'https://via.placeholder.com/900x420'}" style="width:100%;height:auto;border-radius:8px;margin-bottom:0.6rem"><p style="text-align:justify">${p.description || ''}</p></div>`,
-                footerHtml: `<button class="btn secondary" id="close-project-btn">Back</button>`
+                title: safeTitle,
+                modalClass: 'project-modal',
+                bodyHtml: `<div class="project-modal-body"><div class="project-modal-media"><img src="${modalImage}" alt="${safeTitle}"></div><div class="project-modal-copy">${descriptionHtml}</div></div>`,
+                footerHtml: `<button class="btn secondary" id="${closeId}">Back</button>`
               });
-              setTimeout(()=> { const b = document.getElementById('close-project-btn'); if(b) b.onclick = closeModal; }, 60);
-            });
+              setTimeout(() => { const btn = document.getElementById(closeId); if(btn){ btn.onclick = closeModal; btn.focus(); } }, 80);
+            };
+            card.addEventListener('click', openProject);
+            card.addEventListener('keydown', evt => { if(evt.key === 'Enter' || evt.key === ' '){ evt.preventDefault(); openProject(); } });
             projectGallery.appendChild(card);
           });
         } else {
-          projectGallery.innerHTML = '<p style="opacity:0.8">No projects yet.</p>';
+          projectGallery.innerHTML = '<p class="text-muted">No projects yet.</p>';
         }
       }).getHomepageContent();
     }
@@ -1259,8 +1326,15 @@
     // ---------------- Initial wiring ----------------
     loginBtn.addEventListener('click', handleLogin);
     guestLoginBtn.addEventListener('click', handleGuestLogin);
-    $$('.back-btn').forEach(btn => btn.addEventListener('click', e => {
-      const t = btn.dataset.target; if(!t) return; switchPanels(t);
+    $$('.back-btn').forEach(btn => btn.addEventListener('click', () => {
+      const t = btn.dataset.target;
+      if(!t) return;
+      if(t === 'login-panel'){
+        switchPanels(t);
+        if(usernameInput){ setTimeout(() => usernameInput.focus(), 120); }
+        return;
+      }
+      switchPanels(t);
     }));
     [usernameInput, passwordInput].forEach(inp => inp.addEventListener('keydown', e => { if(e.key === 'Enter') handleLogin(); }));
 
