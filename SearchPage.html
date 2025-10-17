@@ -151,6 +151,8 @@
     h1 { font-family:'Lexend',sans-serif; color:var(--primary); font-size:1.5rem; margin:0; text-align:center; }
     h2 { font-family:'Lexend',sans-serif; color:var(--primary); font-size:1.05rem; margin:10px 0 6px; text-align:center; }
 
+    .container{ max-width:1200px; margin:0 auto; padding:0 16px; }
+
     /* inputs & buttons */
     .input-field, textarea, select {
       width:100%;
@@ -172,23 +174,31 @@
       align-items:center;
       justify-content:center;
       gap:8px;
-      padding:11px 14px;
+      padding:10px 16px;
       border-radius:12px;
       border:0;
       background:var(--primary);
-      color:var(--text-light);
+      color:#fff;
       font-family:'Lexend',sans-serif;
       cursor:pointer;
-      font-weight:700;
-      box-shadow:var(--shadow-1);
-      transition: transform .16s cubic-bezier(.2,.9,.2,1), box-shadow .16s ease, filter .12s;
+      font-weight:600;
+      box-shadow:0 6px 24px rgba(0,0,0,0.12);
+      transition: transform .2s ease, box-shadow .2s ease, filter .12s;
       min-height:44px;
-      min-width:130px;
       text-align:center;
     }
-    .btn:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.16); filter:brightness(1.04) }
-    .btn:active { transform:translateY(-1px) }
-    .btn.secondary { background:transparent; color:var(--primary); border:2px solid var(--primary); box-shadow:none; font-weight:700; }
+    .btn-primary {
+      background:var(--primary);
+      color:#fff;
+    }
+    .btn.secondary {
+      border:2px solid var(--primary);
+      color:var(--primary);
+      background:rgba(246,66,31,0.05);
+      box-shadow:none;
+    }
+    .btn:hover { transform:translateY(-2px); box-shadow:0 10px 32px rgba(0,0,0,0.18); filter:brightness(1.02); }
+    .btn:active { transform:translateY(0); }
     .btn:focus-visible { outline:3px solid rgba(246,66,31,0.35); outline-offset:2px; }
 
     .button-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; justify-content:center; }
@@ -215,23 +225,141 @@
     details summary { list-style:none; font-family:'Lexend'; cursor:pointer; font-weight:700; }
 
     /* lists / cards */
-    .card { background:var(--input-bg); padding:12px; border-radius:12px; border:1px solid var(--input-border); box-shadow:var(--shadow-1); }
+    .card {
+      background:#fff;
+      padding:16px;
+      border-radius:12px;
+      border:1px solid var(--input-border);
+      box-shadow:0 6px 24px rgba(0,0,0,0.08);
+    }
     .avatar { width:86px; height:86px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.05); }
 
     /* homepage content */
-    #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); }
-    #project-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; padding-block:8px; }
-    .project-card { width:100%; border-radius:12px; overflow:hidden; cursor:pointer; transition:transform .18s ease, box-shadow .18s; background:linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.98)); box-shadow:0 6px 22px rgba(0,0,0,0.05); border:1px solid var(--input-border); }
-    .project-card img { width:100%; height:150px; object-fit:cover; display:block; }
-    .project-card p { padding:10px; margin:0; font-size:0.92rem; text-align:left; }
-
-    .project-card:hover { transform:translateY(-8px); box-shadow:0 16px 40px rgba(0,0,0,0.12) }
+    #homepage-panel .panel-body { display:flex; flex-direction:column; min-height:100%; }
+    .homepage-layout { display:flex; flex-direction:column; gap:24px; min-height:100%; }
+    .homepage-layout .container { width:100%; }
+    #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); display:flex; flex-direction:column; gap:16px; }
+    .homepage-section-block h3 { font-family:'Lexend',sans-serif; margin:0 0 8px; font-size:1.1rem; color:var(--primary); }
+    .homepage-section-block p { margin:0; font-size:0.95rem; line-height:1.6; }
+    .homepage-lede { font-size:1.05rem; font-weight:500; }
+    .homepage-meta { display:flex; flex-direction:column; gap:4px; font-size:0.94rem; }
+    .homepage-meta strong { font-family:'Lexend',sans-serif; font-size:1rem; }
+    .homepage-org-chart { border-radius:12px; overflow:hidden; background:#fff; }
+    .homepage-org-chart img { width:100%; display:block; }
+    .homepage-contact-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+    .homepage-contact-grid .card { display:flex; flex-direction:column; gap:12px; }
+    .homepage-contact-grid .card p { margin:0; }
+    .homepage-contact-grid .card h3 { font-family:'Lexend',sans-serif; margin:0; font-size:1.1rem; color:var(--primary); }
+    .homepage-action-stack { display:flex; flex-wrap:wrap; gap:12px; }
+    #project-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding-block:12px; }
+    .project-card {
+      width:100%;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease;
+      background:#fff;
+      border:1px solid rgba(0,0,0,0.08);
+      box-shadow:0 6px 20px rgba(0,0,0,0.08);
+      display:flex;
+      flex-direction:column;
+      text-align:left;
+      padding:0;
+      color:var(--text-dark);
+    }
+    .project-card:focus-visible { outline:3px solid rgba(246,66,31,0.35); outline-offset:2px; }
+    .project-card__media {
+      border-radius:12px 12px 0 0;
+      overflow:hidden;
+    }
+    .project-card__title {
+      font-family:'Lexend',sans-serif;
+      font-size:1.05rem;
+      color:var(--primary);
+      margin:12px 12px 4px;
+    }
+    .project-card__copy {
+      margin:0 12px 16px;
+      color:var(--text-dark);
+      font-size:0.95rem;
+    }
+    .project-card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,0.14); }
 
     /* modal */
-    .modal-backdrop { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1800; padding:16px; }
-    .modal { width:92%; max-width:780px; background:var(--card-bg); border-radius:16px; padding:clamp(16px,3vw,24px); box-shadow:var(--shadow-2); max-height:min(90vh,760px); overflow:auto; display:flex; flex-direction:column; gap:12px; }
-    .modal .modal-header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:4px; }
-    .close-x { cursor:pointer; font-weight:800; font-size:18px; user-select:none; }
+    .modal-root{ position:relative; }
+    .modal-backdrop {
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.5);
+      display:none;
+      z-index:1800;
+    }
+    .modal-backdrop.is-open { display:block; }
+    .modal {
+      position:fixed;
+      inset:0;
+      display:grid;
+      place-items:center;
+      opacity:0;
+      transform:scale(.98);
+      transition:opacity .22s ease, transform .22s ease;
+      pointer-events:none;
+      z-index:1810;
+      padding:24px;
+    }
+    .modal.is-open {
+      opacity:1;
+      transform:scale(1);
+      pointer-events:auto;
+    }
+    .modal__panel {
+      width:min(92vw,840px);
+      max-height:90dvh;
+      overflow:auto;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 12px 48px rgba(0,0,0,0.18);
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      padding:clamp(16px,3vw,24px);
+    }
+    .modal__header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .modal__title {
+      font-family:'Lexend',sans-serif;
+      font-size:1.3rem;
+      margin:0;
+      color:var(--primary);
+    }
+    .modal__close {
+      border:0;
+      background:transparent;
+      color:var(--text-dark);
+      font-size:1.2rem;
+      cursor:pointer;
+      border-radius:8px;
+      padding:6px;
+    }
+    .modal__close:focus-visible { outline:3px solid rgba(246,66,31,0.35); outline-offset:2px; }
+    .modal__body { line-height:1.6; font-size:0.98rem; color:var(--text-dark); }
+    .modal__footer { display:flex; justify-content:flex-end; }
+    .project-modal-body { display:flex; flex-direction:column; gap:16px; }
+    .project-modal-media { border-radius:12px; overflow:hidden; }
+    .project-modal-media img { width:100%; display:block; }
+    .project-modal-copy { display:flex; flex-direction:column; gap:12px; font-size:0.98rem; line-height:1.6; }
+    .project-modal-copy p { margin:0; }
+
+    @media (min-width:768px){
+      .project-modal-body { flex-direction:row; gap:24px; }
+      .project-modal-media, .project-modal-copy { flex:1; }
+    }
+
+    .ratio-16x9 { aspect-ratio:16/9; overflow:hidden; border-radius:inherit; }
+    .ratio-16x9 img { width:100%; height:100%; object-fit:cover; }
 
     /* table styles */
     .styled-table { width:100%; border-collapse:collapse; border-radius:10px; overflow:hidden; }
@@ -414,29 +542,30 @@
       <header class="panel-header">
         <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
         <h1>YSP Tagum — Homepage</h1>
-        <p class="panel-subtitle">Review mission highlights, current projects, and developer contacts.</p>
+        <p class="panel-subtitle">Mission, vision, key projects, and ways to contact the organization.</p>
       </header>
 
-      <div class="panel-body is-wide">
-        <div id="homepage-content" class="card" style="padding:12px">Loading homepage...</div>
-
-        <div class="panel-section">
-          <h2>Projects Implemented</h2>
-          <div id="project-gallery"></div>
+      <div class="panel-body is-wide homepage-layout">
+        <div class="container">
+          <article id="homepage-content" class="card" aria-live="polite">Loading homepage...</article>
         </div>
 
-        <div class="panel-section">
-          <h2>Web App Developer</h2>
-          <div class="card">
-            <p style="margin:0"><strong>Ezequiel John B. Crisostomo</strong></p>
-            <p style="margin:6px 0 0 0">Membership and Internal Affairs Officer</p>
-            <p style="margin:6px 0 0 0">Facebook/Messenger: Ezequiel Crisostomo</p>
-            <p style="margin:6px 0 0 0">Report issues via the YSP Facebook page or email.</p>
-          </div>
+        <div class="container">
+          <section class="card" aria-labelledby="homepage-projects-title">
+            <div class="section-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+              <h2 id="homepage-projects-title" style="margin:0;font-family:'Lexend',sans-serif;font-size:1.25rem;color:var(--primary);">Projects Implemented</h2>
+              <p class="text-muted" style="margin:0;font-size:0.92rem;">Tap a project card to open the gallery.</p>
+            </div>
+            <div id="project-gallery"></div>
+          </section>
         </div>
 
-        <div class="panel-actions">
-          <button class="btn secondary back-btn" data-target="main-menu-panel">Back</button>
+        <div class="container">
+          <div id="homepage-contacts" class="homepage-contact-grid" aria-live="polite"></div>
+        </div>
+
+        <div class="panel-actions" style="margin-top:auto;">
+          <button id="homepage-back-btn" class="btn secondary back-btn" data-target="login-panel">Back to Login</button>
         </div>
       </div>
     </section>
@@ -520,7 +649,7 @@
     </section>
 
     <!-- Modal root -->
-    <div id="modal-root" style="display:none"></div>
+    <div id="modal-root" class="modal-root" hidden></div>
   </main>
 
   <!-- ---------------- JS: UI logic ---------------- -->
@@ -578,9 +707,44 @@
 
 
     const modalRoot = $('#modal-root');
-    let activeEscListener = null;
+    const modalState = {
+      escListener: null,
+      trapCleanup: null,
+      lastFocused: null,
+      backdrop: null,
+      modal: null,
+      panel: null
+    };
     const attrEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
     const escapeAttr = value => String(value ?? '').replace(/[&<>"']/g, ch => attrEscapeMap[ch] || ch);
+    const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
+    const isSafeHttpUrl = (value) => {
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch(e){
+        return false;
+      }
+    };
+    const buildGmailComposeUrl = (email) => {
+      const safeEmail = textOrEmpty(email);
+      if(!safeEmail) return '';
+      const compose = new URL('https://mail.google.com/mail/');
+      compose.searchParams.set('view','cm');
+      compose.searchParams.set('fs','1');
+      compose.searchParams.set('to', safeEmail);
+      compose.searchParams.set('su','[YSP] Issue Report');
+      return compose.toString();
+    };
+    const openExternal = (url) => {
+      if(!url) return;
+      try {
+        const win = window.open(url, '_blank', 'noopener');
+        if(win){ win.opener = null; }
+      } catch(err){
+        console.warn('Unable to open link', err);
+      }
+    };
 
     // Utilities
     function switchPanels(targetId){
@@ -600,6 +764,11 @@
       // small scroll to top for panel
       const t = $('#'+targetId);
       if(t) t.scrollTop = 0;
+      if(targetId === 'login-panel'){
+        location.hash = '#login';
+      } else if(targetId === 'homepage-panel'){
+        location.hash = '#homepage';
+      }
     }
 
     function showStatusFor(idSelectorOrText, text, timeout=4200){
@@ -616,44 +785,162 @@
     }
 
     // modal helper
-    function showModal({title='', bodyHtml='', footerHtml='', modalClass=''}){
-      if(activeEscListener){
-        document.removeEventListener('keydown', activeEscListener);
-        activeEscListener = null;
+    function showModal({title = '', bodyHtml = '', footerHtml = '', modalClass = '', opener = null}){
+      if(!modalRoot) return;
+      if(!modalRoot.hidden){
+        if(modalState.escListener){
+          document.removeEventListener('keydown', modalState.escListener);
+          modalState.escListener = null;
+        }
+        if(modalState.trapCleanup){
+          modalState.trapCleanup();
+          modalState.trapCleanup = null;
+        }
+        modalRoot.innerHTML = '';
+        modalRoot.hidden = true;
+        modalState.backdrop = null;
+        modalState.modal = null;
+        modalState.panel = null;
       }
-      const extraClass = modalClass ? ' ' + modalClass : '';
-      modalRoot.innerHTML = `
-        <div class="modal-backdrop" id="modal-backdrop">
-          <div class="modal${extraClass}" role="dialog" aria-modal="true">
-            <div class="modal-header">
-              <h3 style="margin:0;font-family:Lexend">${title}</h3>
-              <button type="button" class="close-x" id="modal-close" aria-label="Close">✕</button>
-            </div>
-            <div class="modal-body">${bodyHtml}</div>
-            <div class="modal-footer" style="margin-top:10px">${footerHtml}</div>
-          </div>
-        </div>
-      `;
-      modalRoot.style.display = 'block';
-      const backdrop = document.getElementById('modal-backdrop');
-      const closeBtn = $('#modal-close');
-      if(closeBtn){
-        closeBtn.onclick = closeModal;
-        setTimeout(() => closeBtn.focus(), 0);
+
+      modalState.lastFocused = opener || document.activeElement;
+
+      const titleId = `modal-title-${Date.now()}`;
+      const descId = `modal-desc-${Date.now()}`;
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+
+      const modal = document.createElement('div');
+      modal.className = 'modal';
+      if(modalClass){ modal.classList.add(modalClass); }
+
+      const panel = document.createElement('div');
+      panel.className = 'modal__panel';
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      panel.setAttribute('aria-labelledby', titleId);
+      panel.setAttribute('aria-describedby', descId);
+
+      const header = document.createElement('div');
+      header.className = 'modal__header';
+
+      const heading = document.createElement('h2');
+      heading.className = 'modal__title';
+      heading.id = titleId;
+      heading.textContent = title || 'Dialog';
+
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'modal__close';
+      closeButton.setAttribute('aria-label', 'Close dialog');
+      closeButton.innerHTML = '&times;';
+      closeButton.addEventListener('click', () => closeModal());
+
+      header.append(heading, closeButton);
+
+      const body = document.createElement('div');
+      body.className = 'modal__body';
+      body.id = descId;
+      body.innerHTML = bodyHtml;
+
+      const footer = document.createElement('div');
+      footer.className = 'modal__footer';
+      footer.innerHTML = footerHtml;
+      footer.querySelectorAll('[data-modal-close]').forEach(el => {
+        if(el.tagName === 'BUTTON' && !el.hasAttribute('type')){
+          el.setAttribute('type','button');
+        }
+        el.addEventListener('click', () => closeModal());
+      });
+
+      panel.append(header, body, footer);
+      modal.append(panel);
+
+      modalRoot.innerHTML = '';
+      modalRoot.append(backdrop, modal);
+      modalRoot.hidden = false;
+
+      requestAnimationFrame(() => {
+        backdrop.classList.add('is-open');
+        modal.classList.add('is-open');
+      });
+
+      const focusableSelectors = 'a[href], area[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      let focusables = Array.from(panel.querySelectorAll(focusableSelectors)).filter(el => el.offsetParent !== null || el === closeButton);
+      if(!focusables.length){
+        panel.setAttribute('tabindex', '-1');
+        focusables = [panel];
       }
-      if(backdrop){
-        backdrop.onclick = (e) => { if(e.target === backdrop) closeModal(); };
-      }
-      activeEscListener = (e) => { if(e.key === 'Escape') closeModal(); };
-      document.addEventListener('keydown', activeEscListener);
+      focusables[0].focus();
+
+      const trapHandler = (event) => {
+        if(event.key !== 'Tab') return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if(event.shiftKey && document.activeElement === first){
+          event.preventDefault();
+          last.focus();
+        } else if(!event.shiftKey && document.activeElement === last){
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      panel.addEventListener('keydown', trapHandler);
+      modalState.trapCleanup = () => panel.removeEventListener('keydown', trapHandler);
+
+      backdrop.addEventListener('click', (event) => {
+        if(event.target === backdrop){
+          closeModal();
+        }
+      });
+
+      const escListener = (event) => {
+        if(event.key === 'Escape'){
+          event.preventDefault();
+          closeModal();
+        }
+      };
+      document.addEventListener('keydown', escListener);
+
+      modalState.escListener = escListener;
+      modalState.backdrop = backdrop;
+      modalState.modal = modal;
+      modalState.panel = panel;
     }
-    function closeModal(){
-      modalRoot.innerHTML='';
-      modalRoot.style.display='none';
-      if(activeEscListener){
-        document.removeEventListener('keydown', activeEscListener);
-        activeEscListener = null;
+
+    function closeModal(options = {}){
+      if(!modalRoot || modalRoot.hidden) return;
+      const { skipFocusRestore = false } = options;
+      const focusTarget = modalState.lastFocused;
+
+      if(modalState.escListener){
+        document.removeEventListener('keydown', modalState.escListener);
+        modalState.escListener = null;
       }
+      if(modalState.trapCleanup){
+        modalState.trapCleanup();
+        modalState.trapCleanup = null;
+      }
+
+      if(modalState.backdrop){
+        modalState.backdrop.classList.remove('is-open');
+      }
+      if(modalState.modal){
+        modalState.modal.classList.remove('is-open');
+      }
+
+      setTimeout(() => {
+        modalRoot.innerHTML = '';
+        modalRoot.hidden = true;
+        modalState.backdrop = null;
+        modalState.modal = null;
+        modalState.panel = null;
+        modalState.lastFocused = null;
+        if(!skipFocusRestore && focusTarget && typeof focusTarget.focus === 'function'){
+          focusTarget.focus();
+        }
+      }, 220);
     }
 
     // ---------------- Login flow ----------------
@@ -851,86 +1138,302 @@
 
 
     function loadHomepage(){
-      homepageContent.innerHTML = 'Loading...';
+      if(homepageContent){
+        homepageContent.classList.remove('text-muted');
+        homepageContent.textContent = 'Loading…';
+      }
       projectGallery.innerHTML = '';
       if(homepageContacts){ homepageContacts.innerHTML = ''; }
-      if(!window.google || !google.script){
-        homepageContent.innerHTML = '<p>Local preview: homepage backend not available.</p>';
-        if(homepageContacts){
-          homepageContacts.innerHTML = '<div class="contact-card accent"><p class="text-muted">Contact links available when connected to Apps Script.</p></div>';
+
+      const renderStatus = (message) => {
+        if(homepageContent){
+          homepageContent.innerHTML = '';
+          const info = document.createElement('p');
+          info.className = 'text-muted';
+          info.textContent = message;
+          homepageContent.appendChild(info);
         }
-        projectGallery.innerHTML = '<p class="text-muted">Projects load once connected.</p>';
-        return;
-      }
-      google.script.run.withSuccessHandler(res => {
-        if(!res || !res.success){
-          homepageContent.innerHTML = '<p>Could not load homepage content.</p>';
-          if(homepageContacts){ homepageContacts.innerHTML = '<div class="contact-card accent"><p class="text-muted">Contact information temporarily unavailable.</p></div>'; }
-          projectGallery.innerHTML = '<p class="text-muted">Projects unavailable.</p>';
+        projectGallery.innerHTML = '';
+      };
+
+      const renderContacts = (content, { offline = false } = {}) => {
+        if(!homepageContacts) return;
+        homepageContacts.innerHTML = '';
+
+        const issueCard = document.createElement('article');
+        issueCard.className = 'card';
+        const issueTitle = document.createElement('h3');
+        issueTitle.textContent = 'Report Issues via FB/Email';
+        const issueBody = document.createElement('p');
+        issueBody.textContent = offline ? 'Contact links become active once connected to Google Apps Script.' : 'Reach the Youth Service Philippines Tagum Chapter through the official channels for support.';
+        issueCard.append(issueTitle, issueBody);
+
+        const actionStack = document.createElement('div');
+        actionStack.className = 'homepage-action-stack';
+        let hasActions = false;
+
+        if(content.facebookUrl && isSafeHttpUrl(content.facebookUrl)){
+          const fbBtn = document.createElement('button');
+          fbBtn.type = 'button';
+          fbBtn.className = 'btn btn-primary';
+          fbBtn.textContent = 'Open Facebook Page';
+          fbBtn.setAttribute('aria-label', 'Open the YSP Tagum Facebook page in a new tab');
+          fbBtn.addEventListener('click', () => openExternal(content.facebookUrl));
+          actionStack.appendChild(fbBtn);
+          hasActions = true;
+        }
+
+        if(content.email){
+          const composeUrl = buildGmailComposeUrl(content.email);
+          if(composeUrl){
+            const emailBtn = document.createElement('button');
+            emailBtn.type = 'button';
+            emailBtn.className = 'btn secondary';
+            emailBtn.textContent = 'Email YSP';
+            emailBtn.setAttribute('aria-label', 'Compose an email to YSP Tagum');
+            emailBtn.addEventListener('click', () => openExternal(composeUrl));
+            actionStack.appendChild(emailBtn);
+            hasActions = true;
+          }
+        }
+
+        if(hasActions){
+          issueCard.appendChild(actionStack);
+        } else {
+          const waitMessage = document.createElement('p');
+          waitMessage.className = 'text-muted';
+          waitMessage.textContent = offline ? 'Actions unavailable in local preview.' : 'Contact links will appear once provided.';
+          issueCard.appendChild(waitMessage);
+        }
+
+        const devCard = document.createElement('article');
+        devCard.className = 'card';
+        const devTitle = document.createElement('h3'); devTitle.textContent = 'Web App Developer';
+        const devName = document.createElement('p'); devName.textContent = 'Ezequiel John B. Crisostomo';
+        const devRole = document.createElement('p'); devRole.textContent = 'Membership and Internal Affairs Officer';
+        const devContact = document.createElement('p'); devContact.textContent = 'Facebook/Messenger: Ezequiel Crisostomo';
+        const devNote = document.createElement('p'); devNote.textContent = 'Maintains the YSP Tagum web platform and supports technical inquiries.';
+        devCard.append(devTitle, devName, devRole, devContact, devNote);
+
+        homepageContacts.append(issueCard, devCard);
+      };
+
+      const renderProjects = (projects) => {
+        projectGallery.innerHTML = '';
+        if(!projects.length){
+          const empty = document.createElement('p');
+          empty.className = 'text-muted';
+          empty.textContent = 'No projects yet.';
+          projectGallery.appendChild(empty);
           return;
         }
-        const content = res.data || {};
-        const overviewParts = [];
-        const makeSection = (title, markup) => { overviewParts.push(`<div class="homepage-section-block"><h3>${title}</h3>${markup}</div>`); };
-        if(content.aboutYSP){ overviewParts.push(`<p class="homepage-lede">${content.aboutYSP}</p>`); }
-        if(content.mission){ makeSection('Mission', `<p>${content.mission}</p>`); }
-        if(content.vision){ makeSection('Vision', `<p>${content.vision}</p>`); }
-        if(content.objectives){ makeSection('Objectives', `<p>${content.objectives}</p>`); }
-        if(content.orgChartUrl){ makeSection('Organizational Chart', `<img src="${content.orgChartUrl}" alt="Organizational Chart">`); }
-        if(content.founderName){ overviewParts.push(`<p class="homepage-lede"><strong>Founder:</strong> ${content.founderName}</p>`); }
-        homepageContent.innerHTML = overviewParts.length ? overviewParts.join('') : '<p class="text-muted">No homepage content yet.</p>';
-        if(homepageContacts){
-          const cards = [];
-          cards.push(`<div class="contact-card"><h3>Web App Developer</h3><p><strong>Ezequiel John B. Crisostomo</strong></p><p>Membership and Internal Affairs Officer</p><p>Facebook/Messenger: Ezequiel Crisostomo</p></div>`);
-          const contactActions = [];
-          if(content.facebookUrl){
-            const safeFb = escapeAttr(content.facebookUrl);
-            contactActions.push(`<a class="contact-btn secondary" href="${safeFb}" target="_blank" rel="noopener noreferrer">Open Facebook Page</a>`);
-          }
-          if(content.email){
-            const gmailUrl = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(content.email);
-            const safeGmail = escapeAttr(gmailUrl);
-            contactActions.push(`<a class="contact-btn primary" href="${safeGmail}" target="_blank" rel="noopener noreferrer">Email YSP Tagum</a>`);
-          }
-          const actionsHtml = contactActions.length ? `<div class="contact-actions">${contactActions.join('')}</div>` : '<p class="text-muted">Contact links coming soon.</p>';
-          cards.push(`<div class="contact-card accent"><h3>Report Issues</h3><p>Report issues via the YSP Facebook page or email.</p>${actionsHtml}</div>`);
-          homepageContacts.innerHTML = cards.join('');
-        }
-        if(content.projects && content.projects.length){
-          projectGallery.innerHTML = '';
-          content.projects.forEach((p, i) => {
-            const cardTitle = p.title || `Project ${i+1}`;
-            const safeTitle = escapeAttr(cardTitle);
-            const imageUrl = p.imageUrl || 'https://via.placeholder.com/720x420';
-            const safeImage = escapeAttr(imageUrl);
-            const rawPreview = (p.description || '').trim();
-            const previewSnippet = rawPreview ? escapeAttr(rawPreview.split(/\n+/)[0]) : 'Tap to preview details.';
-            const card = document.createElement('div');
-            card.className = 'project-card';
-            card.innerHTML = `<figure class="project-card__media"><img src="${safeImage}" alt="${safeTitle}"><figcaption>${safeTitle}</figcaption></figure><p>${previewSnippet}</p>`;
-            card.setAttribute('role','button');
-            card.setAttribute('tabindex','0');
-            const closeId = `close-project-btn-${i}`;
-            const openProject = () => {
-              const descriptionText = rawPreview || 'Details coming soon.';
-              const descriptionHtml = descriptionText.split(/\n+/).map(line => `<p>${escapeAttr(line)}</p>`).join('') || '<p>Details coming soon.</p>';
-              const modalImage = escapeAttr(p.imageUrl || 'https://via.placeholder.com/960x540');
-              showModal({
-                title: safeTitle,
-                modalClass: 'project-modal',
-                bodyHtml: `<div class="project-modal-body"><div class="project-modal-media"><img src="${modalImage}" alt="${safeTitle}"></div><div class="project-modal-copy">${descriptionHtml}</div></div>`,
-                footerHtml: `<button class="btn secondary" id="${closeId}">Back</button>`
-              });
-              setTimeout(() => { const btn = document.getElementById(closeId); if(btn){ btn.onclick = closeModal; btn.focus(); } }, 80);
-            };
-            card.addEventListener('click', openProject);
-            card.addEventListener('keydown', evt => { if(evt.key === 'Enter' || evt.key === ' '){ evt.preventDefault(); openProject(); } });
-            projectGallery.appendChild(card);
+
+        projects.forEach((project, index) => {
+          const title = textOrEmpty(project.title) || `Project ${index + 1}`;
+          const description = textOrEmpty(project.description);
+          const imageUrl = isSafeHttpUrl(project.imageUrl) ? project.imageUrl : '';
+
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'project-card';
+          card.setAttribute('aria-label', `View more about ${title}`);
+
+          const media = document.createElement('div');
+          media.className = 'project-card__media ratio-16x9';
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = `${title} photo`;
+          img.src = imageUrl || 'https://via.placeholder.com/960x540?text=YSP+Project';
+          media.appendChild(img);
+
+          const heading = document.createElement('p');
+          heading.className = 'project-card__title';
+          heading.textContent = title;
+
+          const copy = document.createElement('p');
+          copy.className = 'project-card__copy';
+          copy.textContent = description ? description.split(/\n+/)[0] : 'Tap to preview details.';
+
+          card.append(media, heading, copy);
+
+          const openProject = () => {
+            const bodyParts = description ? description.split(/\n+/).map(line => `<p>${escapeAttr(line)}</p>`).join('') : '<p>Details coming soon.</p>';
+            const modalImage = escapeAttr(imageUrl || 'https://via.placeholder.com/960x540?text=YSP+Project');
+            showModal({
+              title,
+              modalClass: 'project-modal',
+              bodyHtml: `<div class="project-modal-body"><div class="project-modal-media ratio-16x9"><img src="${modalImage}" alt="${escapeAttr(title)}"></div><div class="project-modal-copy">${bodyParts}</div></div>`,
+              footerHtml: '<button type="button" class="btn secondary" data-modal-close="true">Back</button>',
+              opener: card
+            });
+          };
+          card.addEventListener('click', openProject);
+          card.addEventListener('keydown', (evt) => {
+            if(evt.key === 'Enter' || evt.key === ' '){
+              evt.preventDefault();
+              openProject();
+            }
           });
+
+          projectGallery.appendChild(card);
+        });
+      };
+
+      const normalizeContent = (raw = {}) => {
+        const normalized = {
+          about: textOrEmpty(raw.aboutYSP || raw.about),
+          mission: textOrEmpty(raw.mission),
+          vision: textOrEmpty(raw.vision),
+          objectives: textOrEmpty(raw.objectives),
+          founderName: textOrEmpty(raw.founderName),
+          orgChartUrl: textOrEmpty(raw.orgChartUrl),
+          facebookUrl: textOrEmpty(raw.facebookUrl),
+          email: textOrEmpty(raw.email),
+          projects: []
+        };
+
+        const incomingProjects = Array.isArray(raw.projects) ? raw.projects : [];
+        if(incomingProjects.length){
+          normalized.projects = incomingProjects.map((proj, idx) => ({
+            title: textOrEmpty(proj.title) || `Project ${idx + 1}`,
+            description: textOrEmpty(proj.description),
+            imageUrl: textOrEmpty(proj.imageUrl)
+          })).filter(p => p.description || p.imageUrl);
         } else {
-          projectGallery.innerHTML = '<p class="text-muted">No projects yet.</p>';
+          let index = 1;
+          const derived = [];
+          while(raw[`projectImageUrl_${index}`] || raw[`projectDesc_${index}`]){
+            derived.push({
+              title: `Project ${index}`,
+              description: textOrEmpty(raw[`projectDesc_${index}`]),
+              imageUrl: textOrEmpty(raw[`projectImageUrl_${index}`])
+            });
+            index += 1;
+          }
+          normalized.projects = derived.filter(p => p.description || p.imageUrl);
         }
-      }).getHomepageContent();
+        return normalized;
+      };
+
+      const renderOverview = (content) => {
+        if(!homepageContent) return;
+        homepageContent.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+        if(content.about){
+          const about = document.createElement('p');
+          about.className = 'homepage-lede';
+          about.textContent = content.about;
+          fragment.appendChild(about);
+        }
+
+        if(content.founderName){
+          const founder = document.createElement('p');
+          founder.className = 'homepage-lede';
+          const label = document.createElement('strong');
+          label.textContent = 'Founder:';
+          founder.append(label, document.createTextNode(` ${content.founderName}`));
+          fragment.appendChild(founder);
+        }
+
+        const blockFromText = (title, value) => {
+          if(!value) return;
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = title;
+          block.appendChild(heading);
+          const para = document.createElement('p');
+          para.textContent = value;
+          block.appendChild(para);
+          fragment.appendChild(block);
+        };
+
+        blockFromText('Mission', content.mission);
+        blockFromText('Vision', content.vision);
+
+        if(content.objectives){
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = 'Objectives';
+          block.appendChild(heading);
+          const items = content.objectives.split(/\n|•|\u2022/).map(item => item.trim()).filter(Boolean);
+          if(items.length > 1){
+            const list = document.createElement('ul');
+            list.style.paddingLeft = '20px';
+            list.style.margin = '0';
+            items.forEach(text => {
+              const li = document.createElement('li');
+              li.textContent = text;
+              list.appendChild(li);
+            });
+            block.appendChild(list);
+          } else {
+            const para = document.createElement('p');
+            para.textContent = content.objectives;
+            block.appendChild(para);
+          }
+          fragment.appendChild(block);
+        }
+
+        if(content.orgChartUrl && isSafeHttpUrl(content.orgChartUrl)){
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = 'Organizational Chart';
+          block.appendChild(heading);
+          const figure = document.createElement('div');
+          figure.className = 'homepage-org-chart ratio-16x9';
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = 'YSP Tagum organizational chart';
+          img.src = content.orgChartUrl;
+          figure.appendChild(img);
+          block.appendChild(figure);
+          fragment.appendChild(block);
+        }
+
+        if(!fragment.childNodes.length){
+          const empty = document.createElement('p');
+          empty.className = 'text-muted';
+          empty.textContent = 'No homepage content yet.';
+          fragment.appendChild(empty);
+        }
+
+        homepageContent.appendChild(fragment);
+      };
+
+      if(!window.google || !google.script){
+        renderStatus('Local preview: homepage backend not available.');
+        renderContacts({ facebookUrl: '', email: '' }, { offline: true });
+        const offlineProjects = document.createElement('p');
+        offlineProjects.className = 'text-muted';
+        offlineProjects.textContent = 'Projects load once connected.';
+        projectGallery.appendChild(offlineProjects);
+        return;
+      }
+
+      google.script.run
+        .withSuccessHandler((res) => {
+          if(!res || !res.success){
+            renderStatus('Could not load homepage content.');
+            renderContacts({ facebookUrl: '', email: '' });
+            renderProjects([]);
+            return;
+          }
+          const normalized = normalizeContent(res.data || {});
+          renderOverview(normalized);
+          renderContacts(normalized);
+          renderProjects(normalized.projects);
+        })
+        .withFailureHandler(err => {
+          console.error('getHomepageContent failed', err);
+          renderStatus('Could not load homepage content.');
+          renderContacts({ facebookUrl: '', email: '' });
+          renderProjects([]);
+        })
+        .getHomepageContent();
     }
 
     // ---------------- Directory search ----------------
