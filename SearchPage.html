@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>YSP Tagum — Member App</title>
+
+  <!-- Fonts & libs -->
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <link rel="icon" href="https://i.imgur.com/J4wddTW.png">
+
+  <style>
+    /* ---------------- Base / Theme ---------------- */
+    :root{
+      --primary:#f6421f;
+      --secondary:#ee8724;
+      --tertiary:#fbcb29;
+      --bg-gradient: linear-gradient(135deg,var(--primary),var(--secondary),var(--tertiary));
+      --text-dark:#222;
+      --text-light:#fff;
+      --card-bg:rgba(255,255,255,0.97);
+      --muted: rgba(0,0,0,0.54);
+      --input-bg: rgba(0,0,0,0.03);
+      --input-border: rgba(0,0,0,0.07);
+      --shadow-1: 0 6px 18px rgba(0,0,0,0.08);
+      --shadow-2: 0 12px 40px rgba(0,0,0,0.12);
+      --success:#34c759;
+      --danger:#ff3b30;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;padding:0}
+    body{
+      font-family:"Roboto",sans-serif;
+      background:var(--bg-gradient);
+      background-size:400% 400%;
+      animation: gradientShift 18s linear infinite;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:18px;
+      color:var(--text-dark);
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+    @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+
+    /* ---------------- App layout ---------------- */
+    #app { width:100%; max-width:920px; height:95vh; position:relative; display:flex; align-items:center; justify-content:center; }
+    .panel {
+      width:100%;
+      max-width:880px;
+      height:100%;
+      background:var(--card-bg);
+      border-radius:14px;
+      padding:22px;
+      box-shadow:var(--shadow-2);
+      border:1px solid rgba(255,255,255,0.6);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      position:absolute;
+      top:0; left:0;
+      transition: transform .36s cubic-bezier(.2,.9,.2,1), opacity .36s ease;
+      overflow:auto;
+    }
+    .panel.hidden { opacity:0; pointer-events:none; transform: translateY(10px) scale(.996); display:none !important; }
+    .panel.active { opacity:1; pointer-events:all; transform:translateY(0); display:flex !important; z-index:5; }
+
+    /* header/logo/title */
+    .logo { width:72px; height:72px; object-fit:contain; margin:0 auto 4px; display:block; }
+    h1 { font-family:'Lexend',sans-serif; color:var(--primary); font-size:1.5rem; margin:0; text-align:center; }
+    h2 { font-family:'Lexend',sans-serif; color:var(--primary); font-size:1.05rem; margin:10px 0 6px; }
+
+    /* inputs & buttons */
+    .input-field, textarea, select {
+      width:100%;
+      padding:12px 14px;
+      border-radius:12px;
+      border:1px solid var(--input-border);
+      background:var(--input-bg);
+      font-size:0.98rem;
+      outline:none;
+      transition: box-shadow .12s ease, transform .08s ease;
+    }
+    .input-field:focus { box-shadow: 0 10px 28px rgba(0,0,0,0.06); transform: translateY(-2px); }
+    textarea { min-height:120px; resize:vertical; }
+
+    .btn {
+      display:inline-block;
+      padding:11px 14px;
+      border-radius:12px;
+      border:0;
+      background:var(--primary);
+      color:var(--text-light);
+      font-family:'Lexend',sans-serif;
+      cursor:pointer;
+      font-weight:700;
+      box-shadow:var(--shadow-1);
+      transition: transform .16s cubic-bezier(.2,.9,.2,1), box-shadow .16s ease, filter .12s;
+    }
+    .btn:hover { transform:translateY(-4px); box-shadow:0 12px 32px rgba(0,0,0,0.12); filter:brightness(1.04) }
+    .btn:active { transform:translateY(-1px) }
+    .btn.secondary { background:transparent; color:var(--primary); border:2px solid var(--primary); box-shadow:none; font-weight:700; }
+
+    .button-row { display:flex; gap:10px; align-items:center; }
+
+    /* eye toggle */
+    .input-container { position:relative; display:flex; gap:10px; align-items:center; }
+    .eye-toggle {
+      position:absolute; right:12px; top:50%; transform:translateY(-50%); width:34px; height:34px;
+      display:flex; align-items:center; justify-content:center; border-radius:8px; cursor:pointer;
+      transition: transform .22s ease, background .18s ease;
+    }
+    .eye-toggle:hover { transform: translateY(-50%) scale(1.06); background:rgba(0,0,0,0.02) }
+    .eye-toggle svg { width:20px; height:20px; stroke:var(--text-dark); fill:none; stroke-width:1.5; transition: transform .18s ease, opacity .18s;}
+    .eye-toggle.closed svg { transform: rotate(-8deg) scale(.98); opacity:0.9; }
+    .eye-toggle.closed svg .pupil { transform:scale(0); transform-origin:center; transition:transform .12s ease; }
+
+    /* status message */
+    .status-message { min-height:22px; font-weight:600; font-size:0.94rem; opacity:0; transition:opacity .18s ease; text-align:center; }
+    .status-message.show { opacity:1; }
+
+    /* menu layout */
+    #main-menu-buttons { display:flex; flex-direction:column; gap:10px; margin-top:6px; }
+    details { border:1px solid var(--input-border); padding:8px; border-radius:10px; background:transparent; }
+    details summary { list-style:none; font-family:'Lexend'; cursor:pointer; font-weight:700; }
+
+    /* lists / cards */
+    .card { background:var(--input-bg); padding:12px; border-radius:10px; border:1px solid var(--input-border); box-shadow:var(--shadow-1); }
+    .avatar { width:86px; height:86px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.05); }
+
+    /* homepage content */
+    #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); }
+    #project-gallery { display:flex; gap:12px; overflow-x:auto; padding-top:8px; padding-bottom:8px; }
+    .project-card { width:230px; min-width:200px; border-radius:12px; overflow:hidden; cursor:pointer; transition:transform .18s ease, box-shadow .18s; background:linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.98)); box-shadow:0 6px 22px rgba(0,0,0,0.05); border:1px solid var(--input-border); }
+    .project-card img { width:100%; height:150px; object-fit:cover; display:block; }
+    .project-card p { padding:10px; margin:0; font-size:0.92rem; text-align:left; }
+
+    .project-card:hover { transform:translateY(-8px); box-shadow:0 16px 40px rgba(0,0,0,0.12) }
+
+    /* modal */
+    .modal-backdrop { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); z-index:1800; }
+    .modal { width:92%; max-width:780px; background:var(--card-bg); border-radius:12px; padding:16px; box-shadow:var(--shadow-2); }
+    .modal .modal-header { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+    .close-x { cursor:pointer; font-weight:800; font-size:18px; user-select:none; }
+
+    /* table styles */
+    .styled-table { width:100%; border-collapse:collapse; border-radius:10px; overflow:hidden; }
+    .styled-table th, .styled-table td { padding:10px 12px; text-align:left; border-bottom:1px solid rgba(0,0,0,0.05); font-size:0.95rem; }
+    .styled-table thead th { background:transparent; color:var(--muted); font-weight:700; }
+    .styled-table tbody tr:nth-child(even) { background: rgba(0,0,0,0.02); }
+
+    /* announcement badge */
+    #ann-badge span { display:inline-block; background:red; color:#fff; padding:6px 10px; border-radius:999px; font-weight:800; font-size:0.85rem; box-shadow:0 6px 12px rgba(255,0,0,0.06); }
+
+    @media (max-width:820px){
+      .panel { padding:14px; border-radius:12px; }
+      #project-gallery { gap:10px }
+      .project-card { width:180px; min-width:160px; }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+
+    <!-- LOGIN PANEL -->
+    <section id="login-panel" class="panel active" aria-hidden="false">
+      <img src="https://i.imgur.com/J4wddTW.png" alt="YSP Logo" class="logo">
+      <h1>Member Login — Youth Service Philippines</h1>
+
+      <div style="width:100%;max-width:640px;margin:0 auto;">
+        <input id="username-input" class="input-field" placeholder="Username (as in User Profiles sheet)" autocomplete="username" />
+        <div class="input-container" style="margin-top:10px;position:relative">
+          <input id="password-input" type="password" class="input-field" placeholder="Password (Your ID Code)" autocomplete="current-password" />
+          <div id="eye-toggle" class="eye-toggle" title="Show / hide password" aria-hidden="false" role="button">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path class="eye-lid" d="M2 12C6 4 18 4 22 12c-4 8-16 8-20 0z" stroke-linecap="round" stroke-linejoin="round"></path>
+              <circle class="pupil" cx="12" cy="12" r="3"></circle>
+            </svg>
+          </div>
+        </div>
+
+        <p id="login-status" class="status-message" aria-live="polite"></p>
+
+        <div class="button-row" style="margin-top:10px">
+          <button id="login-btn" class="btn">Log In</button>
+          <button id="guest-login-btn" class="btn secondary">Log in as Guest</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- MAIN MENU -->
+    <section id="main-menu-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" alt="YSP Logo" class="logo">
+      <h1 id="welcome-message">Welcome</h1>
+
+      <div style="display:flex;gap:12px;align-items:center;">
+        <img id="user-avatar" src="https://via.placeholder.com/120" alt="avatar" class="avatar">
+        <div style="flex:1;">
+          <div id="user-details" style="line-height:1.2"></div>
+          <div style="margin-top:8px"><span id="ann-badge"></span></div>
+        </div>
+      </div>
+
+      <div id="main-menu-buttons"></div>
+    </section>
+
+    <!-- SEARCH PANEL -->
+    <section id="search-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
+      <h1>Search Officer</h1>
+
+      <div style="max-width:720px;margin:0 auto">
+        <div class="input-container">
+          <input id="search-input" class="input-field" placeholder="Enter officer's surname or ID..." />
+        </div>
+        <ul id="suggestions-list" class="card suggestions-list" style="list-style:none;padding:8px;margin-top:8px"></ul>
+        <div id="result-box" style="margin-top:8px"></div>
+        <div style="margin-top:8px"><button class="btn secondary back-btn" data-target="main-menu-panel">Back to Menu</button></div>
+      </div>
+    </section>
+
+    <!-- HOMEPAGE PANEL -->
+    <section id="homepage-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
+      <h1>YSP Tagum — Homepage</h1>
+
+      <div id="homepage-content" class="card" style="padding:12px">Loading homepage...</div>
+
+      <h2>Projects Implemented</h2>
+      <div id="project-gallery"></div>
+
+      <h2>Web App Developer</h2>
+      <div class="card">
+        <p style="margin:0"><strong>Ezequiel John B. Crisostomo</strong></p>
+        <p style="margin:6px 0 0 0">Membership and Internal Affairs Officer</p>
+        <p style="margin:6px 0 0 0">Facebook/Messenger: Ezequiel Crisostomo</p>
+        <p style="margin:6px 0 0 0">Report issues via the YSP Facebook page or email.</p>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:8px">
+        <button class="btn secondary back-btn" data-target="main-menu-panel">Back</button>
+      </div>
+    </section>
+
+    <!-- VIEW FEEDBACK -->
+    <section id="view-feedback-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
+      <h1>Feedback</h1>
+      <div id="feedback-container"></div>
+      <div style="margin-top:8px"><button class="btn secondary back-btn" data-target="main-menu-panel">Back</button></div>
+    </section>
+
+    <!-- VIEW LOGS -->
+    <section id="view-logs-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
+      <h1>Access Logs</h1>
+      <div id="access-logs-container"></div>
+      <div style="margin-top:8px"><button class="btn secondary back-btn" data-target="main-menu-panel">Back</button></div>
+    </section>
+
+    <!-- PROFILE (read-only UI) -->
+    <section id="profile-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
+      <h1>My Profile</h1>
+      <div id="profile-container">Loading...</div>
+      <div style="margin-top:8px"><button class="btn secondary back-btn" data-target="main-menu-panel">Back</button></div>
+    </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section id="announcements-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
+      <h1>Announcements</h1>
+
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:8px">
+        <div style="flex:1"><select id="ann-filter" class="input-field"><option value="all">All</option><option value="unread">Unread</option><option value="mine">To me</option></select></div>
+        <button id="create-ann-btn" class="btn">Create Announcement</button>
+      </div>
+
+      <div id="ann-list"></div>
+
+      <div style="margin-top:8px"><button class="btn secondary back-btn" data-target="main-menu-panel">Back</button></div>
+    </section>
+
+    <!-- ATTENDANCE TRANSPARENCY -->
+    <section id="attendance-trans-panel" class="panel hidden" aria-hidden="true">
+      <img src="https://i.imgur.com/J4wddTW.png" class="logo" alt="logo">
+      <h1>Attendance Transparency</h1>
+      <p style="margin:0 0 8px 0">View your attendance records (Date, Event, Time In, Time Out)</p>
+      <div id="attendance-table"></div>
+      <div style="margin-top:8px"><button class="btn secondary back-btn" data-target="main-menu-panel">Back</button></div>
+    </section>
+
+    <!-- Modal root -->
+    <div id="modal-root" style="display:none"></div>
+  </div>
+
+  <!-- ---------------- JS: UI logic ---------------- -->
+  <script>
+  (function(){
+    // Shortcuts + state
+    const $ = s => document.querySelector(s);
+    const $$ = s => Array.from(document.querySelectorAll(s));
+    const panels = $$('.panel');
+    let appState = {
+      currentUser: null,
+      officerData: [],
+      events: [],
+      announcements: [],
+      unreadCount: 0
+    };
+
+    // Elements
+    const loginPanel = $('#login-panel');
+    const loginBtn = $('#login-btn');
+    const guestLoginBtn = $('#guest-login-btn');
+    const usernameInput = $('#username-input');
+    const passwordInput = $('#password-input');
+    const eyeToggle = $('#eye-toggle');
+    const loginStatus = $('#login-status');
+
+    const mainMenuPanel = $('#main-menu-panel');
+    const welcomeMessage = $('#welcome-message');
+    const userDetailsDiv = $('#user-details');
+    const userAvatar = $('#user-avatar');
+    const mainMenuButtons = $('#main-menu-buttons');
+    const annBadge = $('#ann-badge');
+
+    const homepagePanel = $('#homepage-panel');
+    const homepageContent = $('#homepage-content');
+    const projectGallery = $('#project-gallery');
+
+    const searchPanel = $('#search-panel');
+    const searchInput = $('#search-input');
+    const suggestionsList = $('#suggestions-list');
+    const resultBox = $('#result-box');
+
+    const feedbackContainer = $('#feedback-container');
+    const logsContainer = $('#access-logs-container');
+    const profileContainer = $('#profile-container');
+
+    const announcementsPanel = $('#announcements-panel');
+    const annList = $('#ann-list');
+    const createAnnBtn = $('#create-ann-btn');
+    const annFilter = $('#ann-filter');
+
+    const attendanceTransPanel = $('#attendance-trans-panel');
+    const attendanceTable = $('#attendance-table');
+
+    const modalRoot = $('#modal-root');
+
+    // Utilities
+    function switchPanels(targetId){
+      panels.forEach(p => {
+        if(p.id === targetId){
+          p.classList.remove('hidden');
+          p.classList.add('active');
+          p.style.display = 'flex';
+          p.setAttribute('aria-hidden','false');
+        } else {
+          p.classList.add('hidden');
+          p.classList.remove('active');
+          p.setAttribute('aria-hidden','true');
+          p.style.display = 'none';
+        }
+      });
+      // small scroll to top for panel
+      const t = $('#'+targetId);
+      if(t) t.scrollTop = 0;
+    }
+
+    function showStatusFor(idSelectorOrText, text, timeout=4200){
+      // convenience: if idSelectorOrText equals 'login' show in login-status
+      const el = (typeof idSelectorOrText === 'string' && idSelectorOrText.startsWith('#')) ? document.querySelector(idSelectorOrText) : document.getElementById(idSelectorOrText + '-status');
+      const target = el || (typeof idSelectorOrText === 'string' ? document.getElementById(idSelectorOrText) : null);
+      if(target){
+        target.textContent = text;
+        target.classList.add('show');
+        setTimeout(()=> target.classList.remove('show'), timeout);
+      } else {
+        console.warn('Status element not found for', idSelectorOrText);
+      }
+    }
+
+    // modal helper
+    function showModal({title='', bodyHtml='', footerHtml=''}){
+      modalRoot.innerHTML = `
+        <div class="modal-backdrop" id="modal-backdrop">
+          <div class="modal" role="dialog" aria-modal="true">
+            <div class="modal-header">
+              <h3 style="margin:0;font-family:Lexend">${title}</h3>
+              <div class="close-x" id="modal-close">✕</div>
+            </div>
+            <div class="modal-body">${bodyHtml}</div>
+            <div class="modal-footer" style="margin-top:10px">${footerHtml}</div>
+          </div>
+        </div>
+      `;
+      modalRoot.style.display = 'block';
+      $('#modal-close').onclick = closeModal;
+      document.getElementById('modal-backdrop').onclick = (e) => { if(e.target.id === 'modal-backdrop') closeModal(); };
+    }
+    function closeModal(){ modalRoot.innerHTML=''; modalRoot.style.display='none'; }
+
+    // ---------------- Login flow ----------------
+    function handleLogin(){
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
+      if(!username || !password){
+        showStatusFor('login', 'Please enter username & password');
+        return;
+      }
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+
+      if(!window.google || !google.script){
+        // Local preview
+        setTimeout(()=> {
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Log In';
+          showStatusFor('login', 'Local preview: google.script.run not available. Deploy to Apps Script to test login.');
+        }, 400);
+        return;
+      }
+
+      google.script.run.withSuccessHandler(resp => {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+        if(resp && resp.success){
+          appState.currentUser = resp.user;
+          populateAfterLogin();
+        } else {
+          showStatusFor('login', resp && resp.message ? resp.message : 'Invalid credentials');
+        }
+      }).withFailureHandler(err => {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+        console.error('checkLogin failed', err);
+        showStatusFor('login', 'Could not connect to server');
+      }).checkLogin({ username, password });
+    }
+
+    function handleGuestLogin(){
+      // Guest: show homepage without profile
+      appState.currentUser = { name:'Guest', role:'Guest', idCode: ''};
+      loadHomepage();
+      switchPanels('homepage-panel');
+    }
+
+    // Eye toggle
+    eyeToggle.addEventListener('click', () => {
+      if(passwordInput.type === 'password'){
+        passwordInput.type = 'text';
+        eyeToggle.classList.add('closed');
+      } else {
+        passwordInput.type = 'password';
+        eyeToggle.classList.remove('closed');
+      }
+    });
+
+    // ---------------- After login ----------------
+    function populateAfterLogin(){
+      const u = appState.currentUser || {};
+      const shortName = u.name ? (u.name.split(',')[0] || u.name) : 'Member';
+      welcomeMessage.textContent = `Welcome, ${shortName}`;
+      userDetailsDiv.innerHTML = `
+        <p style="margin:0"><strong>${u.name||''}</strong></p>
+        <p style="margin:6px 0 0 0"><small>${u.position||''} • ${u.role||''}</small></p>
+        <p style="margin:6px 0 0 0;opacity:.8"><small>ID: ${u.idCode||''}</small></p>
+      `;
+      // avatar
+      if(window.google && google.script){
+        google.script.run.withSuccessHandler(profile => {
+          if(profile && profile.ProfilePictureURL) userAvatar.src = profile.ProfilePictureURL;
+        }).getUserProfile(u.idCode);
+      }
+      buildDynamicMenus();
+      loadUnreadAnnouncements();
+      switchPanels('main-menu-panel');
+
+      // Preload officer data & events for privileged roles
+      if(['Admin','Auditor','Head'].includes(u.role) && window.google && google.script){
+        google.script.run.withSuccessHandler(res => { if(res && res.success) appState.officerData = res.data || []; }).getOfficerData();
+        google.script.run.withSuccessHandler(res => { if(res && res.success) appState.events = res.data || []; }).getEvents();
+      }
+    }
+
+    // ---------------- Build dynamic menu ----------------
+    function buildDynamicMenus(){
+      mainMenuButtons.innerHTML = '';
+      const u = appState.currentUser || {};
+
+      // Homepage
+      const homepageBtn = document.createElement('button'); homepageBtn.className='btn secondary'; homepageBtn.textContent='Homepage';
+      homepageBtn.onclick = ()=> { loadHomepage(); switchPanels('homepage-panel'); };
+      mainMenuButtons.appendChild(homepageBtn);
+
+      // Attendance details
+      const attendanceDetails = document.createElement('details');
+      attendanceDetails.innerHTML = `<summary>Attendance System</summary>`;
+      const btnMyQr = document.createElement('button'); btnMyQr.className='btn secondary'; btnMyQr.textContent='My QR ID';
+      btnMyQr.onclick = () => { showMyQr(); };
+      attendanceDetails.appendChild(btnMyQr);
+
+      if(['Admin','Auditor','Head'].includes(u.role)){
+        const btnScan = document.createElement('button'); btnScan.className='btn secondary'; btnScan.textContent='Open Scanner (separate page)';
+        btnScan.onclick = () => {
+          // web apps: instruct to open scanner link (server can provide URL)
+          if(window.google && google.script){
+            // optionally open separate page if backend exposes a URL; otherwise notify user
+            try {
+              google.script.run.withSuccessHandler(url => {
+                if(url && typeof url === 'string') window.open(url, '_blank');
+                else alert('QR Scanner is a separate page. Open QRScanner.html in a new tab (deployed web app) or use the scanner in Admin console.');
+              }).getQrScannerUrl();
+            } catch(e){
+              alert('Open the QR Scanner page in a new tab (separate file).');
+            }
+          } else {
+            alert('Open QRScanner.html (local preview cannot open Apps Script page).');
+          }
+        };
+        attendanceDetails.appendChild(btnScan);
+
+        const btnManual = document.createElement('button'); btnManual.className='btn secondary'; btnManual.textContent='Manual Attendance';
+        btnManual.onclick = () => {
+          // use the search panel to find a person and mark status — simplified to redirect to search for manual marking
+          switchPanels('search-panel');
+          // instruction: admins can search and then a UI will call manual attendance backend
+        };
+        attendanceDetails.appendChild(btnManual);
+      }
+      mainMenuButtons.appendChild(attendanceDetails);
+
+      // Analytics & Admin
+      const analytics = document.createElement('details'); analytics.innerHTML = `<summary>Analytics & Admin</summary>`;
+      if(['Admin','Auditor','Head'].includes(u.role)){
+        const dirBtn = document.createElement('button'); dirBtn.className='btn secondary'; dirBtn.textContent='Officer Directory Search';
+        dirBtn.onclick = () => { switchPanels('search-panel'); };
+        analytics.appendChild(dirBtn);
+      }
+      if(['Admin','Auditor'].includes(u.role)){
+        const dashBtn = document.createElement('button'); dashBtn.className='btn secondary'; dashBtn.textContent='Attendance Dashboard';
+        dashBtn.onclick = ()=> { switchPanels('attendance-trans-panel'); loadAttendanceTransparency(); };
+        analytics.appendChild(dashBtn);
+
+        const manageBtn = document.createElement('button'); manageBtn.className='btn secondary'; manageBtn.textContent='Manage Events';
+        manageBtn.onclick = ()=> { alert('Event creation is done within the Admin Google Sheet (Master Attendance Log columns).'); };
+        analytics.appendChild(manageBtn);
+
+        const viewFeedbackBtn = document.createElement('button'); viewFeedbackBtn.className='btn secondary'; viewFeedbackBtn.textContent='View Feedback';
+        viewFeedbackBtn.onclick = ()=> { loadFeedback(); switchPanels('view-feedback-panel'); };
+        analytics.appendChild(viewFeedbackBtn);
+      }
+      if(u.role === 'Auditor'){
+        const logsBtn = document.createElement('button'); logsBtn.className='btn secondary'; logsBtn.textContent='View Access Logs';
+        logsBtn.onclick = ()=> { loadAccessLogs(); switchPanels('view-logs-panel'); };
+        analytics.appendChild(logsBtn);
+      }
+      if(analytics.querySelectorAll(':scope > *').length>1) mainMenuButtons.appendChild(analytics);
+
+      // Announcements
+      const annBtn = document.createElement('button'); annBtn.className='btn secondary'; annBtn.textContent='Announcements';
+      annBtn.onclick = () => { loadAnnouncements(); switchPanels('announcements-panel'); };
+      mainMenuButtons.appendChild(annBtn);
+
+      // Feedback
+      const feedbackBtn = document.createElement('button'); feedbackBtn.className='btn'; feedbackBtn.textContent='Submit Feedback';
+      feedbackBtn.onclick = ()=> { switchPanels('view-feedback-panel'); loadFeedback(); };
+      mainMenuButtons.appendChild(feedbackBtn);
+
+      // Profile
+      const profileBtn = document.createElement('button'); profileBtn.className='btn secondary'; profileBtn.textContent='My Profile';
+      profileBtn.onclick = ()=> { loadUserProfile(); switchPanels('profile-panel'); };
+      mainMenuButtons.appendChild(profileBtn);
+
+      // Logout
+      const logoutBtn = document.createElement('button'); logoutBtn.className='btn secondary'; logoutBtn.textContent='Log Out';
+      logoutBtn.onclick = ()=> { handleLogout(); };
+      mainMenuButtons.appendChild(logoutBtn);
+    }
+
+    function handleLogout(){
+      appState.currentUser = null;
+      usernameInput.value = ''; passwordInput.value = '';
+      passwordInput.type = 'password';
+      eyeToggle.classList.remove('closed');
+      switchPanels('login-panel');
+    }
+
+    // ---------------- Homepage ----------------
+    function loadHomepage(){
+      homepageContent.innerHTML = 'Loading...';
+      projectGallery.innerHTML = '';
+      if(!window.google || !google.script){
+        homepageContent.innerHTML = '<p>Local preview: homepage backend not available.</p>';
+        return;
+      }
+      google.script.run.withSuccessHandler(res => {
+        if(!res || !res.success){ homepageContent.innerHTML = '<p>Could not load homepage content.</p>'; return; }
+        const content = res.data || {};
+        // content mapping expected: mission, vision, objectives, orgChartUrl, facebookUrl, email, founderName, aboutYSP, projects: [{imageUrl,description},...]
+        let html = '';
+        if(content.aboutYSP) html += `<div style="margin-bottom:8px">${content.aboutYSP}</div>`;
+        if(content.mission) html += `<h3 style="margin:8px 0 0 0">Mission</h3><p style="text-align:justify">${content.mission}</p>`;
+        if(content.vision) html += `<h3 style="margin:8px 0 0 0">Vision</h3><p style="text-align:justify">${content.vision}</p>`;
+        if(content.objectives) html += `<h3 style="margin:8px 0 0 0">Objectives</h3><p style="text-align:justify">${content.objectives}</p>`;
+        if(content.orgChartUrl) html += `<h3 style="margin:8px 0 0 0">Organizational Chart</h3><img src="${content.orgChartUrl}" style="width:100%;border-radius:10px;margin-top:6px" alt="Org Chart">`;
+        if(content.founderName) html += `<p style="margin-top:10px"><strong>Founder:</strong> ${content.founderName}</p>`;
+        if(content.email) html += `<p style="margin-top:6px"><a href="mailto:${content.email}">${content.email}</a></p>`;
+        if(content.facebookUrl) html += `<p style="margin-top:6px"><a href="${content.facebookUrl}" target="_blank" rel="noopener noreferrer">Facebook</a></p>`;
+        homepageContent.innerHTML = html || '<p>No homepage content yet.</p>';
+
+        // projects
+        if(content.projects && content.projects.length){
+          projectGallery.innerHTML = '';
+          content.projects.forEach((p, i) => {
+            const card = document.createElement('div'); card.className = 'project-card';
+            card.innerHTML = `<img src="${p.imageUrl || 'https://via.placeholder.com/600x350'}" alt="project image"><p>${p.description || ''}</p>`;
+            card.addEventListener('click', () => {
+              showModal({
+                title: `Project ${i+1}`,
+                bodyHtml: `<div style="text-align:left"><img src="${p.imageUrl || 'https://via.placeholder.com/900x420'}" style="width:100%;height:auto;border-radius:8px;margin-bottom:0.6rem"><p style="text-align:justify">${p.description || ''}</p></div>`,
+                footerHtml: `<button class="btn secondary" id="close-project-btn">Back</button>`
+              });
+              setTimeout(()=> { const b = document.getElementById('close-project-btn'); if(b) b.onclick = closeModal; }, 60);
+            });
+            projectGallery.appendChild(card);
+          });
+        } else {
+          projectGallery.innerHTML = '<p style="opacity:0.8">No projects yet.</p>';
+        }
+      }).getHomepageContent();
+    }
+
+    // ---------------- Directory search ----------------
+    searchInput && searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      suggestionsList.innerHTML = ''; resultBox.innerHTML = '';
+      if(!q || !appState.officerData || !appState.officerData.length) return;
+      // officerData rows: [idCode, fullName, position, ...]
+      const matches = appState.officerData.filter(r => (r[0]||'').toString().toLowerCase().includes(q) || (r[1]||'').toString().toLowerCase().includes(q));
+      matches.slice(0,10).forEach(o => {
+        const li = document.createElement('li');
+        li.textContent = `${o[1] || ''} • ${o[2] || ''} (${o[0] || ''})`;
+        li.style.padding = '8px';
+        li.style.cursor = 'pointer';
+        li.onclick = () => { displayResult(o); suggestionsList.innerHTML = ''; };
+        suggestionsList.appendChild(li);
+      });
+    });
+
+    function displayResult(officer){
+      resultBox.innerHTML = `<div class="card" style="padding:10px"><p style="margin:0"><strong>${officer[1] || ''}</strong></p><p style="margin:6px 0">${officer[2] || ''}</p><p style="opacity:0.8;margin:0">${officer[0] || ''}</p><div style="margin-top:8px"><button class="btn secondary" id="mark-att-btn">Mark Attendance</button></div></div>`;
+      // allow admin to mark status manually
+      const markBtn = document.getElementById('mark-att-btn');
+      if(markBtn){
+        markBtn.onclick = () => {
+          // open modal to choose status and record
+          showModal({
+            title: 'Manual Attendance',
+            bodyHtml: `<div style="display:flex;flex-direction:column;gap:8px">
+              <div><strong>${officer[1] || ''}</strong><div style="opacity:.8">${officer[0] || ''}</div></div>
+              <label style="font-weight:700">Status</label>
+              <select id="manual-att-status" class="input-field">
+                <option value="Present">Present</option>
+                <option value="Late">Late</option>
+                <option value="Absent">Absent</option>
+                <option value="Excused">Excused</option>
+              </select>
+            </div>`,
+            footerHtml: `<button class="btn" id="save-manual-att">Save</button> <button class="btn secondary" id="cancel-manual-att">Cancel</button>`
+          });
+          setTimeout(()=> {
+            document.getElementById('cancel-manual-att').onclick = closeModal;
+            document.getElementById('save-manual-att').onclick = () => {
+              const status = document.getElementById('manual-att-status').value;
+              closeModal();
+              // call backend to record manual attendance (supply idCode and status)
+              if(window.google && google.script){
+                google.script.run.withSuccessHandler(res => {
+                  if(res && res.success) {
+                    alert(`Recorded ${officer[0]} as ${status}`);
+                  } else {
+                    alert(res.message || 'Failed to record.');
+                  }
+                }).withFailureHandler(err => { console.error(err); alert('Connection error.'); }).recordManualAttendance(officer[0], status);
+              } else {
+                alert('(Local) Recorded ' + officer[0] + ' as ' + status);
+              }
+            };
+          }, 40);
+        };
+      }
+    }
+
+    // ---------------- Feedback & logs ----------------
+    function loadFeedback(){
+      feedbackContainer.innerHTML = 'Loading...';
+      if(!window.google || !google.script){
+        feedbackContainer.innerHTML = '<p>Local preview: backend not available.</p>'; return;
+      }
+      google.script.run.withSuccessHandler(res => {
+        if(!res || !res.success){ feedbackContainer.innerHTML = '<p>No feedback or error.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ feedbackContainer.innerHTML = '<p>No feedback found.</p>'; return; }
+        let html = `<table class="styled-table"><thead><tr><th>Timestamp</th><th>Name</th><th>ID</th><th>Message</th></tr></thead><tbody>`;
+        rows.forEach(r => html += `<tr><td>${r.timestamp||''}</td><td>${r.name||''}</td><td>${r.idCode||''}</td><td>${r.message||''}</td></tr>`);
+        html += `</tbody></table>`;
+        feedbackContainer.innerHTML = html;
+      }).getFeedback();
+    }
+
+    function loadAccessLogs(){
+      logsContainer.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ logsContainer.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(res => {
+        if(!res || !res.success){ logsContainer.innerHTML = '<p>No logs or error.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ logsContainer.innerHTML = '<p>No access logs found.</p>'; return; }
+        logsContainer.innerHTML = rows.map(r => `<div class="card" style="margin-bottom:8px"><strong>${r.name}</strong><div style="opacity:.8">${r.idCode} • ${r.timestamp}</div></div>`).join('');
+      }).getAccessLogs();
+    }
+
+    // ---------------- Profile ----------------
+    function loadUserProfile(){
+      profileContainer.innerHTML = 'Loading...';
+      if(!appState.currentUser || !appState.currentUser.idCode){ profileContainer.innerHTML = '<p>No user info</p>'; return; }
+      if(!window.google || !google.script){ profileContainer.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(res => {
+        if(!res || !res.success){ profileContainer.innerHTML = '<p>Could not load profile.</p>'; return; }
+        const p = res.data || {};
+        profileContainer.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center">
+            <img src="${p.ProfilePictureURL || 'https://via.placeholder.com/150'}" class="avatar" style="width:110px;height:110px">
+            <div>
+              <h3 style="margin:0">${p['Full name']||p.FullName||p.Username||appState.currentUser.name||''}</h3>
+              <p style="margin:6px 0 0 0">${p.Position || p.position || ''} • ${p.Role || p.role || ''}</p>
+              <p style="margin:6px 0 0 0;opacity:.8">ID: ${p['ID Code'] || p.IDCode || p.idCode || appState.currentUser.idCode || ''}</p>
+            </div>
+          </div>
+
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="card"><strong>Email</strong><div style="margin-top:6px">${p['Email Address (B)'] || p.Email || ''}</div></div>
+            <div class="card"><strong>Birthday</strong><div style="margin-top:6px">${p['Date of Birth (E)']||p.DateOfBirth||''}</div></div>
+
+            <div class="card"><strong>Age</strong><div style="margin-top:6px">${p['Age (F)']||p.Age||''}</div></div>
+            <div class="card"><strong>Gender / Pronouns</strong><div style="margin-top:6px">${p['Sex/Gender (G)']||p['Pronouns (H)']||''}</div></div>
+
+            <div class="card"><strong>Contact Number</strong><div style="margin-top:6px">${p['Contact Number (J)']||p.Contact||''}</div></div>
+            <div class="card"><strong>Nationality</strong><div style="margin-top:6px">${p['Nationality (L)']||p.Nationality||''}</div></div>
+          </div>
+
+          <div style="margin-top:12px" class="card"><strong>About</strong><div style="margin-top:6px">${p.Bio || p.BioText || ''}</div></div>
+        `;
+      }).getUserProfile(appState.currentUser.idCode);
+    }
+
+    // ---------------- Announcements ----------------
+    function loadAnnouncements(){
+      annList.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ annList.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(res => {
+        if(!res || !res.success){ annList.innerHTML = '<p>Could not load announcements.</p>'; return; }
+        appState.announcements = res.data || [];
+        renderAnnouncements();
+      }).getAnnouncements();
+    }
+
+    function renderAnnouncements(){
+      annList.innerHTML = '';
+      const uId = appState.currentUser && appState.currentUser.idCode;
+      appState.unreadCount = 0;
+      (appState.announcements || []).forEach(a => {
+        if(a.unread && uId && a.unread[uId]) appState.unreadCount++;
+      });
+      annBadge.innerHTML = appState.unreadCount ? `<span>${appState.unreadCount} new</span>` : '';
+
+      if(!appState.announcements.length){ annList.innerHTML = '<p>No announcements.</p>'; return; }
+
+      appState.announcements.forEach(a => {
+        const isForMe = !a.recipients || a.recipients.length===0 || (appState.currentUser && a.recipients.includes(appState.currentUser.idCode)) || (a.recipients && a.recipients.includes('all'));
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.marginBottom = '8px';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${a.title}</strong><div style="font-size:0.9rem;opacity:0.85">${a.timestamp || ''}</div></div>
+          <div><small style="opacity:0.9">${isForMe ? 'To you' : 'Group'}</small></div>
+        </div>
+        <p style="margin:8px 0">${(a.body||'').slice(0,220)}${(a.body||'').length>220 ? '...' : ''}</p>
+        <div style="display:flex;gap:8px"><button class="btn secondary" data-id="${a.id}" data-read="${a.unread && appState.currentUser && a.unread[appState.currentUser.idCode] ? '0' : '1'}">Mark Read</button><button class="btn" data-view="${a.id}">View</button></div>`;
+        annList.appendChild(el);
+
+        el.querySelector('[data-view]').onclick = () => viewAnnouncement(a);
+        el.querySelector('[data-id]').onclick = (ev) => {
+          const id = ev.currentTarget.dataset.id;
+          markAnnouncementRead(id);
+        };
+      });
+    }
+
+    function viewAnnouncement(a){
+      showModal({
+        title: a.title,
+        bodyHtml: `<div style="max-height:60vh;overflow:auto"><p style="text-align:justify">${a.body}</p><p style="margin-top:10px"><em>Sent by: ${a.authorName || ''}</em></p></div>`,
+        footerHtml: `<button class="btn secondary" id="close-ann-modal">Close</button>`
+      });
+      setTimeout(()=> { const b = document.getElementById('close-ann-modal'); if(b) b.onclick = closeModal; }, 40);
+      if(a.unread && appState.currentUser && a.unread[appState.currentUser.idCode]) markAnnouncementRead(a.id);
+    }
+
+    function markAnnouncementRead(id){
+      if(!window.google || !google.script){ loadAnnouncements(); return; }
+      google.script.run.withSuccessHandler(res => { loadAnnouncements(); }).withFailureHandler(err => { console.error('markAnnouncementRead failed', err); }).markAnnouncementRead(appState.currentUser.idCode, id);
+    }
+
+    // create announcement (only Admin/Auditor/Head)
+    createAnnBtn && (createAnnBtn.onclick = () => {
+      const role = appState.currentUser && appState.currentUser.role;
+      if(!['Admin','Auditor','Head'].includes(role)){ alert('Only Admins, Auditors, Heads can create announcements.'); return; }
+      showModal({
+        title: 'Create Announcement',
+        bodyHtml: `<div style="display:flex;flex-direction:column;gap:8px">
+          <input id="ann-title" class="input-field" placeholder="Title">
+          <input id="ann-subject" class="input-field" placeholder="Subject (optional)">
+          <textarea id="ann-body" class="input-field" placeholder="Body"></textarea>
+          <input id="ann-recipients" class="input-field" placeholder="Recipients (comma-separated IDs or 'all' or committee code)">
+          <div style="font-size:0.86rem;color:rgba(0,0,0,0.7)">You can enter: <code>all</code>, <code>heads</code>, committee codes (e.g. <code>YSPTIR</code>), or specific ID codes separated by commas.</div>
+        </div>`,
+        footerHtml: `<button class="btn" id="ann-send">Send</button><button class="btn secondary" id="ann-cancel">Cancel</button>`
+      });
+      setTimeout(()=> {
+        $('#ann-cancel').onclick = closeModal;
+        $('#ann-send').onclick = () => {
+          const title = $('#ann-title').value.trim();
+          const body = $('#ann-body').value.trim();
+          const recipientsRaw = $('#ann-recipients').value.trim();
+          if(!title || !body){ alert('Title and body required'); return; }
+          const recipients = recipientsRaw ? recipientsRaw.split(',').map(s=>s.trim()).filter(Boolean) : ['all'];
+          const payload = {
+            authorId: appState.currentUser.idCode,
+            authorName: appState.currentUser.name,
+            title,
+            body,
+            recipients
+          };
+          if(!window.google || !google.script){
+            alert('Local: announcement created (not persisted).');
+            closeModal();
+            loadAnnouncements();
+            return;
+          }
+          google.script.run.withSuccessHandler(res => {
+            if(res && res.success){
+              alert('Announcement created and emails queued.');
+              closeModal();
+              loadAnnouncements();
+            } else {
+              alert(res.message || 'Failed to create announcement.');
+            }
+          }).withFailureHandler(err => {
+            console.error(err);
+            alert('Failed to create announcement (server error).');
+          }).createAnnouncement(payload);
+        };
+      }, 40);
+    });
+
+    // load unread badge
+    function loadUnreadAnnouncements(){
+      if(!window.google || !google.script) return;
+      google.script.run.withSuccessHandler(res => {
+        if(!res || !res.success) return;
+        appState.announcements = res.data || [];
+        let c = 0; const id = appState.currentUser && appState.currentUser.idCode;
+        (appState.announcements||[]).forEach(a=>{ if(a.unread && id && a.unread[id]) c++; });
+        appState.unreadCount = c;
+        annBadge.innerHTML = c ? `<span>${c} new</span>` : '';
+      }).getAnnouncements();
+    }
+
+    // ---------------- Attendance transparency ----------------
+    function loadAttendanceTransparency(){
+      attendanceTable.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ attendanceTable.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(res => {
+        if(!res || !res.success){ attendanceTable.innerHTML = '<p>Could not load attendance data.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ attendanceTable.innerHTML = '<p>No attendance records.</p>'; return; }
+        let html = `<table class="styled-table"><thead><tr><th>Date</th><th>Event</th><th>Time In</th><th>Time Out</th></tr></thead><tbody>`;
+        rows.forEach(r => {
+          html += `<tr><td>${r.date||''}</td><td>${r.event||''}</td><td>${r.timeIn||''}</td><td>${r.timeOut||''}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        attendanceTable.innerHTML = html;
+      }).getAttendanceTransparencyForUser(appState.currentUser.idCode);
+    }
+
+    // ---------------- My QR ----------------
+    function showMyQr(){
+      const id = appState.currentUser && appState.currentUser.idCode;
+      if(!id){ alert('No ID code'); return; }
+      showModal({
+        title: 'My QR Code',
+        bodyHtml: `<div style="text-align:center"><div id="qr-holder" style="display:inline-block;position:relative"></div><p style="margin-top:10px">${appState.currentUser.name || ''}<br><small style="opacity:.8">${appState.currentUser.position || ''} • ${id}</small></p></div>`,
+        footerHtml: `<button class="btn secondary" id="close-qr-btn">Close</button>`
+      });
+      setTimeout(()=> {
+        const qrHolder = document.getElementById('qr-holder');
+        try {
+          qrHolder.innerHTML = '';
+          new QRCode(qrHolder, { text: id, width:220, height:220, correctLevel: QRCode.CorrectLevel.H });
+          // overlay logo - place by absolute positioning
+          const logo = document.createElement('img');
+          logo.src = 'https://i.imgur.com/J4wddTW.png';
+          logo.style.position = 'absolute';
+          logo.style.width = '48px';
+          logo.style.height = '48px';
+          logo.style.left = '50%';
+          logo.style.top = '50%';
+          logo.style.transform = 'translate(-50%,-50%)';
+          logo.style.borderRadius = '8px';
+          logo.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
+          qrHolder.appendChild(logo);
+        } catch(e){ console.warn('QR error', e); }
+        const closeBtn = document.getElementById('close-qr-btn'); if(closeBtn) closeBtn.onclick = closeModal;
+      }, 80);
+    }
+
+    // ---------------- Initial wiring ----------------
+    loginBtn.addEventListener('click', handleLogin);
+    guestLoginBtn.addEventListener('click', handleGuestLogin);
+    $$('.back-btn').forEach(btn => btn.addEventListener('click', e => {
+      const t = btn.dataset.target; if(!t) return; switchPanels(t);
+    }));
+    [usernameInput, passwordInput].forEach(inp => inp.addEventListener('keydown', e => { if(e.key === 'Enter') handleLogin(); }));
+
+    // initial panel state
+    panels.forEach(p => { if(p.id !== 'login-panel'){ p.classList.add('hidden'); p.style.display = 'none'; }});
+    loginPanel.classList.remove('hidden'); loginPanel.classList.add('active'); loginPanel.style.display = 'flex';
+
+    // expose for debug
+    window.__YSP = {
+      switchPanels, loadHomepage, loadAnnouncements, loadFeedback, loadAccessLogs, loadUserProfile, showMyQr
+    };
+
+    // If server has session info, optionally fetch (server-side session login)
+    if(window.google && google.script){
+      google.script.run.withSuccessHandler(sess => {
+        if(sess && sess.user){
+          appState.currentUser = sess.user;
+          populateAfterLogin();
+        }
+      }).getSession && google.script.run.getSession();
+    }
+  })();
+  </script>
+</body>
+</html>

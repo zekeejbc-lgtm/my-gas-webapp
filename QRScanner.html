@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>YSPT QR Attendance Scanner</title>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<link rel="icon" href="https://i.imgur.com/J4wddTW.png">
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@600&family=Roboto:wght@400&display=swap');
+  :root{
+    --primary:#f6421f;
+    --secondary:#ee8724;
+    --tertiary:#fbcb29;
+    --text-dark:#212121;
+    --text-light:#fff;
+    --card-bg:rgba(255,255,255,0.96);
+    --input-bg:rgba(0,0,0,0.04);
+    --shadow:rgba(0,0,0,0.12);
+    --success:#34c759;
+    --error:#ff3b30;
+  }
+  body{
+    margin:0;
+    font-family:'Roboto',sans-serif;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    height:100vh;
+    background:linear-gradient(135deg,var(--primary),var(--secondary),var(--tertiary));
+    background-size:400% 400%;
+    animation:gradient 15s ease infinite;
+    color:var(--text-dark);
+    overflow:hidden;
+    padding:1rem;
+  }
+  @keyframes gradient{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+  .container{
+    width:100%;
+    max-width:700px;
+    background:var(--card-bg);
+    border-radius:16px;
+    padding:1.8rem;
+    box-shadow:0 10px 30px var(--shadow);
+    text-align:center;
+  }
+  .logo{ width:70px; height:70px; margin-bottom:0.4rem }
+  h1{ font-family:'Lexend',sans-serif; font-size:1.6rem; color:var(--primary); margin-bottom:0.3rem }
+  .btn{
+    display:inline-block;
+    padding:0.75rem 1.4rem;
+    border-radius:10px;
+    border:none;
+    background:var(--primary);
+    color:var(--text-light);
+    font-family:'Lexend';
+    cursor:pointer;
+    transition:all .2s;
+    margin:0.4rem;
+  }
+  .btn:hover{ transform:translateY(-2px); box-shadow:0 5px 12px rgba(0,0,0,0.2) }
+  .btn.secondary{ background:transparent; color:var(--primary); border:2px solid var(--primary) }
+  #reader{ width:100%; max-width:420px; margin:1rem auto; border-radius:12px; overflow:hidden; }
+  #status-msg{ font-weight:600; margin-top:1rem; transition:all .25s; }
+  .success{ color:var(--success); animation:fadeout 4s forwards }
+  .error{ color:var(--error); animation:fadeout 4s forwards }
+  @keyframes fadeout{0%{opacity:1}90%{opacity:1}100%{opacity:0}}
+  /* Modal for manual attendance */
+  #modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000; }
+  .modal{ background:var(--card-bg); border-radius:12px; padding:1.4rem; width:90%; max-width:420px; text-align:left; }
+  label{ display:block; font-weight:600; margin-bottom:0.4rem }
+  input, select{
+    width:100%; padding:0.75rem 0.9rem;
+    border-radius:10px; border:1px solid rgba(0,0,0,0.1);
+    background:var(--input-bg);
+    margin-bottom:1rem;
+    font-size:1rem;
+  }
+</style>
+</head>
+
+<body>
+  <div class="container">
+    <img src="https://i.imgur.com/J4wddTW.png" alt="logo" class="logo">
+    <h1>Attendance Scanner</h1>
+    <p style="margin:0.2rem 0 1rem 0;font-size:0.95rem;">Scan QR Codes to mark attendance automatically as <strong>Present</strong>.</p>
+
+    <div>
+      <button class="btn" id="manual-entry-btn">Manual Entry</button>
+      <button class="btn secondary" id="back-btn">Back to Menu</button>
+    </div>
+
+    <div id="reader"></div>
+    <div id="status-msg"></div>
+  </div>
+
+  <!-- Modal for Manual Attendance -->
+  <div id="modal-backdrop">
+    <div class="modal">
+      <h3 style="font-family:'Lexend';color:var(--primary)">Manual Attendance Entry</h3>
+      <label for="manual-id">Member ID Code</label>
+      <input type="text" id="manual-id" placeholder="e.g. YSPTMB-25901">
+      <label for="manual-status">Status</label>
+      <select id="manual-status">
+        <option value="Present">Present</option>
+        <option value="Late">Late</option>
+        <option value="Absent">Absent</option>
+        <option value="Excused">Excused</option>
+      </select>
+      <div style="text-align:right">
+        <button class="btn secondary" id="cancel-manual">Cancel</button>
+        <button class="btn" id="save-manual">Save</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+let scanner;
+const statusMsg = document.getElementById('status-msg');
+const modal = document.getElementById('modal-backdrop');
+
+function showStatus(message, type='success'){
+  statusMsg.textContent = message;
+  statusMsg.className = type;
+  setTimeout(()=> statusMsg.textContent = '', 4000);
+}
+
+// Initialize QR Scanner
+function startScanner(){
+  const html5QrCode = new Html5Qrcode("reader");
+  const config = { fps:10, qrbox:250 };
+  html5QrCode.start({ facingMode: "environment" }, config,
+    (decodedText) => {
+      html5QrCode.pause();
+      handleScan(decodedText);
+      setTimeout(()=> html5QrCode.resume(), 2200);
+    },
+    (errorMessage)=>{}
+  ).catch(err=>{
+    showStatus("Camera access error.", "error");
+    console.error(err);
+  });
+  scanner = html5QrCode;
+}
+
+// Handle scanned code
+function handleScan(idCode){
+  if(!idCode) return;
+  showStatus(`Processing ${idCode}...`, 'success');
+  if(typeof google === 'undefined' || !google.script){
+    setTimeout(()=> showStatus(`(Local test) Marked ${idCode} as Present`, 'success'), 1000);
+    return;
+  }
+  google.script.run.withSuccessHandler(res=>{
+    if(res && res.success){
+      showStatus(`✅ ${idCode} marked as Present`, 'success');
+    } else {
+      showStatus(res.message || "Failed to record.", "error");
+    }
+  }).withFailureHandler(err=>{
+    console.error(err);
+    showStatus("Connection error.", "error");
+  }).recordAttendanceScan(idCode); // backend function
+}
+
+// Manual Entry logic
+document.getElementById('manual-entry-btn').onclick = ()=>{ modal.style.display='flex'; };
+document.getElementById('cancel-manual').onclick = ()=>{ modal.style.display='none'; };
+document.getElementById('save-manual').onclick = ()=>{
+  const id = document.getElementById('manual-id').value.trim();
+  const status = document.getElementById('manual-status').value;
+  if(!id){ showStatus("Please enter an ID code.","error"); return; }
+  modal.style.display='none';
+  showStatus(`Recording ${id} as ${status}...`);
+  if(typeof google === 'undefined' || !google.script){
+    setTimeout(()=> showStatus(`(Local test) Recorded ${id} as ${status}`,'success'),1000);
+    return;
+  }
+  google.script.run.withSuccessHandler(res=>{
+    if(res && res.success){
+      showStatus(`✅ ${id} marked as ${status}`,'success');
+    } else {
+      showStatus(res.message || "Failed to record.","error");
+    }
+  }).withFailureHandler(err=>{
+    console.error(err);
+    showStatus("Connection error.","error");
+  }).recordManualAttendance(id,status);
+};
+
+// Back to menu
+document.getElementById('back-btn').onclick = ()=>{
+  if(typeof google !== 'undefined' && google.script){
+    google.script.host.close(); // closes the tab if Apps Script modal
+  } else {
+    window.close();
+  }
+};
+
+// Start camera when ready
+window.onload = startScanner;
+</script>
+</body>
+</html>
