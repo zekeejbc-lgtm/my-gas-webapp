@@ -6,11 +6,11 @@
 - Login captures username/password, calls `checkLogin`, stores the authenticated user in `appState`, fetches avatar/profile, and assembles a role-aware menu (home, QR tools, announcements, etc.).
 - Guest login skips authentication and opens the homepage in read-only mode.
 - Search panel filters officer records in-memory (`appState.officerData`) with live suggestions, keyboard-accessible navigation (Arrow keys/Enter/Escape), and status messaging before opening a manual attendance modal wired to the backend.
-- Homepage pulls rich content (mission, vision, projects), renders it inside a frosted overview card, surfaces a contact grid with a dedicated developer card plus a separate issue-report card (Facebook + Gmail launchers), and presents polished project modals for each card.
+- Homepage pulls rich content (mission, vision, projects) and presents modal details per project card.
 - Announcements list renders cards with mark-read and modal view actions, includes creator-only modal for creating announcements.
 - Attendance transparency fetches per-user records and renders a table summarizing events, time in/out, and inferred status.
 - Feedback, access logs, and profile panels load corresponding datasets on demand with table/card layouts.
-- Modal helper renders a single reusable dialog (`#modal-root`) for announcements, QR code display, manual attendance, etc., now with frosted-glass styling, ESC/backdrop dismissal, and automatic focus hand-off to the close button.
+- Modal helper renders a single reusable dialog (`#modal-root`) for announcements, QR code display, manual attendance, etc., while headings/ARIA wiring keep focus trapped until closure.
 
 ### Frontend ↔ backend touchpoints
 - Authentication & session: `checkLogin({ username, password })` persists the last user in `PropertiesService`, and `getSession()` bootstraps returning visitors when available.
@@ -24,14 +24,11 @@
 - New scanner entry point: `getQrScannerUrl()` opens the QR scanner web app in a new tab when available.
 
 ### UI/CSS structure & observations
-- Body retains the animated tri-color gradient but now overlays a subtle white wash, centers `#app` with a grid-based `place-items:center` layout plus `min-height:100dvh`, and uses clamp-based padding tokens so there is no dead space at the top or bottom on any viewport.
-- New panel width tokens (`--panel-max-*`, `--panel-body-*`) let each section declare tight/default/wide shells so login stays compact, dashboards widen gracefully, and all panels still stretch to 100% on narrow screens.
+- Body retains the animated tri-color gradient but now overlays a subtle white wash, centers `#app` with `flex` + `min-height:100dvh`, and uses clamp-based padding tokens so there is no dead space at the top or bottom on any viewport.
 - Each panel uses the new `.panel-header` (logo, title, optional subtitle) and `.panel-body` wrappers; widths clamp between 520–840px, internal gaps rely on shared spacing tokens, and scrollbars stay inside the frosted card shell.
 - Form-heavy sections adopt `.form-stack` and `.panel-actions`, ensuring inputs/buttons share consistent spacing while button rows automatically stack on phones.
 - The suggestions list is now a styled `.suggestions-list`/`.suggestion-item` component that hides via the `hidden` attribute, highlights the active option, and syncs `aria-activedescendant` as the user navigates with the keyboard.
 - Utility classes like `.media-stack`, `.info-grid`, `.directory-result`, and `.panel-divider` replace prior inline style clusters so avatar rows, profile cards, and action grids remain balanced as breakpoints change.
-- Homepage-specific `.homepage-overview`, `.contact-grid`, `.contact-card`, and `.contact-btn` utilities center the haloed crest logos, split developer vs. issue-report content into separate frosted cards, and ensure the new Gmail/Facebook buttons behave like standard 44px touch targets.
-- Panel logos share a halo treatment by padding each crest within a circular gradient background, keeping every header visually balanced while reinforcing the organization’s branding.
 - Media queries at 1024px, 820px, 600px, and 420px adjust padding, border radii, and layout direction while `prefers-reduced-motion` disables the gradient animation for accessibility.
 
 ## 2. QRScanner.html
@@ -47,8 +44,8 @@
 - `google.script.host.close()` used to exit Apps Script dialog contexts.
 
 ### UI/CSS structure & observations
-- Body keeps the animated gradient but adds a translucent overlay, grid-based centering, and clamp padding so the scanner card stays vertically balanced without bottom gaps.
-- `.container` now features a frosted glass treatment, border, and spacing tokens; `.scanner-header` and `.action-group` align controls while preserving center alignment, and the crest mirrors the SearchPage halo with clamp sizing to avoid crowding tablets.
+- Body keeps the animated gradient but adds a translucent overlay, centered flex layout, and clamp padding so the scanner card stays vertically balanced without bottom gaps.
+- `.container` now features a frosted glass treatment, border, and spacing tokens; `.scanner-header` and `.action-group` align controls while preserving center alignment.
 - Buttons hold 44px+ touch targets, share Lexend typography, and stretch full-width below 640px; the Flip Camera button hides automatically when only one device is exposed.
 - `#reader` uses a resized `qrbox` driven by `computeQrBox()` and an inset border to maintain a predictable viewport as the device rotates.
 - `showStatus` swaps `data-state` attributes instead of classes so success/error colors render consistently and messages clear after four seconds unless marked persistent.
@@ -75,9 +72,9 @@
 
 ## 5. Visual layout previews (text descriptions)
 ### SearchPage panels
-- **Login panel:** Frosted panel header stacks the haloed YSP crest, Lexend headline, and a muted subtitle above a compact `.form-stack` with username/password fields. Primary and secondary actions sit in a centered button group, and the status line fades in directly beneath the form.
+- **Login panel:** Frosted panel header stacks the YSP crest, Lexend headline, and a muted subtitle above a compact `.form-stack` with username/password fields. Primary and secondary actions sit in a centered button group, and the status line fades in directly beneath the form.
 - **Main menu / dashboard:** Panel header greets the user by name, while the `.media-stack` pairs the avatar with detail text and unread badge. Below a translucent divider, the dynamic menu renders as vertical button groups that stay centered yet stretch full-width on phones.
-- **Homepage panel:** `.panel-body` widens to 840px for longform content. Mission/vision/objectives sit inside the `.homepage-overview` card, the project grid collapses to a single column on phones, and a new `.contact-grid` splits the developer bio from the issue-report card with Facebook + Gmail buttons that stay centered with the crest.
+- **Homepage panel:** `.panel-body` widens to 840px for longform content. Mission text lives in a card, followed by a responsive project grid that collapses to one column on mobile and a developer contact card anchored by evenly spaced paragraphs.
 - **Announcements panel:** Filter row keeps the dropdown and “Create Announcement” button aligned on a single row (wrapping gracefully when space is tight). Announcement cards inherit the frosted style with bold titles, timestamp metadata, and in-card action buttons.
 - **Feedback panel:** The feedback container sits inside the panel body with consistent padding; entries render in stacked cards or the fallback table, and the back button shares the standardized `.panel-actions` alignment.
 - **Access logs panel:** Logs appear inside the card body with uniform spacing and muted metadata while the header subtitle reiterates accountability messaging.
@@ -86,7 +83,7 @@
 - **Manual attendance dialog:** The reusable modal maintains Lexend headings, stacked inputs, and right-aligned action buttons that collapse full-width on narrow screens.
 
 ### QRScanner page
-- **Scanner shell:** The centered card now opens with a structured header (haloed crest, title, descriptive subtitle) and an action group that houses Manual Entry, Flip Camera, and Back controls while keeping everything perfectly centered.
+- **Scanner shell:** The centered card now opens with a structured header (logo, title, descriptive subtitle) and an action group that houses Manual Entry, Flip Camera, and Back controls while keeping everything perfectly centered.
 - **Camera preview:** The reader viewport gains an inset border and dynamically sized `qrbox`, so it scales toward square on larger viewports yet stays comfortable (minimum 220px) on small phones.
 - **Status area:** A muted placeholder message (“Initializing camera…”) transitions into success/error messaging driven by `data-state`—messages fade after four seconds unless explicitly persistent.
 - **Manual entry modal:** Dialog styling mirrors the main palette with Lexend heading, stacked labels/fields, and right-aligned controls that stretch to full width on narrow devices while maintaining ESC/backdrop dismissal and focus return.

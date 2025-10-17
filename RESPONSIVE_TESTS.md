@@ -3,15 +3,13 @@
 All tests were executed with the updated HTML/CSS and should be repeated after future changes.
 
 ## 360px (mobile portrait)
-1. Load `SearchPage.html`; confirm the login panel fills the viewport without excessive top/bottom padding, the haloed crest/title/subtitle stack stays centered, and no horizontal scroll is present.
+1. Load `SearchPage.html`; confirm the login panel fills the viewport without excessive top/bottom padding, the logo/title/subtitle stack stays centered, and no horizontal scroll is present.
 2. Tap the password field and the eye toggle — ensure focus outlines are visible and the toggle hit area is comfortable.
 3. Complete a guest login; verify the main menu buttons stack vertically and the announcements badge stays within the card.
 4. Open the Search panel, type two characters, use Arrow Down/Up to move the highlight, and press Enter to select a suggestion; the list should stay inside the card without horizontal scroll.
 5. Clear the field (Escape or blur) and confirm the list hides while the “No officers found” message appears when searching nonsense text.
 6. Open the announcements modal and manual attendance modal from the search results; both should fit the screen height with internal scrolling only.
 7. From the menu, open the homepage panel; project cards should display as a single column grid with balanced margins.
-8. Verify the contact grid shows two frosted cards (developer + report issues) stacked vertically with centered logos and buttons.
-9. Tap the Facebook and Email buttons — each should open in a new tab (Gmail compose for email) without breaking layout, then press Back to Login and confirm the login panel is displayed.
 
 ## 768px (tablet portrait)
 1. On the main menu, ensure the avatar row aligns side-by-side with breathing room and the card retains rounded corners.
@@ -30,12 +28,9 @@ All tests were executed with the updated HTML/CSS and should be repeated after f
 2. Inspect the project gallery; multiple cards should render in a row via the CSS grid with uniform spacing.
 3. Open attendance transparency; table columns should stay left-aligned and readable without stretching excessively.
 4. Refresh the page to confirm returning users auto-load when `getSession` is available (if testing in Apps Script) without exposing console errors.
-5. Open a project card to review the modal layout; on desktop the image/text should sit side-by-side, ESC/backdrop closes the dialog, and focus returns to the triggering card.
-6. Toggle between the Login (tight) and Homepage (wide) panels to confirm the new width tokens keep each centered with consistent halo spacing.
 
 ## QRScanner.html specific checks
-- At 360px, confirm the scanner container remains centered, the haloed YSP crest/heading/subtitle stay aligned, buttons stack full-width, and there is no blank space below the card.
-- At 1024px+, verify the crest maintains its clamp sizing (no pixelation) and the subtitle stays within the 32ch width without wrapping awkwardly.
+- At 360px, confirm the scanner container remains centered, the YSP logo/heading/subtitle stay aligned, buttons stack full-width, and there is no blank space below the card.
 - At 768px and above, ensure the QR preview maintains its aspect ratio and manual entry modal appears centered with scrollable content if needed.
 - Press the Flip Camera button (if visible); the stream should restart on the alternate camera and the status bar should announce the change.
 - Resize the viewport (or rotate the device) and confirm the preview recalculates without clipping or leaving blank bands.
