@@ -235,8 +235,12 @@
     .avatar { width:86px; height:86px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.05); }
 
     /* homepage content */
-    #homepage-panel .panel-body { display:flex; flex-direction:column; min-height:100%; }
-    .homepage-layout { display:flex; flex-direction:column; gap:24px; min-height:100%; }
+    #homepage-panel .panel-body {
+      display:flex;
+      flex-direction:column;
+      min-height:min(100%, calc(100dvh - 180px));
+    }
+    .homepage-layout { display:flex; flex-direction:column; gap:24px; flex:1; }
     .homepage-layout .container { width:100%; }
     #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); display:flex; flex-direction:column; gap:16px; }
     .homepage-section-block h3 { font-family:'Lexend',sans-serif; margin:0 0 8px; font-size:1.1rem; color:var(--primary); }
@@ -251,6 +255,7 @@
     .homepage-contact-grid .card p { margin:0; }
     .homepage-contact-grid .card h3 { font-family:'Lexend',sans-serif; margin:0; font-size:1.1rem; color:var(--primary); }
     .homepage-action-stack { display:flex; flex-wrap:wrap; gap:12px; }
+    .panel-actions.push-bottom { margin-top:auto; }
     #project-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding-block:12px; }
     .project-card {
       width:100%;
@@ -564,7 +569,7 @@
           <div id="homepage-contacts" class="homepage-contact-grid" aria-live="polite"></div>
         </div>
 
-        <div class="panel-actions" style="margin-top:auto;">
+        <div class="panel-actions push-bottom">
           <button id="homepage-back-btn" class="btn secondary back-btn" data-target="login-panel">Back to Login</button>
         </div>
       </div>
@@ -715,8 +720,9 @@
       modal: null,
       panel: null
     };
-    const attrEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    const escapeAttr = value => String(value ?? '').replace(/[&<>"']/g, ch => attrEscapeMap[ch] || ch);
+    const htmlEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => htmlEscapeMap[ch] || ch);
+    const escapeAttr = value => escapeHtml(value);
     const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
     const isSafeHttpUrl = (value) => {
       try {
@@ -737,7 +743,7 @@
       return compose.toString();
     };
     const openExternal = (url) => {
-      if(!url) return;
+      if(!isSafeHttpUrl(url)) return;
       try {
         const win = window.open(url, '_blank', 'noopener');
         if(win){ win.opener = null; }
@@ -1188,7 +1194,7 @@
           if(composeUrl){
             const emailBtn = document.createElement('button');
             emailBtn.type = 'button';
-            emailBtn.className = 'btn secondary';
+            emailBtn.className = 'btn btn-primary';
             emailBtn.textContent = 'Email YSP';
             emailBtn.setAttribute('aria-label', 'Compose an email to YSP Tagum');
             emailBtn.addEventListener('click', () => openExternal(composeUrl));
@@ -1257,7 +1263,12 @@
           card.append(media, heading, copy);
 
           const openProject = () => {
-            const bodyParts = description ? description.split(/\n+/).map(line => `<p>${escapeAttr(line)}</p>`).join('') : '<p>Details coming soon.</p>';
+            const bodyParts = description
+              ? description.split(/\n+/).map(line => {
+                  const trimmed = line.trim();
+                  return trimmed ? `<p>${escapeHtml(trimmed)}</p>` : '';
+                }).filter(Boolean).join('')
+              : '<p>Details coming soon.</p>';
             const modalImage = escapeAttr(imageUrl || 'https://via.placeholder.com/960x540?text=YSP+Project');
             showModal({
               title,
