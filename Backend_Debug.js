@@ -66,7 +66,8 @@ function doGet(e) {
     var viewKey = requestedView || requestedPage;
     const targetFile = viewKey === "qrscanner" || viewKey === "scanner" ? "QRScanner" : FRONTEND_HTML;
     Logger.log("doGet: serving HTML: %s", targetFile);
-    const output = HtmlService.createHtmlOutputFromFile(targetFile)
+    const template = HtmlService.createTemplateFromFile(targetFile);
+    const output = template.evaluate()
       .setTitle(targetFile === "QRScanner" ? "YSPT QR Attendance Scanner" : "YSPT Officer Directory - Tagum")
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
     if (targetFile === "QRScanner") {
@@ -77,6 +78,10 @@ function doGet(e) {
     Logger.log("doGet Error: " + err);
     return HtmlService.createHtmlOutput("<pre>Error serving page: " + err.toString() + "</pre>");
   }
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 function getQrScannerUrl() {
