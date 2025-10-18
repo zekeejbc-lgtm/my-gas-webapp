@@ -1,17 +1,40 @@
-(function () {
+(function (factory) {
+  var root = typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : {};
+  factory(root);
+})(function (root) {
   'use strict';
+
+  if (!root || !root.document) {
+    if (root) {
+      root.loadAnnouncements = root.loadAnnouncements || function () {};
+      root.renderAnnouncements = root.renderAnnouncements || function () {};
+    }
+    return;
+  }
+
+  var doc = root.document;
+  var globalYsp = (root.YSP = root.YSP || {});
+  var utils = (globalYsp.utils = globalYsp.utils || {});
+  var callServer = typeof utils.callServer === 'function' ? utils.callServer : function () {};
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var showModalFn = typeof root.showModal === 'function' ? root.showModal : function () { return doc.createElement('div'); };
+  var closeModalFn = typeof root.closeModal === 'function' ? root.closeModal : function () {};
+  var selectOne = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var escapeHtml = typeof root.esc === 'function' ? root.esc : function (value) {
+    return String(value == null ? '' : value);
+  };
 
   var createBound = false;
 
   function loadAnnouncements() {
     if (!createBound) {
-      var btn = $('#btn-new-announcement');
+      var btn = selectOne('#btn-new-announcement');
       if (btn) {
         createBound = true;
         btn.addEventListener('click', openAnnouncementModal);
       }
     }
-    YSP.utils.callServer(
+    callServer(
       'listAnnouncements',
       [],
       function (res) {
@@ -19,8 +42,10 @@
         renderAnnouncements(list);
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load announcements.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load announcements.');
       },
       [
         { id: 'ANN-1', title: 'General Assembly', body: 'Join us this Saturday for our monthly assembly.', read: false },
@@ -30,7 +55,7 @@
   }
 
   function renderAnnouncements(list) {
-    var container = $('#announcement-list');
+    var container = selectOne('#announcement-list');
     if (!container) {
       return;
     }
@@ -40,21 +65,21 @@
       return;
     }
     list.forEach(function (item) {
-      var card = document.createElement('article');
+      var card = doc.createElement('article');
       card.className = 'card announcement-card';
       card.style.borderLeft = item.read ? '4px solid rgba(0,0,0,0.08)' : '4px solid var(--primary)';
       card.innerHTML =
         '<h3>' +
-        esc(item.title || 'Announcement') +
+        escapeHtml(item.title || 'Announcement') +
         '</h3><p class="muted">' +
-        esc(item.body || '') +
+        escapeHtml(item.body || '') +
         '</p>';
       container.appendChild(card);
     });
   }
 
   function openAnnouncementModal() {
-    var panel = showModal({
+    var panel = showModalFn({
       title: 'Create Announcement',
       bodyHtml:
         '<div class="form-group"><label>Title<input id="announcement-title" type="text" placeholder="Announcement title" /></label></div>' +
@@ -63,26 +88,33 @@
         '<button type="button" class="btn btn-outline" data-close="1">Cancel</button>' +
         '<button type="button" class="btn btn-primary" id="announcement-save">Publish</button>',
     });
+    if (!panel || typeof panel.querySelector !== 'function') {
+      return;
+    }
     var save = panel.querySelector('#announcement-save');
     if (save) {
       save.addEventListener('click', function () {
-        var title = String($('#announcement-title').value || '').trim();
-        var body = String($('#announcement-body').value || '').trim();
+        var titleEl = selectOne('#announcement-title');
+        var bodyEl = selectOne('#announcement-body');
+        var title = String((titleEl && titleEl.value) || '').trim();
+        var body = String((bodyEl && bodyEl.value) || '').trim();
         if (!title || !body) {
-          toast('Please provide a title and message.');
+          toastFn('Please provide a title and message.');
           return;
         }
-        YSP.utils.callServer(
+        callServer(
           'createAnnouncement',
           [{ title: title, body: body }],
           function (res) {
-            closeModal();
-            toast(res && res.message ? res.message : 'Announcement posted.');
+            closeModalFn();
+            toastFn(res && res.message ? res.message : 'Announcement posted.');
             loadAnnouncements();
           },
           function (err) {
-            console.error(err);
-            toast('Unable to publish announcement.');
+            if (root.console && typeof root.console.error === 'function') {
+              root.console.error(err);
+            }
+            toastFn('Unable to publish announcement.');
           },
           { success: true, message: 'Announcement created.' }
         );
@@ -90,6 +122,10 @@
     }
   }
 
-  window.loadAnnouncements = loadAnnouncements;
-  window.renderAnnouncements = renderAnnouncements;
-})();
+  globalYsp.announcements = globalYsp.announcements || {};
+  globalYsp.announcements.loadAnnouncements = loadAnnouncements;
+  globalYsp.announcements.renderAnnouncements = renderAnnouncements;
+
+  root.loadAnnouncements = loadAnnouncements;
+  root.renderAnnouncements = renderAnnouncements;
+});

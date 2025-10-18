@@ -1,12 +1,25 @@
-(function () {
+
+(function (root) {
   'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  var doc = root.document;
+  var historyApi = root.history;
+  var locationApi = root.location;
+  var setTimeoutFn = typeof root.setTimeout === 'function' ? root.setTimeout.bind(root) : function (fn) {
+    return fn();
+  };
+
+  var globalYsp = (root.YSP = root.YSP || {});
+  globalYsp.state = globalYsp.state || { session: null };
 
   var isReady = false;
   var readyQueue = [];
   var toastTimers = [];
   var toastRoot = null;
-
-  YSP.state = YSP.state || { session: null };
 
   function onReady(fn) {
     if (typeof fn !== 'function') {
@@ -33,18 +46,26 @@
     });
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', flushReady, { once: true });
-  } else {
+  if (doc && doc.readyState === 'loading') {
+    doc.addEventListener('DOMContentLoaded', flushReady, { once: true });
+  } else if (doc) {
     flushReady();
   }
 
   function $(selector, scope) {
-    return (scope || document).querySelector(selector);
+    var ctx = scope || doc;
+    if (!ctx || typeof ctx.querySelector !== 'function') {
+      return null;
+    }
+    return ctx.querySelector(selector);
   }
 
   function $$(selector, scope) {
-    return Array.prototype.slice.call((scope || document).querySelectorAll(selector));
+    var ctx = scope || doc;
+    if (!ctx || typeof ctx.querySelectorAll !== 'function') {
+      return [];
+    }
+    return Array.prototype.slice.call(ctx.querySelectorAll(selector));
   }
 
   function esc(value) {
@@ -67,28 +88,32 @@
           return acc[key];
         }
         return undefined;
-      }, window);
+      }, root);
   }
 
   function show(id) {
     if (!id) {
       return;
     }
-    var target = document.getElementById(id);
+    var target = doc ? doc.getElementById(id) : null;
     if (!target) {
       console.warn('Panel not found', id);
       return;
     }
-    $$('.panel').forEach(function (panel) {
-      var isTarget = panel === target;
-      panel.classList.toggle('active', isTarget);
-      panel.classList.toggle('hidden', !isTarget);
-    });
+    if (doc) {
+      $$('.panel').forEach(function (panel) {
+        var isTarget = panel === target;
+        panel.classList.toggle('active', isTarget);
+        panel.classList.toggle('hidden', !isTarget);
+      });
+    }
     try {
-      if (typeof history.replaceState === 'function') {
-        history.replaceState(null, '', '#' + id);
+      if (historyApi && typeof historyApi.replaceState === 'function') {
+        historyApi.replaceState(null, '', '#' + id);
       } else {
-        window.location.hash = id;
+        if (locationApi) {
+          locationApi.hash = '#' + id;
+        }
       }
     } catch (err) {
       // ignore
@@ -102,33 +127,43 @@
         console.error('Panel load handler failed', handlerName, err);
       }
     }
-    target.dispatchEvent(new CustomEvent('panel:show', { detail: { panel: target } }));
+    if (target && typeof target.dispatchEvent === 'function' && root.CustomEvent) {
+      target.dispatchEvent(new root.CustomEvent('panel:show', { detail: { panel: target } }));
+    }
   }
 
   function ensureToastRoot() {
+    if (!doc) {
+      return null;
+    }
     if (!toastRoot) {
-      toastRoot = document.getElementById('toast-root');
-      if (!toastRoot) {
-        toastRoot = document.createElement('div');
+      toastRoot = doc.getElementById('toast-root');
+      if (!toastRoot && doc.body) {
+        toastRoot = doc.createElement('div');
         toastRoot.id = 'toast-root';
         toastRoot.className = 'toast-container';
-        document.body.appendChild(toastRoot);
+        doc.body.appendChild(toastRoot);
       }
     }
-    toastRoot.classList.add('toast-container');
+    if (toastRoot) {
+      toastRoot.classList.add('toast-container');
+    }
     return toastRoot;
   }
 
   function toast(message, opts) {
     var root = ensureToastRoot();
     var text = message ? String(message) : 'Action completed.';
-    var toastEl = document.createElement('div');
+    if (!root || !doc) {
+      return null;
+    }
+    var toastEl = doc.createElement('div');
     toastEl.className = 'toast';
     toastEl.textContent = text;
     root.appendChild(toastEl);
 
     var duration = (opts && opts.duration) || 3200;
-    var timer = window.setTimeout(function () {
+    var timer = setTimeoutFn(function () {
       toastEl.classList.add('is-leaving');
       toastEl.addEventListener(
         'transitionend',
@@ -154,7 +189,7 @@
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
         throw new Error('Invalid protocol');
       }
-      var win = window.open(parsed.toString(), '_blank', 'noopener');
+      var win = root.open ? root.open(parsed.toString(), '_blank', 'noopener') : null;
       if (win) {
         win.opener = null;
       }
@@ -199,7 +234,7 @@
         failureHandler(err);
       }
     } else {
-      window.setTimeout(function () {
+      setTimeoutFn(function () {
         if (mock !== undefined) {
           successHandler(mock);
         } else {
@@ -233,16 +268,16 @@
     });
   }
 
-  window.onReady = onReady;
-  window.$ = $;
-  window.$$ = $$;
-  window.esc = esc;
-  window.show = show;
-  window.toast = toast;
-  window.openSafe = openSafe;
-  window.bindBackButtons = bindBackButtons;
-  YSP.utils = YSP.utils || {};
-  YSP.utils.callServer = callServer;
-  YSP.utils.hasServer = hasServer;
-  YSP.utils.resolveFunction = resolveFunction;
-})();
+  root.onReady = onReady;
+  root.$ = $;
+  root.$$ = $$;
+  root.esc = esc;
+  root.show = show;
+  root.toast = toast;
+  root.openSafe = openSafe;
+  root.bindBackButtons = bindBackButtons;
+  globalYsp.utils = globalYsp.utils || {};
+  globalYsp.utils.callServer = callServer;
+  globalYsp.utils.hasServer = hasServer;
+  globalYsp.utils.resolveFunction = resolveFunction;
+})(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : null);
