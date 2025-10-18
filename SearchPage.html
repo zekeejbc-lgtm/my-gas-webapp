@@ -6,88 +6,640 @@
   <title>YSP Tagum — Member App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700&family=Roboto:wght@400;500;700&display=swap"
-    rel="stylesheet"
-  />
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="icon" href="https://i.imgur.com/J4wddTW.png" />
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Tokens.css').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Components.css').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Panels.css').getContent(); ?>
+    :root {
+      --primary: #f6421f;
+      --secondary: #ee8724;
+      --tertiary: #fbcb29;
+      --bg-gradient: linear-gradient(135deg, var(--primary), var(--secondary), var(--tertiary));
+      --text-dark: #1c1c1c;
+      --text-muted: rgba(0, 0, 0, 0.65);
+      --surface: rgba(255, 255, 255, 0.97);
+      --border: rgba(255, 255, 255, 0.55);
+      --shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
+      --shadow-light: 0 8px 20px rgba(0, 0, 0, 0.08);
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --radius-sm: 10px;
+      --space-xs: clamp(6px, 1vh, 10px);
+      --space-sm: clamp(10px, 1.6vh, 16px);
+      --space-md: clamp(16px, 2.8vh, 24px);
+      --space-lg: clamp(24px, 3.5vh, 40px);
+      --space-xl: clamp(32px, 4.5vh, 56px);
+      --success: #2ecc71;
+      --danger: #ff3b30;
+      --warn: #f1c40f;
+      font-size: 16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      width: 100%;
+    }
+
+    body {
+      font-family: "Roboto", sans-serif;
+      background: var(--bg-gradient);
+      background-size: 300% 300%;
+      animation: gradientShift 18s linear infinite;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(18px, 6vw, 48px) clamp(12px, 4vw, 40px);
+      color: var(--text-dark);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      body { animation: none; }
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.08));
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    #app {
+      position: relative;
+      z-index: 1;
+      width: min(100%, 1080px);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-lg);
+    }
+
+    .panel {
+      display: none;
+      flex-direction: column;
+      gap: var(--space-md);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: clamp(18px, 4vw, 36px);
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      max-height: calc(100dvh - clamp(120px, 14vh, 220px));
+      overflow: hidden auto;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .panel.active {
+      display: flex !important;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .panel.hidden {
+      display: none !important;
+      opacity: 0;
+      transform: translateY(14px) scale(0.99);
+      pointer-events: none;
+    }
+
+    .panel-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--space-xs);
+      text-align: center;
+    }
+
+    .panel-header h1,
+    .panel-header h2 {
+      font-family: "Lexend", sans-serif;
+      margin: 0;
+      color: var(--primary);
+      letter-spacing: 0.02em;
+    }
+
+    .panel-header h1 { font-size: clamp(1.5rem, 2.4vw, 2.1rem); }
+    .panel-header h2 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
+
+    .panel-header p { margin: 0; color: var(--text-muted); }
+
+    .panel-body {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+      width: 100%;
+    }
+
+    .logo {
+      width: clamp(68px, 10vw, 90px);
+      height: clamp(68px, 10vw, 90px);
+      object-fit: contain;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.6);
+      padding: 6px;
+      box-shadow: var(--shadow-light);
+    }
+
+    .form-stack { display: flex; flex-direction: column; gap: var(--space-sm); }
+    label { font-weight: 500; color: var(--text-muted); }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(0,0,0,0.08);
+      background: rgba(0,0,0,0.03);
+      font: inherit;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: 3px solid rgba(246,66,31,0.18);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(246,66,31,0.12);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      padding: 0 18px;
+      border-radius: var(--radius-md);
+      border: none;
+      font: 600 0.95rem "Roboto", sans-serif;
+      cursor: pointer;
+      transition: transform 0.18s ease, box-shadow 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      box-shadow: var(--shadow-light);
+    }
+
+    .btn-secondary {
+      background: rgba(0,0,0,0.04);
+      color: var(--text-dark);
+      border: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .btn-danger { background: var(--danger); color: #fff; }
+
+    /* lists / cards */
+    .card {
+      background:#fff;
+      padding:16px;
+      border-radius:12px;
+      border:1px solid var(--input-border);
+      box-shadow:0 6px 24px rgba(0,0,0,0.08);
+    }
+    .avatar { width:86px; height:86px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.05); }
+
+    /* homepage content */
+    #homepage-panel .panel-body {
+      display:flex;
+      flex-direction:column;
+      min-height:min(100%, calc(100dvh - 180px));
+    }
+    .homepage-layout { display:flex; flex-direction:column; gap:24px; flex:1; }
+    .homepage-layout .container { width:100%; }
+    #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); display:flex; flex-direction:column; gap:16px; }
+    .homepage-section-block h3 { font-family:'Lexend',sans-serif; margin:0 0 8px; font-size:1.1rem; color:var(--primary); }
+    .homepage-section-block p { margin:0; font-size:0.95rem; line-height:1.6; }
+    .homepage-lede { font-size:1.05rem; font-weight:500; }
+    .homepage-meta { display:flex; flex-direction:column; gap:4px; font-size:0.94rem; }
+    .homepage-meta strong { font-family:'Lexend',sans-serif; font-size:1rem; }
+    .homepage-org-chart { border-radius:12px; overflow:hidden; background:#fff; }
+    .homepage-org-chart img { width:100%; display:block; }
+    .homepage-contact-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+    .homepage-contact-grid .card { display:flex; flex-direction:column; gap:12px; }
+    .homepage-contact-grid .card p { margin:0; }
+    .homepage-contact-grid .card h3 { font-family:'Lexend',sans-serif; margin:0; font-size:1.1rem; color:var(--primary); }
+    .homepage-action-stack { display:flex; flex-wrap:wrap; gap:12px; }
+    .panel-actions.push-bottom { margin-top:auto; }
+    #project-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding-block:12px; }
+    .project-card {
+      width:100%;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease;
+      background:#fff;
+      border:1px solid rgba(0,0,0,0.08);
+      box-shadow:0 6px 20px rgba(0,0,0,0.08);
+      display:flex;
+      flex-direction:column;
+      text-align:left;
+      padding:0;
+      color:var(--text-dark);
+    }
+    .project-card:focus-visible { outline:3px solid rgba(246,66,31,0.35); outline-offset:2px; }
+    .project-card__media {
+      border-radius:12px 12px 0 0;
+      overflow:hidden;
+    }
+    .project-card__title {
+      font-family:'Lexend',sans-serif;
+      font-size:1.05rem;
+      color:var(--primary);
+      margin:12px 12px 4px;
+    }
+    .project-card__copy {
+      margin:0 12px 16px;
+      color:var(--text-dark);
+      font-size:0.95rem;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: scale(0.98); }
+
+    .icon-button {
+      border: none;
+      background: rgba(0,0,0,0.05);
+      border-radius: 50%;
+      width: 46px;
+      height: 46px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s ease;
+    }
+
+    .icon-button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; }
+    .icon-button:hover { background: rgba(246,66,31,0.12); }
+    .icon-button.pulse::after {
+      content: "";
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(246,66,31,0.45);
+      animation: pulse 0.45s ease;
+    }
+
+    @keyframes pulse {
+      from { opacity: 0.8; transform: scale(0.88); }
+      to { opacity: 0; transform: scale(1.3); }
+    }
+
+    .panel-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+    }
+
+    .guest-modal{ display:flex; flex-direction:column; gap:var(--space-sm); }
+    .guest-modal__status{ min-height:20px; font-size:0.92rem; color:var(--muted); transition:color .18s ease; }
+    .guest-modal__status.is-error{ color:var(--danger); }
+
+    .info-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+      gap:var(--space-sm);
+    }
+
+    .tile {
+      background: rgba(255,255,255,0.85);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: var(--shadow-light);
+      border: 1px solid rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .tile:hover { transform: translateY(-3px); box-shadow: 0 12px 22px rgba(0,0,0,0.12); }
+    .tile:focus-visible { outline: 3px solid rgba(251,203,41,0.55); }
+    .tile-title { font-weight: 600; font-family: "Lexend", sans-serif; color: var(--primary); }
+    .tile-desc { font-size: 0.85rem; color: var(--text-muted); }
+
+    .back-btn { align-self: flex-start; }
+
+    .card-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .card {
+      background: rgba(255,255,255,0.88);
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: var(--shadow-light);
+      padding: var(--space-sm);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+    }
+
+    .card h3 { margin: 0; font-family: "Lexend", sans-serif; color: var(--primary); }
+    .card p { margin: 0; color: var(--text-muted); font-size: 0.92rem; }
+
+    .ratio-box {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: rgba(0,0,0,0.08);
+    }
+
+    .ratio-box img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    ul.suggestion-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-radius: var(--radius-md);
+      border: 1px solid rgba(0,0,0,0.08);
+      background: rgba(255,255,255,0.95);
+      box-shadow: var(--shadow-light);
+      overflow: hidden;
+    }
+
+    ul.suggestion-list li {
+      padding: 10px 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    ul.suggestion-list li:hover,
+    ul.suggestion-list li:focus-visible {
+      background: rgba(246,66,31,0.12);
+      outline: none;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-light);
+    }
+
+    thead { background: rgba(246,66,31,0.12); }
+    th, td { padding: 12px 14px; text-align: left; font-size: 0.92rem; }
+    tbody tr:nth-child(even) { background: rgba(0,0,0,0.02); }
+
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    .toast {
+      background: rgba(28,28,28,0.92);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow);
+      animation: slideUp 0.3s ease;
+      pointer-events: auto;
+      max-width: 320px;
+      font-size: 0.92rem;
+    }
+
+    .toast.fade-out {
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translate(-50%, 12px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: rgba(46,204,113,0.15);
+      color: #187741;
+    }
+
+    .status-chip.danger { background: rgba(255,59,48,0.16); color: #a01010; }
+    .status-chip.warn { background: rgba(251,203,41,0.2); color: #8c5f00; }
+
+    .flex-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .link { color: var(--primary); text-decoration: underline; cursor: pointer; }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.9);
+      border-radius: var(--radius-md);
+      padding: var(--space-sm);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      text-align: center;
+      box-shadow: var(--shadow-light);
+    }
+
+    .stat-card span { font-size: 0.85rem; color: var(--text-muted); }
+    .stat-card strong { font-size: 1.4rem; color: var(--primary); }
+
+    .list-empty {
+      text-align: center;
+      padding: var(--space-md);
+      color: var(--text-muted);
+      border-radius: var(--radius-md);
+      background: rgba(0,0,0,0.02);
+    }
+
+    .modal-root { position: relative; z-index: 1000; }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(17,17,17,0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 4vw, 40px);
+      animation: fadeIn 0.2s ease;
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow);
+      width: min(520px, 100%);
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(0);
+      animation: modalIn 0.25s ease;
+    }
+
+    .modal__panel { display: flex; flex-direction: column; }
+    .modal__header, .modal__footer { padding: var(--space-sm) var(--space-md); }
+    .modal__body { padding: var(--space-sm) var(--space-md); overflow: auto; }
+    .modal__title { margin: 0; font-family: "Lexend", sans-serif; color: var(--primary); }
+    .modal__close { background: none; border: none; font-size: 1.8rem; line-height: 1; cursor: pointer; }
+
+    @keyframes modalIn { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    @media (max-width: 768px) {
+      body { padding: 24px 14px; }
+      .panel { padding: clamp(16px, 5vw, 28px); max-height: calc(100dvh - 120px); }
+      .tile-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+    }
+
+    @media (max-width: 480px) {
+      .panel { padding: 18px; }
+      .panel-header h1 { font-size: 1.35rem; }
+      .panel-header h2 { font-size: 1.05rem; }
+      .card-list { grid-template-columns: 1fr; }
+      .tile-grid { grid-template-columns: 1fr; }
+      .flex-row { flex-direction: column; align-items: stretch; }
+      .btn { width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <div id="app" class="app-shell">
-    <section class="panel" id="login-panel">
-      <div class="login-illustration">
-        <div class="login-brand">
-          <img src="https://i.imgur.com/J4wddTW.png" alt="YSP Tagum" class="login-logo" />
-          <h1 class="login-title">YSP Tagum Member Portal</h1>
-          <p class="login-subtitle">Empowering young leaders through unified service and collaboration.</p>
+  <div id="app">
+    <section id="login-panel" class="panel active" aria-labelledby="login-title">
+      <header class="panel-header">
+        <img src="https://i.imgur.com/J4wddTW.png" alt="YSP Tagum Logo" class="logo" />
+        <h1 id="login-title">YSP Tagum Chapter</h1>
+        <p>Welcome! Please log in with your member credentials or continue as a guest.</p>
+      </header>
+      <div class="panel-body">
+        <div class="form-stack">
+          <label for="username">Member ID or Email</label>
+          <input id="username" type="text" autocomplete="username" placeholder="Enter your ID or email" />
         </div>
-      </div>
-      <div class="login-form" role="form" aria-labelledby="login-heading">
-        <h2 id="login-heading">Sign in</h2>
-        <div class="form-group">
-          <label for="username">Email or ID</label>
-          <input id="username" name="username" type="text" autocomplete="username" placeholder="Enter your email or ID" />
-        </div>
-        <div class="form-group password-group">
-          <label for="password">Password</label>
-          <div class="password-input">
-            <input id="password" name="password" type="password" autocomplete="current-password" placeholder="Enter your password" />
-            <button id="eye-toggle" type="button" class="eye-toggle" aria-label="Show password" aria-pressed="false">
-              <span class="eye">
-                <span class="eye-ball"></span>
-                <span class="eye-lid"></span>
-              </span>
+        <div class="form-stack">
+          <div class="flex-between">
+            <label for="password">Password</label>
+            <button id="eye-toggle" type="button" class="icon-button" aria-label="Toggle password visibility">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+                <line x1="4" y1="4" x2="20" y2="20" stroke-width="2"></line>
+              </svg>
             </button>
           </div>
+          <input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" />
         </div>
-        <div class="form-actions">
-          <button id="login-btn" type="button" class="btn btn-primary btn-block">Log In</button>
-          <button id="guest-login-btn" type="button" class="btn btn-outline btn-block">Log in as Guest</button>
+        <div class="panel-actions">
+          <button id="login-btn" class="btn" type="button">Log In</button>
+          <button id="guest-login-btn" class="btn secondary" type="button">Log in as Guest</button>
         </div>
-        <p class="login-footnote">Authorized members only. Guests may explore limited features.</p>
+        <p id="login-status" class="text-muted" role="status" aria-live="polite"></p>
       </div>
     </section>
 
-    <section class="panel hidden" id="main-menu-panel">
+    <section id="main-menu-panel" class="panel" aria-labelledby="dashboard-title">
       <header class="panel-header">
-        <button class="btn btn-text back-btn" data-target="login-panel">&larr; Back to Login</button>
-        <div>
-          <h2 class="panel-title">Welcome back, <span id="welcome-name">Member</span>!</h2>
-          <p class="panel-subtitle">Choose an area below to manage your YSP experience.</p>
-        </div>
+        <h1 id="dashboard-title">Main Menu</h1>
+        <p id="dashboard-subtitle">Choose a module to continue.</p>
       </header>
-      <div id="dashboard-tiles" class="tile-grid" role="list"></div>
+      <div class="panel-body">
+        <div id="dashboard-tiles" class="tile-grid" role="list"></div>
+      </div>
     </section>
 
-    <section class="panel hidden" id="homepage-panel">
-      <header class="panel-header">
-        <button class="btn btn-text back-btn" data-target="login-panel">&larr; Back to Login</button>
-        <div>
-          <h2 class="panel-title">Homepage</h2>
-          <p class="panel-subtitle">Discover the latest highlights from YSP Tagum.</p>
+      <div class="panel-body is-wide">
+        <div class="media-stack">
+          <img id="user-avatar" src="https://placehold.co/120x120?text=Avatar" alt="avatar" class="avatar">
+          <div class="panel-section" style="flex:1;">
+            <div id="user-details" style="line-height:1.2"></div>
+            <div><span id="ann-badge"></span></div>
+          </div>
         </div>
-      </header>
-      <article class="card">
-        <h3>About</h3>
-        <p id="home-about" class="muted">Loading content…</p>
-      </article>
-      <div class="grid two">
-        <article class="card">
-          <h3>Mission</h3>
-          <p id="home-mission" class="muted">…</p>
-        </article>
-        <article class="card">
-          <h3>Vision</h3>
-          <p id="home-vision" class="muted">…</p>
-        </article>
+        <section class="card">
+          <h3>Organizational Chart</h3>
+          <div class="ratio-box">
+            <img id="home-org-chart" src="https://placehold.co/800x450?text=Organizational+Chart" alt="YSP Organizational Chart" />
+          </div>
+        </section>
+        <section>
+          <h2>Projects</h2>
+          <div id="projects-grid" class="card-list"></div>
+          <div id="projects-empty" class="list-empty" hidden>No projects available yet.</div>
+        </section>
+        <section class="card-list">
+          <article class="card" id="contact-report-card">
+            <h3>Report Issues</h3>
+            <p>If you experience any issue, reach out through Facebook or Email.</p>
+            <div class="panel-actions">
+              <button id="contact-fb" class="btn btn-primary" type="button">Open Facebook</button>
+              <button id="contact-email" class="btn btn-secondary" type="button">Send Email</button>
+            </div>
+          </article>
+          <article class="card">
+            <h3>Web App Developer</h3>
+            <p>The YSP Tagum digital team maintains this platform. Please send constructive feedback using the in-app forms.</p>
+          </article>
+        </section>
       </div>
       <article class="card">
         <h3>Objectives</h3>
@@ -121,50 +673,51 @@
       </section>
     </section>
 
-    <section class="panel hidden" id="profile-panel">
+    <section id="profile-panel" class="panel" aria-labelledby="profile-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Profile &amp; ID</h2>
-          <p class="panel-subtitle">Review your account and download your QR ID.</p>
-        </div>
+        <h1 id="profile-title">My Profile</h1>
       </header>
-      <article id="profile-card" class="card profile-card">
-        <div class="profile-info">
-          <img id="profile-avatar" src="https://placehold.co/400x400?text=Member" alt="Profile avatar" />
-          <div>
-            <h3 id="profile-name">Member Name</h3>
-            <p id="profile-role" class="muted">Role</p>
-            <p id="profile-email" class="muted">Email</p>
-            <p id="profile-id" class="muted">ID Code</p>
+      <div class="panel-body">
+        <div id="profile-card" class="card">
+          <h3 id="profile-name">Guest Member</h3>
+          <p id="profile-role" class="text-muted">Role</p>
+          <p><span class="text-muted">Email:</span> <span id="profile-email">guest@example.com</span></p>
+          <p><span class="text-muted">Member ID:</span> <span id="profile-id">N/A</span></p>
+          <div class="ratio-box" aria-hidden="true">
+            <div id="qrid"></div>
           </div>
+          <button id="btn-download-qr" type="button" class="btn btn-secondary">Download QR</button>
         </div>
-        <div class="profile-qr">
-          <div id="qrid" class="qr-box" aria-live="polite"></div>
-          <button id="btn-download-qr" type="button" class="btn btn-outline">Download QR</button>
-        </div>
-      </article>
+      </div>
     </section>
 
-    <section class="panel hidden" id="qr-attendance-panel">
+    <section id="qr-attendance-panel" class="panel" aria-labelledby="qr-attendance-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">QR Attendance</h2>
-          <p class="panel-subtitle">Scan members for instant attendance logging.</p>
-        </div>
+        <h1 id="qr-attendance-title">QR Attendance</h1>
       </header>
-      <div class="card">
-        <label for="event-select">Active Event</label>
-        <select id="event-select"></select>
-        <div class="button-row">
-          <button id="btn-start-scan" type="button" class="btn btn-primary">Start Scanner</button>
-          <button id="btn-stop-scan" type="button" class="btn btn-outline">Stop Scanner</button>
+      <div class="panel-body">
+        <div class="form-stack">
+          <label for="event-select">Event</label>
+          <select id="event-select">
+            <option value="">Select an event</option>
+          </select>
         </div>
-        <div id="scanner" class="scanner-box" aria-live="polite"></div>
-        <div class="upload-fallback">
-          <label for="qr-file">Upload QR Image</label>
-          <input id="qr-file" type="file" accept="image/*" />
+        <div class="panel-actions">
+          <button id="start-scan" class="btn btn-primary" type="button">Start Scanner</button>
+          <button id="stop-scan" class="btn btn-secondary" type="button">Stop Scanner</button>
+        </div>
+        <div class="form-stack">
+          <label for="scan-file">Upload QR Image (Fallback)</label>
+          <input id="scan-file" type="file" accept="image/*" />
+          <button id="scan-file-btn" class="btn btn-secondary" type="button">Scan Uploaded QR</button>
+        </div>
+        <div id="scanner" class="card" role="region" aria-live="polite"></div>
+        <div id="scan-fallback-target" style="display:none;"></div>
+        <div id="scan-output" class="card" aria-live="polite">
+          <h3>Scan Log</h3>
+          <div id="scan-log"></div>
         </div>
       </div>
       <article class="card">
@@ -173,220 +726,1863 @@
       </article>
     </section>
 
-    <section class="panel hidden" id="manual-attendance-panel">
+    <section id="manual-attendance-panel" class="panel" aria-labelledby="manual-attendance-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Manual Attendance</h2>
-          <p class="panel-subtitle">Record attendance for members manually.</p>
-        </div>
+        <h1 id="manual-attendance-title">Manual Attendance</h1>
       </header>
-      <div class="card">
-        <label for="manual-event">Select Event</label>
-        <select id="manual-event"></select>
-        <div class="form-group">
-          <label for="manual-member">Search Member</label>
-          <input id="manual-member" type="text" placeholder="Search by name or ID" autocomplete="off" />
+      <div class="panel-body">
+        <div class="form-stack">
+          <label for="manual-event">Event</label>
+          <select id="manual-event">
+            <option value="">Select an event</option>
+          </select>
         </div>
-        <ul id="manual-suggestions" class="suggestions"></ul>
-        <div class="button-row">
-          <button id="manual-in" type="button" class="btn btn-primary">Time In</button>
-          <button id="manual-out" type="button" class="btn btn-outline">Time Out</button>
+        <div class="form-stack">
+          <label for="manual-member">Member</label>
+          <input id="manual-member" type="text" placeholder="Search member" autocomplete="off" />
+          <ul id="manual-suggestions" class="suggestion-list" hidden></ul>
         </div>
       </div>
     </section>
 
-    <section class="panel hidden" id="attendance-dashboard-panel">
-      <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Attendance Dashboard</h2>
-          <p class="panel-subtitle">Visualize participation across events.</p>
+        <div class="panel-actions push-bottom">
+          <button id="homepage-back-btn" class="btn secondary back-btn" data-target="login-panel">Back to Login</button>
         </div>
-      </header>
-      <article class="card">
-        <canvas id="kpi-chart" height="320" role="img" aria-label="Attendance KPIs chart"></canvas>
-      </article>
-    </section>
-
-    <section class="panel hidden" id="attendance-trans-panel">
-      <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Attendance Transparency</h2>
-          <p class="panel-subtitle">Track your attendance record.</p>
-        </div>
-      </header>
-      <div class="card table-card">
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Event</th>
-                <th>Time In</th>
-                <th>Time Out</th>
-              </tr>
-            </thead>
-            <tbody id="attendance-rows"></tbody>
-          </table>
-        </div>
+        <div id="manual-status" class="text-muted" role="status" aria-live="polite"></div>
       </div>
     </section>
 
-    <section class="panel hidden" id="manage-events-panel">
+    <section id="attendance-dashboard-panel" class="panel" aria-labelledby="attendance-dashboard-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Manage Events</h2>
-          <p class="panel-subtitle">Create and update YSP events.</p>
-        </div>
+        <h1 id="attendance-dashboard-title">Attendance Dashboard</h1>
       </header>
-      <div class="card">
-        <button id="btn-create-event" type="button" class="btn btn-primary">Create Event</button>
-      </div>
-      <div class="card table-card">
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Event</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="events-rows"></tbody>
-          </table>
-        </div>
+      <div class="panel-body">
+        <div class="stat-grid" id="kpi-stats"></div>
+        <canvas id="kpi-canvas" height="280" aria-label="Attendance KPI chart" role="img"></canvas>
       </div>
     </section>
 
-    <section class="panel hidden" id="directory-panel">
+    <section id="attendance-trans-panel" class="panel" aria-labelledby="attendance-trans-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Officer Directory</h2>
-          <p class="panel-subtitle">Find officers and members quickly.</p>
-        </div>
+        <h1 id="attendance-trans-title">My Attendance Records</h1>
       </header>
-      <div class="card">
-        <label for="search-input">Search Members</label>
-        <input id="search-input" type="text" placeholder="Type name or ID" autocomplete="off" />
-        <ul id="suggestions-list" class="suggestions" role="listbox"></ul>
+      <div class="panel-body">
+        <div id="attendance-table" aria-live="polite"></div>
       </div>
       <article id="directory-result" class="card profile-card muted">Search to view member details.</article>
     </section>
 
-    <section class="panel hidden" id="announcements-panel">
+    <section id="manage-events-panel" class="panel" aria-labelledby="manage-events-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Announcements</h2>
-          <p class="panel-subtitle">Share updates with the YSP community.</p>
-        </div>
+        <h1 id="manage-events-title">Manage Events</h1>
       </header>
-      <div class="card">
-        <button id="btn-new-announcement" type="button" class="btn btn-primary">Create Announcement</button>
+      <div class="panel-body">
+        <div class="panel-actions">
+          <button id="btn-create-event" class="btn btn-primary" type="button">Create Event</button>
+        </div>
+        <div id="events-table" aria-live="polite"></div>
       </div>
       <div id="announcement-list" class="stack"></div>
     </section>
 
-    <section class="panel hidden" id="submit-feedback-panel">
+    <section id="directory-panel" class="panel" aria-labelledby="directory-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Submit Feedback</h2>
-          <p class="panel-subtitle">Tell us how we can improve.</p>
-        </div>
+        <h1 id="directory-title">Officer Directory</h1>
       </header>
-      <div class="card">
-        <label for="feedback-text">Your Feedback</label>
-        <textarea id="feedback-text" rows="6" placeholder="Share your thoughts"></textarea>
-        <button id="btn-send-feedback" type="button" class="btn btn-primary">Send Feedback</button>
+      <div class="panel-body">
+        <div class="form-stack">
+          <label for="search-input">Search Member</label>
+          <input id="search-input" type="text" placeholder="Type name or ID" autocomplete="off" />
+          <ul id="suggestions-list" class="suggestion-list" hidden></ul>
+        </div>
+        <div id="officer-profile" class="directory-result"></div>
       </div>
-      <section class="card">
-        <h3>Your Previous Feedback</h3>
-        <div id="my-feedback-list" class="stack"></div>
-      </section>
+    </section>
+    <section id="announcements-panel" class="panel" aria-labelledby="announcements-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
+      <header class="panel-header">
+        <h1 id="announcements-title">Announcements</h1>
+      </header>
+      <div class="panel-body">
+        <div class="panel-actions">
+          <button id="btn-create-announcement" class="btn btn-primary" type="button">Create Announcement</button>
+        </div>
+        <div id="announcements-list" class="card-list"></div>
+      </div>
     </section>
 
-    <section class="panel hidden" id="view-feedback-panel">
+    <section id="submit-feedback-panel" class="panel" aria-labelledby="submit-feedback-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Feedback Inbox</h2>
-          <p class="panel-subtitle">Review submissions from members.</p>
-        </div>
+        <h1 id="submit-feedback-title">Submit Feedback</h1>
       </header>
-      <div id="feedback-admin-list" class="stack"></div>
+      <div class="panel-body">
+        <div class="form-stack">
+          <label for="feedback-text">Your Feedback</label>
+          <textarea id="feedback-text" rows="5" placeholder="Share your thoughts"></textarea>
+        </div>
+        <div class="panel-actions">
+          <button id="btn-send-feedback" class="btn btn-primary" type="button">Send Feedback</button>
+        </div>
+        <div id="feedback-status" class="text-muted" role="status" aria-live="polite"></div>
+      </div>
     </section>
 
-    <section class="panel hidden" id="view-logs-panel">
+    <section id="view-feedback-panel" class="panel" aria-labelledby="view-feedback-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
       <header class="panel-header">
-        <button class="btn btn-text back-btn">&larr; Back</button>
-        <div>
-          <h2 class="panel-title">Access Logs</h2>
-          <p class="panel-subtitle">Monitor sign-in history for transparency.</p>
-        </div>
+        <h1 id="view-feedback-title">Feedback Inbox</h1>
       </header>
-      <div class="card table-card">
-        <div class="table-wrapper">
-          <table>
-            <thead>
-              <tr>
-                <th>Timestamp</th>
-                <th>ID Code</th>
-                <th>Name</th>
-              </tr>
-            </thead>
-            <tbody id="access-log-rows"></tbody>
-          </table>
-        </div>
+      <div class="panel-body">
+        <div id="feedback-list" class="card-list"></div>
+      </div>
+    </section>
+
+    <section id="view-logs-panel" class="panel" aria-labelledby="view-logs-title">
+      <button class="btn btn-secondary back-btn" type="button" data-target="main-menu-panel">Back</button>
+      <header class="panel-header">
+        <h1 id="view-logs-title">Access Logs</h1>
+      </header>
+      <div class="panel-body">
+        <div id="logs-table"></div>
       </div>
     </section>
   </div>
 
   <div id="modal-root" hidden></div>
-  <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
+  <div id="toast-container" class="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
 
+  <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
+
+  <!-- ---------------- JS: UI logic ---------------- -->
+  <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
   <script>
-    <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Utils.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Modal.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Login.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Homepage.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Directory.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_QR.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Manual.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Attendance.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_KPIs.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Events.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Announcements.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Feedback.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_AccessLogs.js').getContent(); ?>
-    onReady(function () {
-      $$('.panel').forEach(function (panel) {
-        var isLogin = panel.id === 'login-panel';
-        panel.classList.toggle('hidden', !isLogin);
-        panel.classList.toggle('active', isLogin);
+  (function(){
+    function onReady(fn){
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', fn);
+      } else {
+        fn();
+      }
+    }
+
+    onReady(function(){
+    // Shortcuts + state
+    function $(s){ return document.querySelector(s); }
+    function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+    const panels = $$('.panel');
+    const panelHashMap = {
+      'login-panel': '#login',
+      'main-menu-panel': '#dashboard',
+      'homepage-panel': '#homepage',
+      'search-panel': '#search',
+      'announcements-panel': '#announcements',
+      'view-feedback-panel': '#feedback',
+      'view-logs-panel': '#logs',
+      'attendance-trans-panel': '#attendance'
+    };
+    let appState = {
+      currentUser: null,
+      officerData: [],
+      events: [],
+      announcements: [],
+      unreadCount: 0
+    };
+
+    // Elements
+    const loginPanel = $('#login-panel');
+    const loginBtn = $('#login-btn');
+    const guestLoginBtn = $('#guest-login-btn');
+    const usernameInput = $('#username-input');
+    const passwordInput = $('#password-input');
+    const eyeToggle = $('#eye-toggle');
+    const loginStatus = $('#login-status');
+
+    const mainMenuPanel = $('#main-menu-panel');
+    const welcomeMessage = $('#welcome-message');
+    const userDetailsDiv = $('#user-details');
+    const userAvatar = $('#user-avatar');
+    const mainMenuButtons = $('#main-menu-buttons');
+    const annBadge = $('#ann-badge');
+
+    const homepagePanel = $('#homepage-panel');
+    const homepageContent = $('#homepage-content');
+    const projectGallery = $('#project-gallery');
+    const homepageContacts = $('#homepage-contacts');
+
+    const searchPanel = $('#search-panel');
+    const searchInput = $('#search-input');
+    const suggestionsList = $('#suggestions-list');
+    const resultBox = $('#result-box');
+
+    const feedbackContainer = $('#feedback-container');
+    const logsContainer = $('#access-logs-container');
+    const profileContainer = $('#profile-container');
+
+    const announcementsPanel = $('#announcements-panel');
+    const annList = $('#ann-list');
+    const createAnnBtn = $('#create-ann-btn');
+    const annFilter = $('#ann-filter');
+
+    const attendanceTransPanel = $('#attendance-trans-panel');
+    const attendanceTable = $('#attendance-table');
+
+
+    var modalRoot = $('#modal-root');
+    var modalState = {
+      escListener: null,
+      trapCleanup: null,
+      lastFocused: null,
+      backdrop: null,
+      modal: null,
+      panel: null
+    };
+    const htmlEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => htmlEscapeMap[ch] || ch);
+    const escapeAttr = value => escapeHtml(value);
+    const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
+    const isSafeHttpUrl = (value) => {
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch(e){
+        return false;
+      }
+    };
+    const normalizeExternalUrl = (value) => {
+      const raw = textOrEmpty(value);
+      if(!raw) return '';
+      const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      if(!isSafeHttpUrl(withProtocol)) return '';
+      try {
+        return new URL(withProtocol).toString();
+      } catch(err){
+        return '';
+      }
+    };
+    const buildGmailComposeUrl = (email) => {
+      const safeEmail = textOrEmpty(email);
+      if(!safeEmail) return '';
+      const compose = new URL('https://mail.google.com/mail/');
+      compose.searchParams.set('view','cm');
+      compose.searchParams.set('fs','1');
+      compose.searchParams.set('to', safeEmail);
+      compose.searchParams.set('su','[YSP] Issue Report');
+      return compose.toString();
+    };
+    const openExternal = (url) => {
+      if(!isSafeHttpUrl(url)) return;
+      try {
+        const win = window.open(safeUrl, '_blank', 'noopener');
+        if(win){ win.opener = null; }
+      } catch(err){
+        console.warn('Unable to open link', err);
+      }
+    }
+
+    // Utilities
+    function switchPanels(targetId){
+      panels.forEach(function(p){
+        if(p.id === targetId){
+          p.classList.remove('hidden');
+          p.classList.add('active');
+          p.style.display = 'flex';
+          p.setAttribute('aria-hidden','false');
+        } else {
+          fn();
+        }
       });
-      bindLogin();
-      bindBackButtons();
-      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run.getSession === 'function') {
-        google.script.run
-          .withSuccessHandler(function (res) {
-            if (res && res.user) {
-              setSession(res.user);
-              show('main-menu-panel');
+      // small scroll to top for panel
+      const t = $('#'+targetId);
+      if(t) t.scrollTop = 0;
+      const hash = panelHashMap[targetId];
+      if(hash){
+        location.hash = hash;
+      }
+    }
+
+    function showStatusFor(idSelectorOrText, text, timeout){
+      const numericTimeout = typeof timeout === 'number' ? timeout : Number(timeout);
+      const displayDuration = !isNaN(numericTimeout) ? numericTimeout : 4200;
+      // convenience: if idSelectorOrText equals 'login' show in login-status
+      const el = (typeof idSelectorOrText === 'string' && idSelectorOrText.startsWith('#')) ? document.querySelector(idSelectorOrText) : document.getElementById(idSelectorOrText + '-status');
+      const target = el || (typeof idSelectorOrText === 'string' ? document.getElementById(idSelectorOrText) : null);
+      if(target){
+        target.textContent = text;
+        target.classList.add('show');
+        setTimeout(function(){ target.classList.remove('show'); }, displayDuration);
+      } else {
+        console.warn('Status element not found for', idSelectorOrText);
+      }
+      if(!YSP.modal || typeof YSP.modal.open !== 'function' || typeof YSP.modal.close !== 'function'){
+        YSP.modal = (function(){
+          var root = null;
+          var lastFocused = null;
+
+          function ensureRoot(){
+            if(!root){
+              root = document.getElementById('modal-root');
+              if(!root){
+                root = document.createElement('div');
+                root.id = 'modal-root';
+                root.hidden = true;
+                document.body.appendChild(root);
+              }
             }
-          })
-          .withFailureHandler(function () {
-            console.warn('Unable to restore session.');
-          })
-          .getSession();
+            return root;
+          }
+
+    // modal helper
+    function showModal(options){
+      const opts = options || {};
+      const title = typeof opts.title === 'string' ? opts.title : '';
+      const bodyHtml = typeof opts.bodyHtml === 'string' ? opts.bodyHtml : '';
+      const footerHtml = typeof opts.footerHtml === 'string' ? opts.footerHtml : '';
+      const modalClass = typeof opts.modalClass === 'string' ? opts.modalClass : '';
+      const opener = opts.opener || null;
+      if(!modalRoot) return;
+      if(!modalRoot.hidden){
+        if(modalState.escListener){
+          document.removeEventListener('keydown', modalState.escListener);
+          modalState.escListener = null;
+        }
+        if(modalState.trapCleanup){
+          modalState.trapCleanup();
+          modalState.trapCleanup = null;
+        }
+        modalRoot.innerHTML = '';
+        modalRoot.hidden = true;
+        document.body.appendChild(modalRoot);
+      }
+
+      modalState.lastFocused = opener || document.activeElement || null;
+
+      var titleId = 'modal-title-' + Date.now();
+      var descId = 'modal-desc-' + Date.now();
+
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+
+      var modalElement = document.createElement('div');
+      modalElement.className = 'modal';
+      if(modalClass){ modalElement.className += ' ' + modalClass; }
+
+      var panel = document.createElement('div');
+      panel.className = 'modal__panel';
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      panel.setAttribute('aria-labelledby', titleId);
+      panel.setAttribute('aria-describedby', descId);
+
+      var header = document.createElement('div');
+      header.className = 'modal__header';
+
+      var heading = document.createElement('h2');
+      heading.className = 'modal__title';
+      heading.id = titleId;
+      heading.textContent = title || 'Dialog';
+      header.appendChild(heading);
+
+      var closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'modal__close';
+      closeButton.setAttribute('aria-label', 'Close dialog');
+      closeButton.innerHTML = '&times;';
+      closeButton.addEventListener('click', function(){ closeModal(); });
+
+      var body = document.createElement('div');
+      body.className = 'modal__body';
+      body.id = descId;
+      body.innerHTML = bodyHtml;
+
+      var footer = document.createElement('div');
+      footer.className = 'modal__footer';
+      footer.innerHTML = footerHtml;
+      footer.querySelectorAll('[data-modal-close]').forEach(function(el){
+        if(el.tagName === 'BUTTON' && !el.hasAttribute('type')){
+          el.setAttribute('type','button');
+        }
+        el.addEventListener('click', function(){ closeModal(); });
+      });
+
+      modalElement.appendChild(panel);
+
+      modalRoot.innerHTML = '';
+      modalRoot.appendChild(backdrop);
+      modalRoot.appendChild(modalElement);
+      modalRoot.hidden = false;
+
+      requestAnimationFrame(function(){
+        backdrop.classList.add('is-open');
+        modal.classList.add('is-open');
+      });
+
+      const focusableSelectors = 'a[href], area[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      let focusables = Array.from(panel.querySelectorAll(focusableSelectors)).filter(function(el){ return el.offsetParent !== null || el === closeButton; });
+      if(!focusables.length){
+        panel.setAttribute('tabindex', '-1');
+        focusables.push(panel);
+      }
+      focusables[0].focus();
+
+      const trapHandler = function(event){
+        if(event.key !== 'Tab') return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if(event.shiftKey && document.activeElement === first){
+          event.preventDefault();
+          last.focus();
+        } else if(!event.shiftKey && document.activeElement === last){
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      panel.addEventListener('keydown', trapHandler);
+      modalState.trapCleanup = function(){ panel.removeEventListener('keydown', trapHandler); };
+
+      backdrop.addEventListener('click', function(event){
+        if(event.target === backdrop){
+          closeModal();
+        }
+      };
+
+      const escListener = function(event){
+        if(event.key === 'Escape'){
+          event.preventDefault();
+          closeModal();
+        }
+      };
+      document.addEventListener('keydown', escListener);
+
+      modalState.escListener = escListener;
+      modalState.backdrop = backdrop;
+      modalState.modal = modalElement;
+      modalState.panel = panel;
+    }
+
+    function closeModal(options){
+      if(!modalRoot || modalRoot.hidden) return;
+      const opts = options || {};
+      const skipFocusRestore = !!opts.skipFocusRestore;
+      const focusTarget = modalState.lastFocused;
+
+          return { open: open, close: close };
+        })();
+      }
+
+      function hideAllPanels(){
+        $$('.panel').forEach(function(panel){
+          panel.classList.remove('active');
+          panel.classList.add('hidden');
+        });
+      }
+    }
+
+      setTimeout(function(){
+        modalRoot.innerHTML = '';
+        modalRoot.hidden = true;
+        modalState.backdrop = null;
+        modalState.modal = null;
+        modalState.panel = null;
+        modalState.lastFocused = null;
+        if(!skipFocusRestore && focusTarget && typeof focusTarget.focus === 'function'){
+          try {
+            focusTarget.focus();
+          } catch (e) {
+            setTimeout(function(){
+              try { focusTarget.focus(); } catch(err){}
+            }, 50);
+          }
+        }
+      }, 220);
+    }
+
+      function show(id){
+        var target = document.getElementById(id);
+        if(!target){ return; }
+        hideAllPanels();
+        target.classList.remove('hidden');
+        target.classList.add('active');
+        if(!hashNavigating){
+          location.hash = id;
+        }
+        var loader = panelLoaders[id];
+        if(typeof loader === 'function'){
+          loader();
+        }
+      }
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+
+      if(!window.google || !google.script){
+        // Local preview
+        setTimeout(function(){
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Log In';
+          showStatusFor('login', 'Local preview: google.script.run not available. Deploy to Apps Script to test login.');
+        }, 400);
+        return;
+      }
+
+      google.script.run.withSuccessHandler(function(resp){
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+        if(resp && resp.success){
+          appState.currentUser = resp.user;
+          populateAfterLogin();
+        } else {
+          showStatusFor('login', resp && resp.message ? resp.message : 'Invalid credentials');
+        }
+      }).withFailureHandler(function(err){
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+        console.error('checkLogin failed', err);
+        showStatusFor('login', 'Could not connect to server');
+      }).checkLogin({ username, password });
+    }
+
+    function handleGuestLogin(){
+      showModal({
+        title: 'Guest Access',
+        modalClass: 'guest-modal-shell',
+        bodyHtml: `
+          <div class="guest-modal">
+            <p>Enter your full name so we can record your visit in the access logs.</p>
+            <label for="guest-name-input" style="font-weight:600">Full Name</label>
+            <input id="guest-name-input" class="input-field" type="text" placeholder="e.g. Juan Dela Cruz" autocomplete="name" />
+            <p id="guest-modal-status" class="guest-modal__status" role="status" aria-live="polite"></p>
+          </div>
+        `,
+        footerHtml: `
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+            <button type="button" class="btn secondary" data-modal-close="true">Cancel</button>
+            <button type="button" class="btn" id="guest-continue-btn">Continue as Guest</button>
+          </div>
+        `,
+        opener: guestLoginBtn
+      });
+
+      requestAnimationFrame(() => {
+        const nameInput = document.getElementById('guest-name-input');
+        const continueBtn = document.getElementById('guest-continue-btn');
+        const statusEl = document.getElementById('guest-modal-status');
+        if(nameInput){
+          nameInput.focus();
+        }
+        const completeGuestLogin = (guestName) => {
+          appState.currentUser = { name: guestName, role: 'Guest', idCode: 'Visitor', position: 'Guest' };
+          closeModal({ skipFocusRestore: true });
+          loadHomepage();
+          switchPanels('homepage-panel');
+        };
+        const logAndContinue = (guestName) => {
+          if(window.google && google.script && google.script.run){
+            google.script.run
+              .withSuccessHandler(() => completeGuestLogin(guestName))
+              .withFailureHandler(err => {
+                console.warn('Guest logAccess failed', err);
+                completeGuestLogin(guestName);
+              })
+              .logAccess({ idCode: 'Visitor', name: guestName });
+          } else {
+            completeGuestLogin(guestName);
+          }
+        };
+        const handleContinue = () => {
+          if(!nameInput || !continueBtn) return;
+          const guestName = (nameInput.value || '').trim();
+          if(!guestName){
+            if(statusEl){
+              statusEl.textContent = 'Please enter your name to continue.';
+              statusEl.classList.add('is-error');
+            }
+            nameInput.focus();
+            return;
+          }
+          if(statusEl){
+            statusEl.textContent = 'Signing you in as a guest…';
+            statusEl.classList.remove('is-error');
+          }
+          continueBtn.disabled = true;
+          continueBtn.textContent = 'Signing in…';
+          logAndContinue(guestName);
+        };
+        if(continueBtn){
+          continueBtn.addEventListener('click', handleContinue);
+        }
+        if(nameInput){
+          nameInput.addEventListener('keydown', (evt) => {
+            if(evt.key === 'Enter'){
+              evt.preventDefault();
+              handleContinue();
+            }
+          });
+        }
+      });
+    }
+
+    // Eye toggle
+    eyeToggle.addEventListener('click', function(){
+      if(passwordInput.type === 'password'){
+        passwordInput.type = 'text';
+        eyeToggle.classList.add('closed');
+      } else {
+        passwordInput.type = 'password';
+        eyeToggle.classList.remove('closed');
       }
     });
+
+    // ---------------- After login ----------------
+    function populateAfterLogin(){
+      const u = appState.currentUser || {};
+      const shortName = u.name ? (u.name.split(',')[0] || u.name) : 'Member';
+      welcomeMessage.textContent = `Welcome, ${shortName}`;
+      userDetailsDiv.innerHTML = `
+        <p style="margin:0"><strong>${u.name||''}</strong></p>
+        <p style="margin:6px 0 0 0"><small>${u.position||''} • ${u.role||''}</small></p>
+        <p style="margin:6px 0 0 0;opacity:.8"><small>ID: ${u.idCode||''}</small></p>
+      `;
+      // avatar
+      if(window.google && google.script){
+        google.script.run.withSuccessHandler(function(profile){
+          if(profile && profile.ProfilePictureURL){
+            userAvatar.src = safeImageUrl(profile.ProfilePictureURL, 'https://via.placeholder.com/120');
+          }
+        }).withFailureHandler(function(err){ console.warn('Profile image fetch failed', err); }).getUserProfile(u.idCode);
+      }
+      buildDynamicMenus();
+      loadUnreadAnnouncements();
+      switchPanels('main-menu-panel');
+
+      // Preload officer data & events for privileged roles
+      if(['Admin','Auditor','Head'].includes(u.role) && window.google && google.script){
+        google.script.run.withSuccessHandler(function(res){ if(res && res.success) appState.officerData = res.data || []; }).withFailureHandler(function(err){ console.warn('getOfficerData failed', err); }).getOfficerData();
+        google.script.run.withSuccessHandler(function(res){ if(res && res.success) appState.events = res.data || []; }).withFailureHandler(function(err){ console.warn('getEvents failed', err); }).getEvents();
+      }
+
+    // ---------------- Build dynamic menu ----------------
+    function buildDynamicMenus(){
+      mainMenuButtons.innerHTML = '';
+      const u = appState.currentUser || {};
+
+      // Homepage
+      const homepageBtn = document.createElement('button'); homepageBtn.className='btn secondary'; homepageBtn.textContent='Homepage';
+      homepageBtn.onclick = function(){ loadHomepage(); switchPanels('homepage-panel'); };
+      mainMenuButtons.appendChild(homepageBtn);
+
+      // Attendance details
+      const attendanceDetails = document.createElement('details');
+      attendanceDetails.innerHTML = `<summary>Attendance System</summary>`;
+      const btnMyQr = document.createElement('button'); btnMyQr.className='btn secondary'; btnMyQr.textContent='My QR ID';
+      btnMyQr.onclick = function(){ showMyQr(); };
+      attendanceDetails.appendChild(btnMyQr);
+
+      if(['Admin','Auditor','Head'].includes(u.role)){
+        const btnScan = document.createElement('button'); btnScan.className='btn secondary'; btnScan.textContent='Open Scanner (separate page)';
+        btnScan.onclick = function(){
+          // web apps: instruct to open scanner link (server can provide URL)
+          if(window.google && google.script){
+            // optionally open separate page if backend exposes a URL; otherwise notify user
+            google.script.run
+              .withSuccessHandler(function(url){
+                if(url && typeof url === 'string') {
+                  window.open(url, '_blank', 'noopener');
+                } else {
+                  alert('QR Scanner is a separate page. Open QRScanner.html in a new tab (deployed web app) or use the scanner in Admin console.');
+                }
+              })
+              .withFailureHandler(function(err){
+                console.error('getQrScannerUrl failed', err);
+                alert('QR Scanner link unavailable. Please open the deployed scanner manually.');
+              })
+              .getQrScannerUrl();
+          } else {
+            if(status){ status.textContent = 'Invalid credentials.'; }
+            toast('Invalid credentials.');
+          }
+        };
+        attendanceDetails.appendChild(btnScan);
+
+        const btnManual = document.createElement('button'); btnManual.className='btn secondary'; btnManual.textContent='Manual Attendance';
+        btnManual.onclick = function(){
+          // use the search panel to find a person and mark status — simplified to redirect to search for manual marking
+          switchPanels('search-panel');
+          // instruction: admins can search and then a UI will call manual attendance backend
+        };
+        attendanceDetails.appendChild(btnManual);
+      }
+      mainMenuButtons.appendChild(attendanceDetails);
+
+      // Analytics & Admin
+      const analytics = document.createElement('details'); analytics.innerHTML = `<summary>Analytics & Admin</summary>`;
+      if(['Admin','Auditor','Head'].includes(u.role)){
+        const dirBtn = document.createElement('button'); dirBtn.className='btn secondary'; dirBtn.textContent='Officer Directory Search';
+          dirBtn.onclick = function(){ switchPanels('search-panel'); };
+        analytics.appendChild(dirBtn);
+      }
+      if(['Admin','Auditor'].includes(u.role)){
+        const dashBtn = document.createElement('button'); dashBtn.className='btn secondary'; dashBtn.textContent='Attendance Dashboard';
+          dashBtn.onclick = function(){ switchPanels('attendance-trans-panel'); loadAttendanceTransparency(); };
+        analytics.appendChild(dashBtn);
+
+        const manageBtn = document.createElement('button'); manageBtn.className='btn secondary'; manageBtn.textContent='Manage Events';
+          manageBtn.onclick = function(){ alert('Event creation is done within the Admin Google Sheet (Master Attendance Log columns).'); };
+        analytics.appendChild(manageBtn);
+
+        const viewFeedbackBtn = document.createElement('button'); viewFeedbackBtn.className='btn secondary'; viewFeedbackBtn.textContent='View Feedback';
+          viewFeedbackBtn.onclick = function(){ loadFeedback(); switchPanels('view-feedback-panel'); };
+        analytics.appendChild(viewFeedbackBtn);
+      }
+      if(u.role === 'Auditor'){
+        const logsBtn = document.createElement('button'); logsBtn.className='btn secondary'; logsBtn.textContent='View Access Logs';
+          logsBtn.onclick = function(){ loadAccessLogs(); switchPanels('view-logs-panel'); };
+        analytics.appendChild(logsBtn);
+      }
+      if(analytics.querySelectorAll(':scope > *').length>1) mainMenuButtons.appendChild(analytics);
+
+      // Announcements
+      const annBtn = document.createElement('button'); annBtn.className='btn secondary'; annBtn.textContent='Announcements';
+        annBtn.onclick = function(){ loadAnnouncements(); switchPanels('announcements-panel'); };
+      mainMenuButtons.appendChild(annBtn);
+
+      // Feedback
+      const feedbackBtn = document.createElement('button'); feedbackBtn.className='btn'; feedbackBtn.textContent='Submit Feedback';
+        feedbackBtn.onclick = function(){ switchPanels('view-feedback-panel'); loadFeedback(); };
+      mainMenuButtons.appendChild(feedbackBtn);
+
+      // Profile
+      const profileBtn = document.createElement('button'); profileBtn.className='btn secondary'; profileBtn.textContent='My Profile';
+        profileBtn.onclick = function(){ loadUserProfile(); switchPanels('profile-panel'); };
+      mainMenuButtons.appendChild(profileBtn);
+
+      // Logout
+      const logoutBtn = document.createElement('button'); logoutBtn.className='btn secondary'; logoutBtn.textContent='Log Out';
+        logoutBtn.onclick = function(){ handleLogout(); };
+      mainMenuButtons.appendChild(logoutBtn);
+    }
+
+      function hideAllPanels(){
+        $$('.panel').forEach(function(panel){
+          panel.classList.remove('active');
+          panel.classList.add('hidden');
+        });
+      }
+
+      var panelLoaders = {
+        'homepage-panel': loadHomepage,
+        'profile-panel': function(){ if(session){ buildProfile(session); } },
+        'qr-attendance-panel': setupQrAttendance,
+        'manual-attendance-panel': function(){ setupManualAttendance(); bindManualAttendance(); },
+        'attendance-trans-panel': loadMyAttendance,
+        'attendance-dashboard-panel': loadKpis,
+        'manage-events-panel': loadEvents,
+        'directory-panel': function(){ bindDirectory(); },
+        'announcements-panel': loadAnnouncements,
+        'submit-feedback-panel': function(){ /* placeholder */ },
+        'view-feedback-panel': loadFeedbackAdmin,
+        'view-logs-panel': loadAccessLogs
+      };
+
+      function setSession(user){
+        session = user || null;
+        window.__SESSION__ = session;
+        if(session && session.name){
+          $('#dashboard-subtitle').textContent = 'Welcome, ' + session.name + '!';
+        }
+        buildDashboard(session);
+        buildProfile(session);
+      }
+
+      function resetLoginPanel(){
+        var username = $('#username');
+        var password = $('#password');
+        if(username){ username.value = ''; }
+        if(password){ password.value = ''; password.type = 'password'; }
+        $('#login-status').textContent = '';
+        if($('#eye-toggle')){ $('#eye-toggle').setAttribute('aria-pressed', 'false'); }
+      }
+      projectGallery.innerHTML = '';
+      if(homepageContacts){ homepageContacts.innerHTML = ''; }
+
+      function renderStatus(message){
+        if(homepageContent){
+          homepageContent.innerHTML = '';
+          const info = document.createElement('p');
+          info.className = 'text-muted';
+          info.textContent = message;
+          homepageContent.appendChild(info);
+        }
+        projectGallery.innerHTML = '';
+      }
+
+      function renderContacts(content, options){
+        const opts = options || {};
+        const offline = !!opts.offline;
+        if(!homepageContacts) return;
+        homepageContacts.innerHTML = '';
+
+        const issueCard = document.createElement('article');
+        issueCard.className = 'card';
+        const issueTitle = document.createElement('h3');
+        issueTitle.textContent = 'Report Issues via FB/Email';
+        const issueBody = document.createElement('p');
+        issueBody.textContent = offline ? 'Contact links become active once connected to Google Apps Script.' : 'Reach the Youth Service Philippines Tagum Chapter through the official channels for support.';
+        issueCard.append(issueTitle, issueBody);
+
+        const actionStack = document.createElement('div');
+        actionStack.className = 'homepage-action-stack';
+        let hasActions = false;
+
+        const facebookLink = normalizeExternalUrl(content.facebookUrl);
+        if(facebookLink){
+          const fbBtn = document.createElement('button');
+          fbBtn.type = 'button';
+          fbBtn.className = 'btn btn-primary';
+          fbBtn.textContent = 'Open Facebook Page';
+          fbBtn.setAttribute('aria-label', 'Open the YSP Tagum Facebook page in a new tab');
+          fbBtn.addEventListener('click', () => openExternal(facebookLink));
+          actionStack.appendChild(fbBtn);
+          hasActions = true;
+        }
+      }
+
+        if(content.email){
+          const composeUrl = buildGmailComposeUrl(content.email);
+          if(composeUrl){
+            const emailBtn = document.createElement('button');
+            emailBtn.type = 'button';
+            emailBtn.className = 'btn btn-primary';
+            emailBtn.textContent = 'Email YSP';
+            emailBtn.setAttribute('aria-label', 'Compose an email to YSP Tagum');
+            emailBtn.addEventListener('click', function(){ openExternal(composeUrl); });
+            actionStack.appendChild(emailBtn);
+            hasActions = true;
+          }
+        });
+        return projects;
+      }
+
+      function renderProjects(projects){
+        var grid = $('#projects-grid');
+        var empty = $('#projects-empty');
+        if(!grid){ return; }
+        grid.innerHTML = '';
+        if(!projects || !projects.length){
+          if(empty){ empty.hidden = false; }
+          return;
+        }
+        if(empty){ empty.hidden = true; }
+        projects.forEach(function(project){
+          var card = document.createElement('article');
+          card.className = 'card';
+          card.tabIndex = 0;
+          card.innerHTML = '<div class="ratio-box"><img src="' + esc(window.YSP ? YSP.safeImage(project.imageUrl, 'https://placehold.co/640x360?text=YSP+Project') : project.imageUrl) + '" alt="' + esc(project.title || 'Project image') + '"></div>' +
+            '<h3>' + esc(project.title || 'Project') + '</h3>' +
+            '<p>' + esc(project.description || 'No description provided.') + '</p>';
+          card.addEventListener('click', function(ev){ openProjectModal(project, ev.currentTarget); });
+          card.addEventListener('keydown', function(ev){ if(ev.key === 'Enter' || ev.key === ' '){ ev.preventDefault(); openProjectModal(project, ev.currentTarget); } });
+          grid.appendChild(card);
+        });
+      }
+
+      function openProjectModal(project, opener){
+        var image = window.YSP ? YSP.safeImage(project.imageUrl, 'https://placehold.co/640x360?text=YSP+Project') : project.imageUrl;
+        var body = '<div class="ratio-box"><img src="' + esc(image) + '" alt="' + esc(project.title || 'Project image') + '"></div>' +
+          '<p style="margin-top:16px;">' + esc(project.description || '') + '</p>';
+        showModal({ title: project.title || 'Project', bodyHtml: body, opener: opener || projectModalOpener });
+      }
+
+      function renderContacts(home){
+        var fbBtn = $('#contact-fb');
+        var emailBtn = $('#contact-email');
+        if(fbBtn){
+          fbBtn.onclick = function(){ openSafe(home && home.facebookUrl ? home.facebookUrl : 'https://www.facebook.com/ysptagum'); };
+        }
+        if(emailBtn){
+          emailBtn.onclick = function(){
+            var email = home && home.email ? home.email : 'support@ysptagum.org';
+            var url = 'https://mail.google.com/mail/?view=cm&fs=1&to=' + encodeURIComponent(email) + '&su=%5BYSP%5D%20Issue%20Report';
+            openSafe(url);
+          };
+        }
+      }
+
+      function renderHome(home){
+        var data = asPayload(home);
+        homepageData = data || {};
+        $('#home-about').textContent = (data && data.about) || 'No information available yet.';
+        $('#home-mission').textContent = (data && data.mission) || 'No mission provided.';
+        $('#home-vision').textContent = (data && data.vision) || 'No vision provided.';
+        $('#home-objectives').textContent = (data && data.objectives) || 'No objectives provided yet.';
+        var chartImg = $('#home-org-chart');
+        if(chartImg){ chartImg.src = window.YSP ? YSP.safeImage(data && data.orgChartUrl, 'https://placehold.co/1024x576?text=Org+Chart') : (data && data.orgChartUrl); }
+        var projects = (data && data.projects) || deriveProjectsFromFlat(data);
+        renderProjects(projects);
+        renderContacts(data);
+      }
+
+        homepageContacts.append(issueCard, devCard);
+      }
+
+      function renderProjects(projects){
+        projectGallery.innerHTML = '';
+        if(!projects.length){
+          const empty = document.createElement('p');
+          empty.className = 'text-muted';
+          empty.textContent = 'No projects yet.';
+          projectGallery.appendChild(empty);
+          return;
+        }
+        callServer('getHomepageContent', [], function(res){
+          if(res && res.success){
+            homepageLoaded = true;
+            renderHome(res);
+          } else if(res) {
+            homepageLoaded = true;
+            renderHome(res);
+          } else {
+            showHomeError();
+          }
+        }, showHomeError);
+      }
+
+        projects.forEach(function(project, index){
+          const title = textOrEmpty(project.title) || `Project ${index + 1}`;
+          const description = textOrEmpty(project.description);
+          const imageUrl = isValidHttpUrl(project.imageUrl) ? project.imageUrl : '';
+
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'project-card';
+          card.setAttribute('aria-label', `View more about ${title}`);
+
+          const media = document.createElement('div');
+          media.className = 'project-card__media ratio-16x9';
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = `${title} photo`;
+          img.src = imageUrl;
+          media.appendChild(img);
+
+          const heading = document.createElement('p');
+          heading.className = 'project-card__title';
+          heading.textContent = title;
+
+          const copy = document.createElement('p');
+          copy.className = 'project-card__copy';
+          copy.textContent = description ? description.split(/\n+/)[0] : 'Tap to preview details.';
+
+          card.append(media, heading, copy);
+
+          const openProject = () => {
+            const bodyParts = description
+              ? description.split(/\n+/).map(line => {
+                  const trimmed = line.trim();
+                  return trimmed ? `<p>${escapeHtml(trimmed)}</p>` : '';
+                }).filter(Boolean).join('')
+              : '<p>Details coming soon.</p>';
+            const modalImage = escapeAttr(imageUrl || 'https://via.placeholder.com/960x540?text=YSP+Project');
+            showModal({
+              title,
+              modalClass: 'project-modal',
+              bodyHtml: `<div class="project-modal-body"><div class="project-modal-media ratio-16x9"><img src="${modalImage}" alt="${escapeAttr(title)}"></div><div class="project-modal-copy">${bodyParts}</div></div>`,
+              footerHtml: '<button type="button" class="btn secondary" data-modal-close="true">Back</button>',
+              opener: card
+            });
+          };
+          card.addEventListener('click', openProject);
+          card.addEventListener('keydown', function(evt){
+            if(evt.key === 'Enter' || evt.key === ' '){
+              evt.preventDefault();
+              openProject();
+            }
+          });
+        }
+        input.addEventListener('input', function(){
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(requestSuggestions, 200);
+        });
+      }
+
+      function normalizeContent(raw){
+        const source = raw || {};
+        const normalized = {
+          about: textOrEmpty(source.aboutYSP || source.about),
+          mission: textOrEmpty(source.mission),
+          vision: textOrEmpty(source.vision),
+          objectives: textOrEmpty(source.objectives),
+          founderName: textOrEmpty(source.founderName),
+          orgChartUrl: textOrEmpty(source.orgChartUrl),
+          facebookUrl: textOrEmpty(source.facebookUrl),
+          email: textOrEmpty(source.email),
+          projects: []
+        };
+
+        const incomingProjects = Array.isArray(source.projects) ? source.projects : [];
+        if(incomingProjects.length){
+          normalized.projects = incomingProjects.map(function(proj, idx){
+            return {
+              title: textOrEmpty(proj.title) || `Project ${idx + 1}`,
+              description: textOrEmpty(proj.description),
+              imageUrl: textOrEmpty(proj.imageUrl)
+            };
+          }).filter(function(p){ return p.description || p.imageUrl; });
+        } else {
+          let index = 1;
+          const derived = [];
+          while(source[`projectImageUrl_${index}`] || source[`projectDesc_${index}`]){
+            derived.push({
+              title: `Project ${index}`,
+              description: textOrEmpty(source[`projectDesc_${index}`]),
+              imageUrl: textOrEmpty(source[`projectImageUrl_${index}`])
+            });
+          }
+          normalized.projects = derived.filter(function(p){ return p.description || p.imageUrl; });
+        }
+        return normalized;
+      }
+
+      function renderOverview(content){
+        if(!homepageContent) return;
+        homepageContent.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+      function startScanner(){
+        if(scannerRunning){ return; }
+        var select = $('#event-select');
+        if(!select || !select.value){ toast('Select an event first.'); return; }
+        var scannerEl = $('#scanner');
+        if(!scannerEl){ return; }
+        scannerEl.innerHTML = '';
+        if(window.Html5Qrcode){
+          var formats = window.Html5QrcodeSupportedFormats ? [ window.Html5QrcodeSupportedFormats.QR_CODE ] : undefined;
+          html5Qr = new Html5Qrcode('scanner', {});
+          var config = { fps: 10, qrbox: 250 };
+          if(formats){ config.formatsToSupport = formats; }
+          html5Qr.start({ facingMode: 'environment' }, config, function(decodedText){ onScan(decodedText); }, function(err){ onScanError(err); });
+          scannerRunning = true;
+          toast('Scanner started.');
+        } else {
+          toast('Scanner library not available.');
+        }
+      }
+
+      function stopScanner(){
+        if(html5Qr){
+          html5Qr.stop().then(function(){ html5Qr.clear(); html5Qr = null; }).catch(function(err){ console.warn('Unable to stop scanner', err); });
+        }
+        scannerRunning = false;
+        toast('Scanner stopped.');
+      }
+
+        const blockFromText = function(title, value){
+          if(!value) return;
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = title;
+          block.appendChild(heading);
+          const para = document.createElement('p');
+          para.textContent = value;
+          block.appendChild(para);
+          fragment.appendChild(block);
+        };
+
+        blockFromText('Mission', content.mission);
+        blockFromText('Vision', content.vision);
+
+        if(content.objectives){
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = 'Objectives';
+          block.appendChild(heading);
+          const items = content.objectives.split(/\n|•|\u2022/).map(function(item){ return item.trim(); }).filter(Boolean);
+          if(items.length > 1){
+            const list = document.createElement('ul');
+            list.style.paddingLeft = '20px';
+            list.style.margin = '0';
+            items.forEach(function(text){
+              const li = document.createElement('li');
+              li.textContent = text;
+              list.appendChild(li);
+            });
+            block.appendChild(list);
+          } else {
+            showHomeError();
+          }
+        }
+
+        if(content.orgChartUrl && isValidHttpUrl(content.orgChartUrl)){
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = 'Organizational Chart';
+          block.appendChild(heading);
+          const figure = document.createElement('div');
+          figure.className = 'homepage-org-chart ratio-16x9';
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = 'YSP Tagum organizational chart';
+          img.src = safeImageUrl(content.orgChartUrl, 'https://via.placeholder.com/1280x720?text=YSP+Org+Chart');
+          figure.appendChild(img);
+          block.appendChild(figure);
+          fragment.appendChild(block);
+        }
+        function requestSuggestions(){
+          var term = input.value.trim();
+          callServer('officerSuggestions', [term], function(res){
+            var payload = asPayload(res);
+            if(payload && (payload.suggestions || Array.isArray(payload))){
+              renderSuggestions(payload.suggestions || payload);
+            }
+          });
+        }
+        input.addEventListener('input', function(){
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(requestSuggestions, 200);
+        });
+      }
+
+      function openOfficer(id){
+        var container = $('#officer-profile');
+        if(!container){ return; }
+        container.innerHTML = '<p class="text-muted">Loading profile...</p>';
+        callServer('getRecordById', [id], function(res){
+          var payload = asPayload(res);
+          if(payload && (payload.record || payload.id || payload.name)){
+            var record = payload.record || payload;
+            container.innerHTML = '<div class="card">' +
+              '<div class="ratio-box"><img src="' + esc(window.YSP ? YSP.safeImage(record.avatar, 'https://placehold.co/640x360?text=Profile') : record.avatar) + '" alt="' + esc(record.name || 'Officer photo') + '"></div>' +
+              '<h3>' + esc(record.name || '') + '</h3>' +
+              '<p>' + esc(record.role || '') + '</p>' +
+              '<p><strong>ID:</strong> ' + esc(record.id || '') + '</p>' +
+              '<p><strong>Email:</strong> ' + esc(record.email || 'N/A') + '</p>' +
+              '<div class="panel-actions"><button type="button" class="btn btn-primary" data-mark-attendance="' + esc(record.id || '') + '">Mark Attendance</button></div>' +
+              '</div>';
+            var markBtn = container.querySelector('[data-mark-attendance]');
+            if(markBtn){
+              markBtn.addEventListener('click', function(){
+                var body = '<div class="form-stack">' +
+                  '<p>Select attendance status for <strong>' + esc(record.name || '') + '</strong>.</p>' +
+                  '<label for="attendance-status">Status</label>' +
+                  '<select id="attendance-status">' +
+                    '<option value="present">Present</option>' +
+                    '<option value="late">Late</option>' +
+                    '<option value="absent">Absent</option>' +
+                    '<option value="excused">Excused</option>' +
+                  '</select>' +
+                '</div>';
+                var footer = '<div class="panel-actions">' +
+                  '<button type="button" class="btn btn-secondary" data-close="1">Cancel</button>' +
+                  '<button type="button" class="btn btn-primary" id="confirm-attendance">Save</button>' +
+                  '</div>';
+                showModal({ title: 'Mark Attendance', bodyHtml: body, footerHtml: footer, opener: markBtn });
+                setTimeout(function(){
+                  var modalRoot = document.getElementById('modal-root');
+                  var confirm = modalRoot ? modalRoot.querySelector('#confirm-attendance') : null;
+                  var select = modalRoot ? modalRoot.querySelector('#attendance-status') : null;
+                  if(select){ select.focus(); }
+                  if(confirm){
+                    confirm.addEventListener('click', function(){
+                      var statusValue = select ? select.value : 'present';
+                      callServer('recordManualAttendance', [record.id, statusValue], function(res){
+                        var payloadResult = asPayload(res);
+                        if(isSuccess(res) || (payloadResult && payloadResult.message)){
+                          var message = (payloadResult && payloadResult.message) || (res && res.message) || 'Attendance recorded.';
+                          toast(message);
+                          closeModal();
+                        } else {
+                          toast('Unable to record attendance.');
+                        }
+                      });
+                    });
+                  }
+                }, 60);
+              });
+            }
+          } else {
+            container.innerHTML = '<p class="text-muted">Officer not found.</p>';
+          }
+        }, function(){ container.innerHTML = '<p class="text-muted">Unable to load profile.</p>'; });
+      }
+
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(!res || !res.success){
+            renderStatus('Could not load homepage content.');
+            renderContacts({ facebookUrl: '', email: '' });
+            renderProjects([]);
+            return;
+          }
+          const normalized = normalizeContent(res.data || {});
+          renderOverview(normalized);
+          renderContacts(normalized);
+          renderProjects(normalized.projects);
+        })
+        .withFailureHandler(function(err){
+          console.error('getHomepageContent failed', err);
+          renderStatus('Could not load homepage content.');
+          renderContacts({ facebookUrl: '', email: '' });
+          renderProjects([]);
+        })
+        .getHomepageContent();
+    }
+
+      function onScanError(err){
+        console.warn('Scan error', err);
+      }
+
+    function setActiveSuggestion(newIndex){
+      const items = suggestionsList.querySelectorAll('.suggestion-item');
+      items.forEach(function(item, idx){
+        if(idx === newIndex){
+          item.classList.add('is-active');
+          item.setAttribute('aria-selected','true');
+          item.scrollIntoView({ block:'nearest' });
+        } else {
+          item.classList.remove('is-active');
+          item.setAttribute('aria-selected','false');
+        }
+        if(stopBtn && !stopBtn.dataset.bound){
+          stopBtn.dataset.bound = '1';
+          stopBtn.addEventListener('click', stopScanner);
+        }
+        if(fileBtn && !fileBtn.dataset.bound){
+          fileBtn.dataset.bound = '1';
+          fileBtn.addEventListener('click', function(){
+            if(!fileInput || !fileInput.files || !fileInput.files.length){
+              toast('Choose an image containing a QR code.');
+              return;
+            }
+            scanFileUpload(fileInput.files[0]);
+          });
+        }
+      }
+
+      function setupManualAttendance(){
+        populateActiveEvents('#manual-event');
+      }
+
+      function bindManualAttendance(){
+        if(manualBound){ return; }
+        manualBound = true;
+        var input = $('#manual-member');
+        var list = $('#manual-suggestions');
+        var eventSelect = $('#manual-event');
+        var status = $('#manual-status');
+        if(!input || !list){ return; }
+        var debounceTimer = null;
+        function render(items){
+          list.innerHTML = '';
+          if(!items || !items.length){ list.hidden = true; return; }
+          items.forEach(function(item){
+            var li = document.createElement('li');
+            li.textContent = item.name + ' (' + item.id + ')';
+            li.tabIndex = 0;
+            li.addEventListener('click', function(){ input.value = item.id; list.hidden = true; });
+            li.addEventListener('keydown', function(ev){ if(ev.key === 'Enter'){ input.value = item.id; list.hidden = true; } });
+            list.appendChild(li);
+          });
+          list.hidden = false;
+        }
+        function request(){
+          var term = input.value.trim();
+          callServer('officerSuggestions', [term], function(res){
+            var payload = asPayload(res);
+            if(payload){ render(payload.suggestions || payload); }
+          });
+        }
+        input.addEventListener('input', function(){
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(request, 200);
+        });
+        function submit(action){
+          var memberId = input.value.trim();
+          var eventId = eventSelect ? eventSelect.value : '';
+          if(!memberId || !eventId){ toast('Complete member and event details.'); return; }
+          callServer('manualAttendance', [memberId, eventId, action], function(res){
+            var payload = asPayload(res);
+            if(isSuccess(res) || (payload && payload.message)){
+              var message = (payload && payload.message) || (res && res.message) || 'Attendance recorded.';
+              status.textContent = message;
+              toast(message);
+            } else {
+              status.textContent = 'Unable to record attendance.';
+              toast('Unable to record attendance.');
+            }
+          }, function(){ status.textContent = 'Unable to record attendance.'; });
+        }
+        var inBtn = $('#manual-time-in');
+        var outBtn = $('#manual-time-out');
+        if(inBtn){ inBtn.addEventListener('click', function(){ submit('in'); }); }
+        if(outBtn){ outBtn.addEventListener('click', function(){ submit('out'); }); }
+      }
+      suggestionMatches = matches.slice(0,10);
+      suggestionsList.hidden = false;
+      searchInput.setAttribute('aria-expanded','true');
+      suggestionMatches.forEach(function(o, idx){
+        const li = document.createElement('li');
+        li.className = 'suggestion-item';
+        li.textContent = `${o[1] || ''} • ${o[2] || ''} (${o[0] || ''})`;
+        li.setAttribute('role','option');
+        li.setAttribute('id', `suggestion-${idx}`);
+        li.setAttribute('aria-selected','false');
+        li.dataset.index = idx;
+        li.addEventListener('mouseenter', function(){ setActiveSuggestion(idx); });
+        li.addEventListener('mousedown', function(event){ event.preventDefault(); });
+        li.addEventListener('click', function(){ selectSuggestion(idx); });
+        suggestionsList.appendChild(li);
+      });
+      setActiveSuggestion(0);
+    }
+
+      function loadMyAttendance(){
+        callServer('getMyAttendance', [], function(res){
+          var container = $('#attendance-table');
+          if(!container){ return; }
+          var payload = asPayload(res);
+          if(payload){
+            var rows = payload.rows || payload;
+            if(!rows.length){ container.innerHTML = '<div class="list-empty">No attendance records yet.</div>'; return; }
+            var html = '<table><thead><tr><th>Date</th><th>Event</th><th>Time In</th><th>Time Out</th></tr></thead><tbody>';
+            rows.forEach(function(row){
+              html += '<tr><td>' + esc(row.date || '') + '</td><td>' + esc(row.event || '') + '</td><td>' + esc(row.timeIn || '') + '</td><td>' + esc(row.timeOut || '') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+            container.innerHTML = html;
+          } else {
+            container.innerHTML = '<div class="list-empty">Unable to load attendance.</div>';
+          }
+        }, function(){
+          var container = $('#attendance-table');
+          if(container){ container.innerHTML = '<div class="list-empty">Unable to load attendance.</div>'; }
+        });
+      }
+      const matches = appState.officerData.filter(function(r){
+        return (r[0]||'').toString().toLowerCase().includes(q) || (r[1]||'').toString().toLowerCase().includes(q);
+      });
+      if(!matches.length){
+        clearSuggestions();
+        resultBox.innerHTML = '<p class="text-muted" style="margin:0">No officers found for that search.</p>';
+        return;
+      }
+
+      function loadKpis(){
+        callServer('getAttendanceKPIs', [], function(res){
+          var statsContainer = $('#kpi-stats');
+          if(res && statsContainer){
+            statsContainer.innerHTML = '';
+            var payload = res && res.data ? res.data : res;
+            var stats = payload.stats || {};
+            var items = [
+              { label: 'Total Events', value: stats.totalEvents || 0 },
+              { label: 'Present', value: stats.present || 0 },
+              { label: 'Absent', value: stats.absent || 0 },
+              { label: 'Late', value: stats.late || 0 }
+            ];
+            items.forEach(function(item){
+              var card = document.createElement('div');
+              card.className = 'stat-card';
+              card.innerHTML = '<span>' + esc(item.label) + '</span><strong>' + esc(item.value) + '</strong>';
+              statsContainer.appendChild(card);
+            });
+            renderKpiChart($('#kpi-canvas'), payload.kpi || {});
+          }
+        });
+      }
+
+    if(searchInput){
+      searchInput.addEventListener('input', handleSearchInput);
+      searchInput.addEventListener('keydown', handleSearchKeydown);
+      searchInput.addEventListener('blur', function(){ setTimeout(clearSuggestions, 120); });
+    }
+
+    function displayResult(officer){
+      if(!officer){ resultBox.innerHTML = ''; return; }
+      resultBox.innerHTML = `
+        <div class="card directory-result">
+          <div class="directory-meta">
+            <p style="margin:0"><strong>${officer[1] || ''}</strong></p>
+            <p style="margin:0">${officer[2] || ''}</p>
+            <p style="margin:0; opacity:0.75">${officer[0] || ''}</p>
+          </div>
+          <div class="panel-actions" style="justify-content:flex-start;">
+            <button class="btn secondary" id="mark-att-btn">Mark Attendance</button>
+          </div>
+        </div>`;
+      // allow admin to mark status manually
+      const markBtn = document.getElementById('mark-att-btn');
+      if(markBtn){
+        markBtn.onclick = function(){
+          // open modal to choose status and record
+          showModal({
+            title: 'Manual Attendance',
+            bodyHtml: `<div style="display:flex;flex-direction:column;gap:8px">
+              <div><strong>${officer[1] || ''}</strong><div style="opacity:.8">${officer[0] || ''}</div></div>
+              <label style="font-weight:700">Status</label>
+              <select id="manual-att-status" class="input-field">
+                <option value="Present">Present</option>
+                <option value="Late">Late</option>
+                <option value="Absent">Absent</option>
+                <option value="Excused">Excused</option>
+              </select>
+            </div>`,
+            footerHtml: `<button class="btn" id="save-manual-att">Save</button> <button class="btn secondary" id="cancel-manual-att">Cancel</button>`
+          });
+          setTimeout(function(){
+            document.getElementById('cancel-manual-att').onclick = closeModal;
+            document.getElementById('save-manual-att').onclick = function(){
+              const status = document.getElementById('manual-att-status').value;
+              closeModal();
+              // call backend to record manual attendance (supply idCode and status)
+              if(window.google && google.script){
+                google.script.run.withSuccessHandler(function(res){
+                  if(res && res.success) {
+                    alert(`Recorded ${officer[0]} as ${status}`);
+                  } else {
+                    alert(res.message || 'Failed to record.');
+                  }
+                }).withFailureHandler(function(err){ console.error(err); alert('Connection error.'); }).recordManualAttendance(officer[0], status);
+              } else {
+                alert('(Local) Recorded ' + officer[0] + ' as ' + status);
+              }
+            }, 80);
+          });
+        }
+      }
+
+      function loadMyFeedback(){
+        callServer('listMyFeedback', [], function(res){
+          var status = $('#feedback-status');
+          if(status && isSuccess(res)){
+            status.textContent = '';
+          }
+        });
+      }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ feedbackContainer.innerHTML = '<p>No feedback or error.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ feedbackContainer.innerHTML = '<p>No feedback found.</p>'; return; }
+        let html = `<table class="styled-table"><thead><tr><th>Timestamp</th><th>Name</th><th>ID</th><th>Message</th></tr></thead><tbody>`;
+        rows.forEach(function(r){ html += `<tr><td>${r.timestamp||''}</td><td>${r.name||''}</td><td>${r.idCode||''}</td><td>${r.message||''}</td></tr>`; });
+        html += `</tbody></table>`;
+        feedbackContainer.innerHTML = html;
+      }).withFailureHandler(function(err){
+        console.error('getFeedback failed', err);
+        feedbackContainer.innerHTML = '<p>Unable to load feedback at this time.</p>';
+      }).getFeedback();
+    }
+
+    function loadAccessLogs(){
+      logsContainer.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ logsContainer.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ logsContainer.innerHTML = '<p>No logs or error.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ logsContainer.innerHTML = '<p>No access logs found.</p>'; return; }
+        logsContainer.innerHTML = rows.map(function(r){ return `<div class="card" style="margin-bottom:8px"><strong>${r.name}</strong><div style="opacity:.8">${r.idCode} • ${r.timestamp}</div></div>`; }).join('');
+      }).withFailureHandler(function(err){
+        console.error('getAccessLogs failed', err);
+        logsContainer.innerHTML = '<p>Unable to load access logs right now.</p>';
+      }).getAccessLogs();
+    }
+
+    // ---------------- Profile ----------------
+    function loadUserProfile(){
+      profileContainer.innerHTML = 'Loading...';
+      if(!appState.currentUser || !appState.currentUser.idCode){ profileContainer.innerHTML = '<p>No user info</p>'; return; }
+      if(!window.google || !google.script){ profileContainer.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ profileContainer.innerHTML = '<p>Could not load profile.</p>'; return; }
+        const p = res.data || {};
+        const profileImage = escapeAttr(safeImageUrl(p.ProfilePictureURL || p.ProfilePicture || '', 'https://via.placeholder.com/150'));
+        profileContainer.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center">
+            <img src="${profileImage}" class="avatar" style="width:110px;height:110px">
+            <div>
+              <h3 style="margin:0">${p['Full name']||p.FullName||p.Username||appState.currentUser.name||''}</h3>
+              <p style="margin:6px 0 0 0">${p.Position || p.position || ''} • ${p.Role || p.role || ''}</p>
+              <p style="margin:6px 0 0 0;opacity:.8">ID: ${p['ID Code'] || p.IDCode || p.idCode || appState.currentUser.idCode || ''}</p>
+            </div>
+          </div>
+
+      function renderEvents(list){
+        var container = $('#events-table');
+        if(!container){ return; }
+        if(!list || !list.length){ container.innerHTML = '<div class="list-empty">No events yet.</div>'; return; }
+        var html = '<table><thead><tr><th>Event</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>';
+        list.forEach(function(evt){
+          html += '<tr>' +
+            '<td>' + esc(evt.name || '') + '</td>' +
+            '<td>' + esc(evt.date || '') + '</td>' +
+            '<td><span class="status-chip ' + (evt.active ? '' : 'warn') + '">' + (evt.active ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td><button class="btn btn-secondary" data-toggle-event="' + esc(evt.id || '') + '">' + (evt.active ? 'Deactivate' : 'Activate') + '</button></td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        $$('#events-table [data-toggle-event]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var id = btn.getAttribute('data-toggle-event');
+            callServer('toggleEventActive', [id], function(res){
+              var payload = asPayload(res);
+              var message = (payload && payload.message) || (res && res.message) || 'Event updated.';
+              if(!isSuccess(res) && !(payload && payload.message)){
+                toast('Unable to update event.');
+                return;
+              }
+              toast(message);
+              loadEvents();
+            });
+          });
+        });
+      }
+
+      function loadEvents(){
+        callServer('listEvents', [], function(res){
+          var payload = asPayload(res);
+          if(payload){ renderEvents(payload.events || payload); }
+        });
+        var createBtn = $('#btn-create-event');
+        if(createBtn && !createBtn.dataset.bound){
+          createBtn.dataset.bound = '1';
+          createBtn.addEventListener('click', function(){
+            var body = '<div class="form-stack">' +
+              '<label for="event-name">Event Name</label>' +
+              '<input id="event-name" type="text" />' +
+              '<label for="event-date">Date</label>' +
+              '<input id="event-date" type="date" />' +
+              '</div>';
+            var footer = '<div class="panel-actions">' +
+              '<button type="button" class="btn btn-secondary" data-close="1">Cancel</button>' +
+              '<button type="button" class="btn btn-primary" id="save-event">Save</button>' +
+              '</div>';
+            showModal({ title: 'Create Event', bodyHtml: body, footerHtml: footer, opener: createBtn });
+            var modalRoot = document.getElementById('modal-root');
+            setTimeout(function(){
+              var saveBtn = modalRoot ? modalRoot.querySelector('#save-event') : null;
+              var nameInput = modalRoot ? modalRoot.querySelector('#event-name') : null;
+              var dateInput = modalRoot ? modalRoot.querySelector('#event-date') : null;
+              if(nameInput){ nameInput.focus(); }
+              if(saveBtn){
+                saveBtn.addEventListener('click', function(){
+                  var payload = { name: nameInput.value.trim(), date: dateInput.value };
+                  if(!payload.name || !payload.date){ toast('Complete event details.'); return; }
+                  callServer('createEvent', [payload], function(res){
+                    var response = asPayload(res);
+                    var message = (response && response.message) || (res && res.message) || 'Event created.';
+                    if(!isSuccess(res) && !(response && response.message)){
+                      toast('Unable to create event.');
+                      return;
+                    }
+                    toast(message);
+                    closeModal();
+                    loadEvents();
+                  });
+                });
+              }
+            }, 80);
+          });
+        }
+      }
+
+      function loadAnnouncements(){
+        callServer('listAnnouncements', [{}], function(res){
+          var list = $('#announcements-list');
+          if(!list){ return; }
+          list.innerHTML = '';
+          var payload = asPayload(res);
+          if(payload){
+            var items = payload.announcements || payload;
+            if(!items.length){ list.innerHTML = '<div class="list-empty">No announcements yet.</div>'; return; }
+            items.forEach(function(item){
+              var card = document.createElement('article');
+              card.className = 'card';
+              card.style.borderLeft = '6px solid ' + (item.isUnread ? 'var(--primary)' : 'rgba(0,0,0,0.1)');
+              card.innerHTML = '<h3>' + esc(item.title || '') + '</h3>' +
+                '<p>' + esc(item.body || '') + '</p>' +
+                '<p class="text-muted">' + esc(item.createdAt || '') + '</p>';
+              list.appendChild(card);
+            });
+          }
+        });
+        var createBtn = $('#btn-create-announcement');
+        if(createBtn && !createBtn.dataset.bound){
+          createBtn.dataset.bound = '1';
+          createBtn.addEventListener('click', function(){
+            var body = '<div class="form-stack">' +
+              '<label for="announcement-title">Title</label>' +
+              '<input id="announcement-title" type="text" />' +
+              '<label for="announcement-body">Message</label>' +
+              '<textarea id="announcement-body" rows="4"></textarea>' +
+              '</div>';
+            var footer = '<div class="panel-actions">' +
+              '<button type="button" class="btn btn-secondary" data-close="1">Cancel</button>' +
+              '<button type="button" class="btn btn-primary" id="save-announcement">Post</button>' +
+              '</div>';
+            showModal({ title: 'Create Announcement', bodyHtml: body, footerHtml: footer, opener: createBtn });
+            setTimeout(function(){
+              var modalRoot = document.getElementById('modal-root');
+              var saveBtn = modalRoot ? modalRoot.querySelector('#save-announcement') : null;
+              var titleInput = modalRoot ? modalRoot.querySelector('#announcement-title') : null;
+              var bodyInput = modalRoot ? modalRoot.querySelector('#announcement-body') : null;
+              if(titleInput){ titleInput.focus(); }
+            if(saveBtn){
+              saveBtn.addEventListener('click', function(){
+                var payload = { title: titleInput.value.trim(), body: bodyInput.value.trim() };
+                if(!payload.title || !payload.body){ toast('Complete announcement details.'); return; }
+                callServer('createAnnouncement', [payload], function(res){
+                  var response = asPayload(res);
+                  var message = (response && response.message) || (res && res.message) || 'Announcement posted.';
+                  if(!isSuccess(res) && !(response && response.message)){
+                    toast('Unable to post announcement.');
+                    return;
+                  }
+                  toast(message);
+                  closeModal();
+                  loadAnnouncements();
+                });
+              });
+              }
+            }, 80);
+          });
+        }
+      }
+
+          <div style="margin-top:12px" class="card"><strong>About</strong><div style="margin-top:6px">${p.Bio || p.BioText || ''}</div></div>
+        `;
+      }).withFailureHandler(function(err){
+        console.error('getUserProfile failed', err);
+        profileContainer.innerHTML = '<p>Could not load profile.</p>';
+      }).getUserProfile(appState.currentUser.idCode);
+    }
+
+    // ---------------- Announcements ----------------
+    function loadAnnouncements(){
+      annList.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ annList.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ annList.innerHTML = '<p>Could not load announcements.</p>'; return; }
+        appState.announcements = res.data || [];
+        renderAnnouncements();
+      }).withFailureHandler(function(err){
+        console.error('getAnnouncements failed', err);
+        annList.innerHTML = '<p>Could not load announcements.</p>';
+      }).getAnnouncements();
+    }
+
+    function renderAnnouncements(){
+      annList.innerHTML = '';
+      const uId = appState.currentUser && appState.currentUser.idCode;
+      appState.unreadCount = 0;
+      (appState.announcements || []).forEach(function(a){
+        if(a.unread && uId && a.unread[uId]) appState.unreadCount++;
+      });
+      annBadge.innerHTML = appState.unreadCount ? `<span>${appState.unreadCount} new</span>` : '';
+
+      if(!appState.announcements.length){ annList.innerHTML = '<p>No announcements.</p>'; return; }
+
+      appState.announcements.forEach(function(a){
+        const isForMe = !a.recipients || a.recipients.length===0 || (appState.currentUser && a.recipients.includes(appState.currentUser.idCode)) || (a.recipients && a.recipients.includes('all'));
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.marginBottom = '8px';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${a.title}</strong><div style="font-size:0.9rem;opacity:0.85">${a.timestamp || ''}</div></div>
+          <div><small style="opacity:0.9">${isForMe ? 'To you' : 'Group'}</small></div>
+        </div>
+        <p style="margin:8px 0">${(a.body||'').slice(0,220)}${(a.body||'').length>220 ? '...' : ''}</p>
+        <div style="display:flex;gap:8px"><button class="btn secondary" data-id="${a.id}" data-read="${a.unread && appState.currentUser && a.unread[appState.currentUser.idCode] ? '0' : '1'}">Mark Read</button><button class="btn" data-view="${a.id}">View</button></div>`;
+        annList.appendChild(el);
+
+        el.querySelector('[data-view]').onclick = function(){ viewAnnouncement(a); };
+        el.querySelector('[data-id]').onclick = function(ev){
+          const id = ev.currentTarget.dataset.id;
+          markAnnouncementRead(id);
+        };
+      });
+    }
+
+    function viewAnnouncement(a){
+      showModal({
+        title: a.title,
+        bodyHtml: `<div style="max-height:60vh;overflow:auto"><p style="text-align:justify">${a.body}</p><p style="margin-top:10px"><em>Sent by: ${a.authorName || ''}</em></p></div>`,
+        footerHtml: `<button class="btn secondary" id="close-ann-modal">Close</button>`
+      });
+      setTimeout(function(){ const b = document.getElementById('close-ann-modal'); if(b) b.onclick = closeModal; }, 40);
+      if(a.unread && appState.currentUser && a.unread[appState.currentUser.idCode]) markAnnouncementRead(a.id);
+    }
+
+    function markAnnouncementRead(id){
+      if(!window.google || !google.script){ loadAnnouncements(); return; }
+      google.script.run.withSuccessHandler(function(){ loadAnnouncements(); }).withFailureHandler(function(err){ console.error('markAnnouncementRead failed', err); }).markAnnouncementRead(appState.currentUser.idCode, id);
+    }
+
+    // create announcement (only Admin/Auditor/Head)
+    if(createAnnBtn){
+      createAnnBtn.onclick = function(){
+      const role = appState.currentUser && appState.currentUser.role;
+      if(!['Admin','Auditor','Head'].includes(role)){ alert('Only Admins, Auditors, Heads can create announcements.'); return; }
+      showModal({
+        title: 'Create Announcement',
+        bodyHtml: `<div style="display:flex;flex-direction:column;gap:8px">
+          <input id="ann-title" class="input-field" placeholder="Title">
+          <input id="ann-subject" class="input-field" placeholder="Subject (optional)">
+          <textarea id="ann-body" class="input-field" placeholder="Body"></textarea>
+          <input id="ann-recipients" class="input-field" placeholder="Recipients (comma-separated IDs or 'all' or committee code)">
+          <div style="font-size:0.86rem;color:rgba(0,0,0,0.7)">You can enter: <code>all</code>, <code>heads</code>, committee codes (e.g. <code>YSPTIR</code>), or specific ID codes separated by commas.</div>
+        </div>`,
+        footerHtml: `<button class="btn" id="ann-send">Send</button><button class="btn secondary" id="ann-cancel">Cancel</button>`
+      });
+      setTimeout(function(){
+        $('#ann-cancel').onclick = closeModal;
+        $('#ann-send').onclick = function(){
+          const title = $('#ann-title').value.trim();
+          const body = $('#ann-body').value.trim();
+          const recipientsRaw = $('#ann-recipients').value.trim();
+          if(!title || !body){ alert('Title and body required'); return; }
+          const recipients = recipientsRaw ? recipientsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : ['all'];
+          const payload = {
+            authorId: appState.currentUser.idCode,
+            authorName: appState.currentUser.name,
+            title,
+            body,
+            recipients
+          };
+          if(!window.google || !google.script){
+            alert('Local: announcement created (not persisted).');
+            closeModal();
+            loadAnnouncements();
+            return;
+          }
+          google.script.run.withSuccessHandler(function(res){
+            if(res && res.success){
+              alert('Announcement created and emails queued.');
+              closeModal();
+              loadAnnouncements();
+            } else {
+              alert(res.message || 'Failed to create announcement.');
+            }
+          }).withFailureHandler(function(err){
+            console.error(err);
+            alert('Failed to create announcement (server error).');
+          }).createAnnouncement(payload);
+        };
+      }, 40);
+      };
+    }
+
+    // load unread badge
+    function loadUnreadAnnouncements(){
+      if(!window.google || !google.script) return;
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success) return;
+        appState.announcements = res.data || [];
+        let c = 0; const id = appState.currentUser && appState.currentUser.idCode;
+        (appState.announcements||[]).forEach(function(a){ if(a.unread && id && a.unread[id]) c++; });
+        appState.unreadCount = c;
+        annBadge.innerHTML = c ? `<span>${c} new</span>` : '';
+      }).withFailureHandler(function(err){
+        console.warn('getAnnouncements (badge) failed', err);
+      }).getAnnouncements();
+    }
+
+    // ---------------- Attendance transparency ----------------
+    function loadAttendanceTransparency(){
+      attendanceTable.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ attendanceTable.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ attendanceTable.innerHTML = '<p>Could not load attendance data.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ attendanceTable.innerHTML = '<p>No attendance records.</p>'; return; }
+        let html = `<table class="styled-table"><thead><tr><th>Date</th><th>Event</th><th>Time In</th><th>Time Out</th></tr></thead><tbody>`;
+        rows.forEach(function(r){
+          html += `<tr><td>${r.date||''}</td><td>${r.event||''}</td><td>${r.timeIn||''}</td><td>${r.timeOut||''}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        attendanceTable.innerHTML = html;
+      }).withFailureHandler(function(err){
+        console.error('getAttendanceTransparencyForUser failed', err);
+        attendanceTable.innerHTML = '<p>Could not load attendance data.</p>';
+      }).getAttendanceTransparencyForUser(appState.currentUser.idCode);
+    }
+
+    // ---------------- My QR ----------------
+    function showMyQr(){
+      const id = appState.currentUser && appState.currentUser.idCode;
+      if(!id){ alert('No ID code'); return; }
+      showModal({
+        title: 'My QR Code',
+        bodyHtml: `<div style="text-align:center"><div id="qr-holder" style="display:inline-block;position:relative"></div><p style="margin-top:10px">${appState.currentUser.name || ''}<br><small style="opacity:.8">${appState.currentUser.position || ''} • ${id}</small></p></div>`,
+        footerHtml: `<button class="btn secondary" id="close-qr-btn">Close</button>`
+      });
+      setTimeout(function(){
+        const qrHolder = document.getElementById('qr-holder');
+        try {
+          qrHolder.innerHTML = '';
+          new QRCode(qrHolder, { text: id, width:220, height:220, correctLevel: QRCode.CorrectLevel.H });
+          // overlay logo - place by absolute positioning
+          const logo = document.createElement('img');
+          logo.src = 'https://i.imgur.com/J4wddTW.png';
+          logo.style.position = 'absolute';
+          logo.style.width = '48px';
+          logo.style.height = '48px';
+          logo.style.left = '50%';
+          logo.style.top = '50%';
+          logo.style.transform = 'translate(-50%,-50%)';
+          logo.style.borderRadius = '8px';
+          logo.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
+          qrHolder.appendChild(logo);
+        } catch(e){ console.warn('QR error', e); }
+        const closeBtn = document.getElementById('close-qr-btn'); if(closeBtn) closeBtn.onclick = closeModal;
+      }, 80);
+    }
+
+    // ---------------- Initial wiring ----------------
+    loginBtn.addEventListener('click', handleLogin);
+    guestLoginBtn.addEventListener('click', handleGuestLogin);
+    $$('.back-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const t = btn.dataset.target;
+        if(!t) return;
+        if(t === 'login-panel'){
+          switchPanels(t);
+          if(usernameInput){ setTimeout(function(){ usernameInput.focus(); }, 120); }
+          return;
+        }
+        switchPanels(t);
+      });
+    });
+    [usernameInput, passwordInput].forEach(function(inp){
+      inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') handleLogin(); });
+    });
+
+    // initial panel state
+    panels.forEach(function(p){ if(p.id !== 'login-panel'){ p.classList.add('hidden'); p.style.display = 'none'; }});
+    loginPanel.classList.remove('hidden'); loginPanel.classList.add('active'); loginPanel.style.display = 'flex';
+
+    // expose for debug
+    window.__YSP = {
+      switchPanels, loadHomepage, loadAnnouncements, loadFeedback, loadAccessLogs, loadUserProfile, showMyQr
+    };
+
+    // If server has session info, optionally fetch (server-side session login)
+    if(window.google && google.script && typeof google.script.run.getSession === 'function'){
+      google.script.run.withSuccessHandler(function(sess){
+        if(sess && sess.user){
+          appState.currentUser = sess.user;
+          populateAfterLogin();
+        }
+      }).withFailureHandler(function(err){ console.warn('getSession unavailable', err); }).getSession();
+    }
+    });
+  })();
   </script>
 </body>
 </html>

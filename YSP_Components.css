@@ -574,12 +574,7 @@ textarea {
 
 @media (max-width: 720px) {
   body {
-    padding: 20px 12px;
-    align-items: flex-start;
-  }
-
-  .app-shell {
-    width: 100%;
+    padding: 24px 12px;
   }
 
   .panel {
@@ -587,17 +582,12 @@ textarea {
   }
 
   .login-illustration {
-    display: none;
-  }
-
-  .login-form {
-    box-shadow: var(--shadow-lg);
+    order: 2;
   }
 
   #login-panel {
     display: grid;
     gap: var(--space-md);
-    grid-template-columns: 1fr;
   }
 }
 
