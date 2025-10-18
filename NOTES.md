@@ -1,7 +1,8 @@
 # Implementation Notes
 
-- `textOrEmpty`, `isSafeHttpUrl`, `buildGmailComposeUrl`, and `openExternal` live near the modal utilities so homepage rendering can sanitize sheet data, validate outbound links, and build Gmail compose URLs without duplicating logic elsewhere.
+- `textOrEmpty`, `isSafeHttpUrl`, `normalizeExternalUrl`, `buildGmailComposeUrl`, and `openExternal` live near the modal utilities so homepage rendering can sanitize sheet data, normalize user-provided links, validate outbound URLs, and build Gmail compose URLs without duplicating logic elsewhere.
 - The modal helper now builds DOM nodes (no template strings for the shell), traps focus with a keydown handler, closes on backdrop/ESC, and restores focus to the opener through `modalState.lastFocused`. Footer buttons just declare `data-modal-close` to opt into the shared teardown.
 - `loadHomepage()` normalizes Apps Script responses that may arrive as a map or array: it derives `projects[]` from sequential `projectImageUrl_N`/`projectDesc_N` keys when the structured array is missing. Missing or unsafe URLs fall back to placeholders.
 - Facebook and Gmail buttons are only wired when URLs survive validation; offline/local preview mode renders explicit disabled messaging so tests can pass without Apps Script connectivity.
-- `switchPanels()` updates `location.hash` for `#homepage`/`#login` so the Back requirement maps the homepage directly to the login panel without touching `Code.gs` or `UserProfiles.gs`.
+- Guest login prompts the visitor for a name inside a modal, logs the access with ID code `Visitor` via `google.script.run.logAccess` when available, and then routes directly to the homepage with a limited session payload.
+- `switchPanels()` now consults a centralized hash map so every navigation path updates `location.hash` (`#login`, `#dashboard`, `#homepage`, etc.), keeping browser back behavior and deep links predictable across panels.

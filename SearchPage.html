@@ -235,8 +235,12 @@
     .avatar { width:86px; height:86px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.05); }
 
     /* homepage content */
-    #homepage-panel .panel-body { display:flex; flex-direction:column; min-height:100%; }
-    .homepage-layout { display:flex; flex-direction:column; gap:24px; min-height:100%; }
+    #homepage-panel .panel-body {
+      display:flex;
+      flex-direction:column;
+      min-height:min(100%, calc(100dvh - 180px));
+    }
+    .homepage-layout { display:flex; flex-direction:column; gap:24px; flex:1; }
     .homepage-layout .container { width:100%; }
     #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); display:flex; flex-direction:column; gap:16px; }
     .homepage-section-block h3 { font-family:'Lexend',sans-serif; margin:0 0 8px; font-size:1.1rem; color:var(--primary); }
@@ -251,6 +255,7 @@
     .homepage-contact-grid .card p { margin:0; }
     .homepage-contact-grid .card h3 { font-family:'Lexend',sans-serif; margin:0; font-size:1.1rem; color:var(--primary); }
     .homepage-action-stack { display:flex; flex-wrap:wrap; gap:12px; }
+    .panel-actions.push-bottom { margin-top:auto; }
     #project-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding-block:12px; }
     .project-card {
       width:100%;
@@ -407,6 +412,10 @@
       border:0;
     }
 
+    .guest-modal{ display:flex; flex-direction:column; gap:var(--space-sm); }
+    .guest-modal__status{ min-height:20px; font-size:0.92rem; color:var(--muted); transition:color .18s ease; }
+    .guest-modal__status.is-error{ color:var(--danger); }
+
     .info-grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
@@ -487,8 +496,8 @@
         <p id="login-status" class="status-message" aria-live="polite"></p>
 
         <div class="panel-actions">
-          <button id="login-btn" class="btn">Log In</button>
-          <button id="guest-login-btn" class="btn secondary">Log in as Guest</button>
+          <button id="login-btn" class="btn" type="button">Log In</button>
+          <button id="guest-login-btn" class="btn secondary" type="button">Log in as Guest</button>
         </div>
       </div>
     </section>
@@ -564,7 +573,7 @@
           <div id="homepage-contacts" class="homepage-contact-grid" aria-live="polite"></div>
         </div>
 
-        <div class="panel-actions" style="margin-top:auto;">
+        <div class="panel-actions push-bottom">
           <button id="homepage-back-btn" class="btn secondary back-btn" data-target="login-panel">Back to Login</button>
         </div>
       </div>
@@ -659,6 +668,16 @@
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
     const panels = $$('.panel');
+    const panelHashMap = {
+      'login-panel': '#login',
+      'main-menu-panel': '#dashboard',
+      'homepage-panel': '#homepage',
+      'search-panel': '#search',
+      'announcements-panel': '#announcements',
+      'view-feedback-panel': '#feedback',
+      'view-logs-panel': '#logs',
+      'attendance-trans-panel': '#attendance'
+    };
     let appState = {
       currentUser: null,
       officerData: [],
@@ -715,8 +734,9 @@
       modal: null,
       panel: null
     };
-    const attrEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    const escapeAttr = value => String(value ?? '').replace(/[&<>"']/g, ch => attrEscapeMap[ch] || ch);
+    const htmlEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => htmlEscapeMap[ch] || ch);
+    const escapeAttr = value => escapeHtml(value);
     const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
     const isSafeHttpUrl = (value) => {
       try {
@@ -724,6 +744,17 @@
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
       } catch(e){
         return false;
+      }
+    };
+    const normalizeExternalUrl = (value) => {
+      const raw = textOrEmpty(value);
+      if(!raw) return '';
+      const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      if(!isSafeHttpUrl(withProtocol)) return '';
+      try {
+        return new URL(withProtocol).toString();
+      } catch(err){
+        return '';
       }
     };
     const buildGmailComposeUrl = (email) => {
@@ -737,9 +768,10 @@
       return compose.toString();
     };
     const openExternal = (url) => {
-      if(!url) return;
+      const safeUrl = normalizeExternalUrl(url);
+      if(!safeUrl) return;
       try {
-        const win = window.open(url, '_blank', 'noopener');
+        const win = window.open(safeUrl, '_blank', 'noopener');
         if(win){ win.opener = null; }
       } catch(err){
         console.warn('Unable to open link', err);
@@ -764,10 +796,9 @@
       // small scroll to top for panel
       const t = $('#'+targetId);
       if(t) t.scrollTop = 0;
-      if(targetId === 'login-panel'){
-        location.hash = '#login';
-      } else if(targetId === 'homepage-panel'){
-        location.hash = '#homepage';
+      const hash = panelHashMap[targetId];
+      if(hash){
+        location.hash = hash;
       }
     }
 
@@ -982,10 +1013,83 @@
     }
 
     function handleGuestLogin(){
-      // Guest: show homepage without profile
-      appState.currentUser = { name:'Guest', role:'Guest', idCode: ''};
-      loadHomepage();
-      switchPanels('homepage-panel');
+      showModal({
+        title: 'Guest Access',
+        modalClass: 'guest-modal-shell',
+        bodyHtml: `
+          <div class="guest-modal">
+            <p>Enter your full name so we can record your visit in the access logs.</p>
+            <label for="guest-name-input" style="font-weight:600">Full Name</label>
+            <input id="guest-name-input" class="input-field" type="text" placeholder="e.g. Juan Dela Cruz" autocomplete="name" />
+            <p id="guest-modal-status" class="guest-modal__status" role="status" aria-live="polite"></p>
+          </div>
+        `,
+        footerHtml: `
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+            <button type="button" class="btn secondary" data-modal-close="true">Cancel</button>
+            <button type="button" class="btn" id="guest-continue-btn">Continue as Guest</button>
+          </div>
+        `,
+        opener: guestLoginBtn
+      });
+
+      requestAnimationFrame(() => {
+        const nameInput = document.getElementById('guest-name-input');
+        const continueBtn = document.getElementById('guest-continue-btn');
+        const statusEl = document.getElementById('guest-modal-status');
+        if(nameInput){
+          nameInput.focus();
+        }
+        const completeGuestLogin = (guestName) => {
+          appState.currentUser = { name: guestName, role: 'Guest', idCode: 'Visitor', position: 'Guest' };
+          closeModal({ skipFocusRestore: true });
+          loadHomepage();
+          switchPanels('homepage-panel');
+        };
+        const logAndContinue = (guestName) => {
+          if(window.google && google.script && google.script.run){
+            google.script.run
+              .withSuccessHandler(() => completeGuestLogin(guestName))
+              .withFailureHandler(err => {
+                console.warn('Guest logAccess failed', err);
+                completeGuestLogin(guestName);
+              })
+              .logAccess({ idCode: 'Visitor', name: guestName });
+          } else {
+            completeGuestLogin(guestName);
+          }
+        };
+        const handleContinue = () => {
+          if(!nameInput || !continueBtn) return;
+          const guestName = (nameInput.value || '').trim();
+          if(!guestName){
+            if(statusEl){
+              statusEl.textContent = 'Please enter your name to continue.';
+              statusEl.classList.add('is-error');
+            }
+            nameInput.focus();
+            return;
+          }
+          if(statusEl){
+            statusEl.textContent = 'Signing you in as a guest…';
+            statusEl.classList.remove('is-error');
+          }
+          continueBtn.disabled = true;
+          continueBtn.textContent = 'Signing in…';
+          logAndContinue(guestName);
+        };
+        if(continueBtn){
+          continueBtn.addEventListener('click', handleContinue);
+        }
+        if(nameInput){
+          nameInput.addEventListener('keydown', (evt) => {
+            if(evt.key === 'Enter'){
+              evt.preventDefault();
+              handleContinue();
+            }
+          });
+        }
+      });
     }
 
     // Eye toggle
@@ -1172,13 +1276,14 @@
         actionStack.className = 'homepage-action-stack';
         let hasActions = false;
 
-        if(content.facebookUrl && isSafeHttpUrl(content.facebookUrl)){
+        const facebookLink = normalizeExternalUrl(content.facebookUrl);
+        if(facebookLink){
           const fbBtn = document.createElement('button');
           fbBtn.type = 'button';
           fbBtn.className = 'btn btn-primary';
           fbBtn.textContent = 'Open Facebook Page';
           fbBtn.setAttribute('aria-label', 'Open the YSP Tagum Facebook page in a new tab');
-          fbBtn.addEventListener('click', () => openExternal(content.facebookUrl));
+          fbBtn.addEventListener('click', () => openExternal(facebookLink));
           actionStack.appendChild(fbBtn);
           hasActions = true;
         }
@@ -1188,7 +1293,7 @@
           if(composeUrl){
             const emailBtn = document.createElement('button');
             emailBtn.type = 'button';
-            emailBtn.className = 'btn secondary';
+            emailBtn.className = 'btn btn-primary';
             emailBtn.textContent = 'Email YSP';
             emailBtn.setAttribute('aria-label', 'Compose an email to YSP Tagum');
             emailBtn.addEventListener('click', () => openExternal(composeUrl));
@@ -1257,7 +1362,12 @@
           card.append(media, heading, copy);
 
           const openProject = () => {
-            const bodyParts = description ? description.split(/\n+/).map(line => `<p>${escapeAttr(line)}</p>`).join('') : '<p>Details coming soon.</p>';
+            const bodyParts = description
+              ? description.split(/\n+/).map(line => {
+                  const trimmed = line.trim();
+                  return trimmed ? `<p>${escapeHtml(trimmed)}</p>` : '';
+                }).filter(Boolean).join('')
+              : '<p>Details coming soon.</p>';
             const modalImage = escapeAttr(imageUrl || 'https://via.placeholder.com/960x540?text=YSP+Project');
             showModal({
               title,

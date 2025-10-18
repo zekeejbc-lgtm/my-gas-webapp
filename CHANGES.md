@@ -1,7 +1,14 @@
 # Change Log
 
 ## SearchPage.html
-- Implemented the blueprint homepage layout: container-based sections, project gallery card grid, split contact cards, and a back-to-login control so the panel fills the viewport without lingering whitespace.
-- Added UI tokens for `.container`, cards, buttons, and the redesigned modal system (backdrop, focus-trapped panel, 16:9 media wrappers) to satisfy accessibility, animation, and responsive requirements.
-- Rebuilt `loadHomepage()` to sanitize sheet data, derive project pairs when the array is missing, validate URLs before opening Facebook/Gmail compose actions, and surface resilient offline/error states.
-- Introduced safe helper utilities (`textOrEmpty`, `isSafeHttpUrl`, `buildGmailComposeUrl`, `openExternal`) plus hash-aware `switchPanels()` updates so navigation, action buttons, and modal focus restoration behave consistently across roles and devices.
+- Applied a viewport-aware minimum height to the homepage panel and introduced the `.push-bottom` helper so the login return control anchors consistently on both mobile and desktop.
+- Upgraded contact buttons to share the `.btn-primary` styling, normalize Facebook URLs that omit the protocol, validate outbound destinations before opening new tabs, and guard Gmail compose links behind the helper sanitizer.
+- Escaped multi-line project descriptions when building modal content, trimming empty lines and preventing HTML injection while preserving the fade/scale animation.
+- Added an inline guest-login modal that captures the visitor's full name, logs the access (ID `Visitor`) via `logAccess`, and routes directly to the homepage once confirmed. The login buttons now declare `type="button"` so Apps Script's default form wrapper cannot swallow clicks.
+- Centralized panel hash routing so every `switchPanels` call updates `location.hash` (`#dashboard`, `#homepage`, `#login`, etc.), guaranteeing consistent back-navigation across desktop and mobile.
+
+## QRScanner.html
+- No source edits required; retained the October 2025 blueprint implementation after syntax validation.
+
+## Backend_Debug.js
+- No modifications per scope (validation only).
