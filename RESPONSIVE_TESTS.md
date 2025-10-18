@@ -20,4 +20,4 @@ Validated using a temporary local HTTP server (`python -m http.server`) and Play
 
 ## Regression Notes
 - Reused modal helper keeps focus trapped and restores it to the triggering element after closing.
-- `openExternal` now normalizes links missing a protocol and still blocks non-HTTP(S) URLs, preventing accidental navigation to unsupported destinations.
+- `openExternal` now blocks non-HTTP(S) URLs, preventing accidental navigation to unsupported protocols.
