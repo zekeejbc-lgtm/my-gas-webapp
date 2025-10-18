@@ -34,13 +34,40 @@ function _timeString() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm:ss");
 }
 
+function health() {
+  return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT);
+}
+
+function whoAmI() {
+  return {
+    email: Session.getActiveUser().getEmail() || '',
+    time: new Date()
+  };
+}
+
+function logClientError(msg, src, line, col) {
+  console.error('CLIENT_ERROR', {
+    message: String(msg),
+    source: String(src),
+    line: Number(line) || 0,
+    column: Number(col) || 0
+  });
+  return { success: true };
+}
+
 // ---------- doGet (serves the main html) ----------
 function doGet(e) {
   try {
+    if (e && e.parameter && e.parameter.health === '1') {
+      return health();
+    }
     const requestedPage = (e && e.parameter && e.parameter.page ? String(e.parameter.page) : "").toLowerCase();
-    const targetFile = requestedPage === "qrscanner" ? "QRScanner" : FRONTEND_HTML;
+    const requestedView = (e && e.parameter && e.parameter.view ? String(e.parameter.view) : "").toLowerCase();
+    var viewKey = requestedView || requestedPage;
+    const targetFile = viewKey === "qrscanner" || viewKey === "scanner" ? "QRScanner" : FRONTEND_HTML;
     Logger.log("doGet: serving HTML: %s", targetFile);
-    const output = HtmlService.createHtmlOutputFromFile(targetFile)
+    const template = HtmlService.createTemplateFromFile(targetFile);
+    const output = template.evaluate()
       .setTitle(targetFile === "QRScanner" ? "YSPT QR Attendance Scanner" : "YSPT Officer Directory - Tagum")
       .addMetaTag("viewport", "width=device-width, initial-scale=1");
     if (targetFile === "QRScanner") {
@@ -51,6 +78,10 @@ function doGet(e) {
     Logger.log("doGet Error: " + err);
     return HtmlService.createHtmlOutput("<pre>Error serving page: " + err.toString() + "</pre>");
   }
+}
+
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 function getQrScannerUrl() {
