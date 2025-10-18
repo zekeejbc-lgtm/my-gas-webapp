@@ -732,6 +732,17 @@
         return false;
       }
     };
+    const normalizeExternalUrl = (value) => {
+      const raw = textOrEmpty(value);
+      if(!raw) return '';
+      const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      if(!isSafeHttpUrl(withProtocol)) return '';
+      try {
+        return new URL(withProtocol).toString();
+      } catch(err){
+        return '';
+      }
+    };
     const buildGmailComposeUrl = (email) => {
       const safeEmail = textOrEmpty(email);
       if(!safeEmail) return '';
@@ -745,7 +756,7 @@
     const openExternal = (url) => {
       if(!isSafeHttpUrl(url)) return;
       try {
-        const win = window.open(url, '_blank', 'noopener');
+        const win = window.open(safeUrl, '_blank', 'noopener');
         if(win){ win.opener = null; }
       } catch(err){
         console.warn('Unable to open link', err);
@@ -1178,13 +1189,14 @@
         actionStack.className = 'homepage-action-stack';
         let hasActions = false;
 
-        if(content.facebookUrl && isSafeHttpUrl(content.facebookUrl)){
+        const facebookLink = normalizeExternalUrl(content.facebookUrl);
+        if(facebookLink){
           const fbBtn = document.createElement('button');
           fbBtn.type = 'button';
           fbBtn.className = 'btn btn-primary';
           fbBtn.textContent = 'Open Facebook Page';
           fbBtn.setAttribute('aria-label', 'Open the YSP Tagum Facebook page in a new tab');
-          fbBtn.addEventListener('click', () => openExternal(content.facebookUrl));
+          fbBtn.addEventListener('click', () => openExternal(facebookLink));
           actionStack.appendChild(fbBtn);
           hasActions = true;
         }
