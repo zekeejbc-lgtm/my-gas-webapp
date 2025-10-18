@@ -14,11 +14,9 @@
   <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <style>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Tokens.css').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Components.css').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Panels.css').getContent(); ?>
-  </style>
+  <?!= include('YSP_Tokens'); ?>
+  <?!= include('YSP_Components'); ?>
+  <?!= include('YSP_Panels'); ?>
 </head>
 <body>
   <div id="app" class="app-shell">
@@ -352,21 +350,21 @@
   <div id="modal-root" hidden></div>
   <div id="toast-root" aria-live="polite" aria-atomic="true"></div>
 
+  <?!= include('Shared'); ?>
+  <?!= include('YSP_Utils'); ?>
+  <?!= include('YSP_Modal'); ?>
+  <?!= include('YSP_Login'); ?>
+  <?!= include('YSP_Homepage'); ?>
+  <?!= include('YSP_Directory'); ?>
+  <?!= include('YSP_QR'); ?>
+  <?!= include('YSP_Manual'); ?>
+  <?!= include('YSP_Attendance'); ?>
+  <?!= include('YSP_KPIs'); ?>
+  <?!= include('YSP_Events'); ?>
+  <?!= include('YSP_Announcements'); ?>
+  <?!= include('YSP_Feedback'); ?>
+  <?!= include('YSP_AccessLogs'); ?>
   <script>
-    <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Utils.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Modal.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Login.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Homepage.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Directory.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_QR.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Manual.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Attendance.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_KPIs.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Events.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Announcements.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_Feedback.js').getContent(); ?>
-    <?!= HtmlService.createHtmlOutputFromFile('YSP_AccessLogs.js').getContent(); ?>
     onReady(function () {
       $$('.panel').forEach(function (panel) {
         var isLogin = panel.id === 'login-panel';
