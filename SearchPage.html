@@ -768,8 +768,7 @@
       return compose.toString();
     };
     const openExternal = (url) => {
-      const safeUrl = normalizeExternalUrl(url);
-      if(!safeUrl) return;
+      if(!isSafeHttpUrl(url)) return;
       try {
         const win = window.open(safeUrl, '_blank', 'noopener');
         if(win){ win.opener = null; }
