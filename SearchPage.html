@@ -512,7 +512,7 @@
 
       <div class="panel-body is-wide">
         <div class="media-stack">
-          <img id="user-avatar" src="https://via.placeholder.com/120" alt="avatar" class="avatar">
+          <img id="user-avatar" src="https://placehold.co/120x120?text=Avatar" alt="avatar" class="avatar">
           <div class="panel-section" style="flex:1;">
             <div id="user-details" style="line-height:1.2"></div>
             <div><span id="ann-badge"></span></div>
@@ -734,8 +734,8 @@
     const attendanceTable = $('#attendance-table');
 
 
-    const modalRoot = $('#modal-root');
-    const modalState = {
+    var modalRoot = $('#modal-root');
+    var modalState = {
       escListener: null,
       trapCleanup: null,
       lastFocused: null,
@@ -850,48 +850,47 @@
         modalState.panel = null;
       }
 
-      modalState.lastFocused = opener || document.activeElement;
+      modalState.lastFocused = opener || document.activeElement || null;
 
-      const titleId = `modal-title-${Date.now()}`;
-      const descId = `modal-desc-${Date.now()}`;
+      var titleId = 'modal-title-' + Date.now();
+      var descId = 'modal-desc-' + Date.now();
 
-      const backdrop = document.createElement('div');
+      var backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
 
-      const modal = document.createElement('div');
-      modal.className = 'modal';
-      if(modalClass){ modal.classList.add(modalClass); }
+      var modalElement = document.createElement('div');
+      modalElement.className = 'modal';
+      if(modalClass){ modalElement.className += ' ' + modalClass; }
 
-      const panel = document.createElement('div');
+      var panel = document.createElement('div');
       panel.className = 'modal__panel';
       panel.setAttribute('role', 'dialog');
       panel.setAttribute('aria-modal', 'true');
       panel.setAttribute('aria-labelledby', titleId);
       panel.setAttribute('aria-describedby', descId);
 
-      const header = document.createElement('div');
+      var header = document.createElement('div');
       header.className = 'modal__header';
 
-      const heading = document.createElement('h2');
+      var heading = document.createElement('h2');
       heading.className = 'modal__title';
       heading.id = titleId;
       heading.textContent = title || 'Dialog';
+      header.appendChild(heading);
 
-      const closeButton = document.createElement('button');
+      var closeButton = document.createElement('button');
       closeButton.type = 'button';
       closeButton.className = 'modal__close';
       closeButton.setAttribute('aria-label', 'Close dialog');
       closeButton.innerHTML = '&times;';
       closeButton.addEventListener('click', function(){ closeModal(); });
 
-      header.append(heading, closeButton);
-
-      const body = document.createElement('div');
+      var body = document.createElement('div');
       body.className = 'modal__body';
       body.id = descId;
       body.innerHTML = bodyHtml;
 
-      const footer = document.createElement('div');
+      var footer = document.createElement('div');
       footer.className = 'modal__footer';
       footer.innerHTML = footerHtml;
       footer.querySelectorAll('[data-modal-close]').forEach(function(el){
@@ -901,11 +900,11 @@
         el.addEventListener('click', function(){ closeModal(); });
       });
 
-      panel.append(header, body, footer);
-      modal.append(panel);
+      modalElement.appendChild(panel);
 
       modalRoot.innerHTML = '';
-      modalRoot.append(backdrop, modal);
+      modalRoot.appendChild(backdrop);
+      modalRoot.appendChild(modalElement);
       modalRoot.hidden = false;
 
       requestAnimationFrame(function(){
@@ -917,7 +916,7 @@
       let focusables = Array.from(panel.querySelectorAll(focusableSelectors)).filter(function(el){ return el.offsetParent !== null || el === closeButton; });
       if(!focusables.length){
         panel.setAttribute('tabindex', '-1');
-        focusables = [panel];
+        focusables.push(panel);
       }
       focusables[0].focus();
 
@@ -940,7 +939,7 @@
         if(event.target === backdrop){
           closeModal();
         }
-      });
+      };
 
       const escListener = function(event){
         if(event.key === 'Escape'){
@@ -952,7 +951,7 @@
 
       modalState.escListener = escListener;
       modalState.backdrop = backdrop;
-      modalState.modal = modal;
+      modalState.modal = modalElement;
       modalState.panel = panel;
     }
 
@@ -986,7 +985,13 @@
         modalState.panel = null;
         modalState.lastFocused = null;
         if(!skipFocusRestore && focusTarget && typeof focusTarget.focus === 'function'){
-          focusTarget.focus();
+          try {
+            focusTarget.focus();
+          } catch (e) {
+            setTimeout(function(){
+              try { focusTarget.focus(); } catch(err){}
+            }, 50);
+          }
         }
       }, 220);
     }
