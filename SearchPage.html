@@ -734,13 +734,10 @@
       modal: null,
       panel: null
     };
-    const htmlEscapeMap = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
-    const escapeHtml = (value) => {
-      const normalized = value == null ? '' : value;
-      return String(normalized).replace(/[&<>"']/g, (ch) => htmlEscapeMap[ch] || ch);
-    };
-    const escapeAttr = (value) => escapeHtml(value);
-    const textOrEmpty = (value) => typeof value === 'string' ? value.trim() : '';
+    const htmlEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => htmlEscapeMap[ch] || ch);
+    const escapeAttr = value => escapeHtml(value);
+    const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
     const isSafeHttpUrl = (value) => {
       try {
         const parsed = new URL(value);
@@ -771,8 +768,7 @@
       return compose.toString();
     };
     const openExternal = (url) => {
-      const safeUrl = normalizeExternalUrl(url);
-      if(!safeUrl) return;
+      if(!isSafeHttpUrl(url)) return;
       try {
         const win = window.open(safeUrl, '_blank', 'noopener');
         if(win){ win.opener = null; }
