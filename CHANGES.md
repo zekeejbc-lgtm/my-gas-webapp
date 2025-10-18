@@ -1,7 +1,12 @@
 # Change Log
 
 ## SearchPage.html
-- Implemented the blueprint homepage layout: container-based sections, project gallery card grid, split contact cards, and a back-to-login control so the panel fills the viewport without lingering whitespace.
-- Added UI tokens for `.container`, cards, buttons, and the redesigned modal system (backdrop, focus-trapped panel, 16:9 media wrappers) to satisfy accessibility, animation, and responsive requirements.
-- Rebuilt `loadHomepage()` to sanitize sheet data, derive project pairs when the array is missing, validate URLs before opening Facebook/Gmail compose actions, and surface resilient offline/error states.
-- Introduced safe helper utilities (`textOrEmpty`, `isSafeHttpUrl`, `buildGmailComposeUrl`, `openExternal`) plus hash-aware `switchPanels()` updates so navigation, action buttons, and modal focus restoration behave consistently across roles and devices.
+- Switched the shared helper include to the project-level `include()` wrapper so GAS renders `Shared.html` server-side instead of surfacing the raw directive behind the login panel.
+- Added defensive fallbacks for `YSP.openExternal` and `YSP.modal` so modal errors no longer short-circuit script execution when the shared bundle is missing or trimmed by the sandbox.
+- Hardened `callServer` to always reach live GAS endpoints (and surface explicit errors when a handler is missing) rather than silently routing through mock data, keeping login/guest actions responsive.
+
+## QRScanner.html
+- No code changes this pass; prior DOMContentLoaded wiring and modal helpers remain valid.
+
+## Backend_Debug.js
+- Validation only; endpoints unchanged.
