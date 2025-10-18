@@ -1,58 +1,217 @@
-(function () {
+<script>
+(function(){
   'use strict';
+  var rootEscListener = null;
+  var focusTrapHandler = null;
+
   window.YSP = window.YSP || {};
-  YSP.ns = function (path) {
-    return String(path || '')
-      .split('.')
-      .filter(function (segment) {
-        return !!segment;
-      })
-      .reduce(function (acc, key) {
-        if (!acc[key]) {
-          acc[key] = {};
-        }
-        return acc[key];
-      }, YSP);
-  };
-
-  function ensureUrl(value, fallback) {
-    try {
-      var raw = String(value || '').trim();
-      if (!raw) {
-        return fallback;
-      }
-      var withProto = /^https?:/i.test(raw) ? raw : 'https://' + raw;
-      var parsed = new URL(withProto);
-      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-        return parsed.toString();
-      }
-      return fallback;
-    } catch (err) {
-      return fallback;
-    }
-  }
-
-  YSP.safeUrl = function (value) {
-    return ensureUrl(value, '');
-  };
-
-  YSP.safeImage = function (value) {
-    return ensureUrl(value, 'https://placehold.co/960x540?text=YSP');
+  YSP.ns = function(path){
+    return String(path || '').split('.').reduce(function(obj, key){
+      if(!key){ return obj; }
+      if(!obj[key]){ obj[key] = {}; }
+      return obj[key];
+    }, YSP);
   };
 
   window.onerror = function (msg, src, line, col, err) {
     try {
-      if (
-        typeof google !== 'undefined' &&
-        google.script &&
-        google.script.run &&
-        typeof google.script.run.logClientError === 'function'
-      ) {
+      if (window.google && google.script && google.script.run && typeof google.script.run.logClientError === 'function') {
         google.script.run.logClientError(String(msg), String(src), Number(line) || 0, Number(col) || 0);
       }
     } catch (loggingError) {
-      // swallow logging errors
+      // swallow logging errors to avoid recursive loops
     }
     console.error('Global JS Error:', msg, 'at', src, line, col, err);
   };
+
+  function ensurePlaceholder(url, fallback){
+    try{
+      var raw = String(url || '').trim();
+      if(!raw){ return fallback; }
+      var candidate = raw.match(/^https?:\/\//i) ? raw : 'https://' + raw;
+      var parsed = new URL(candidate);
+      if(parsed.protocol === 'http:' || parsed.protocol === 'https:'){
+        return parsed.toString();
+      }
+      return fallback;
+    } catch (err){
+      return fallback;
+    }
+  }
+
+  YSP.safeUrl = function(value){
+    return ensurePlaceholder(value, '');
+  };
+
+  YSP.safeImage = function(value, fallback){
+    var fb = fallback || 'https://placehold.co/600x400?text=YSP';
+    var valid = ensurePlaceholder(value, '');
+    return valid || fb;
+  };
+
+  YSP.openExternal = function(url){
+    var valid = YSP.safeUrl(url);
+    if(!valid){ return; }
+    try{
+      var win = window.open(valid, '_blank', 'noopener');
+      if(win){ win.opener = null; }
+    } catch (err){
+      console.warn('Unable to open external link', err);
+    }
+  };
+
+  YSP.modal = (function(){
+    var root = null;
+    var lastFocused = null;
+
+    function ensureRoot(){
+      root = document.getElementById('modal-root');
+      if(!root){
+        root = document.createElement('div');
+        root.id = 'modal-root';
+        root.className = 'modal-root';
+        root.hidden = true;
+        document.body.appendChild(root);
+      }
+      return root;
+    }
+
+    function trapFocus(panel){
+      var selectors = 'a[href],area[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
+      var nodes = panel.querySelectorAll(selectors);
+      var focusables = [];
+      for(var i = 0; i < nodes.length; i++){
+        if(nodes[i].offsetParent !== null || nodes[i] === panel){
+          focusables.push(nodes[i]);
+        }
+      }
+      if(!focusables.length){
+        panel.setAttribute('tabindex', '-1');
+        focusables.push(panel);
+      }
+      var first = focusables[0];
+      var last = focusables[focusables.length - 1];
+      focusTrapHandler = function(event){
+        if(event.key !== 'Tab'){ return; }
+        if(event.shiftKey){
+          if(document.activeElement === first){
+            event.preventDefault();
+            last.focus();
+          }
+        } else if(document.activeElement === last){
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      panel.addEventListener('keydown', focusTrapHandler);
+      setTimeout(function(){ first.focus(); }, 30);
+    }
+
+    function removeTrap(panel){
+      if(panel && focusTrapHandler){
+        panel.removeEventListener('keydown', focusTrapHandler);
+      }
+      focusTrapHandler = null;
+    }
+
+    function close(skipFocus){
+      if(!root){ return; }
+      var skipRestore = false;
+      if(typeof skipFocus === 'object' && skipFocus){
+        skipRestore = !!skipFocus.skipFocusRestore;
+      } else {
+        skipRestore = !!skipFocus;
+      }
+      if(rootEscListener){
+        document.removeEventListener('keydown', rootEscListener);
+        rootEscListener = null;
+      }
+      var panel = root.querySelector('.modal__panel');
+      removeTrap(panel);
+      root.innerHTML = '';
+      root.hidden = true;
+      if(!skipRestore && lastFocused && typeof lastFocused.focus === 'function'){
+        try { lastFocused.focus(); } catch (err) {}
+      }
+      lastFocused = null;
+    }
+
+    function open(opts){
+      ensureRoot();
+      var o = opts || {};
+      var title = typeof o.title === 'string' ? o.title : 'Dialog';
+      var bodyHtml = typeof o.bodyHtml === 'string' ? o.bodyHtml : '';
+      var footerHtml = typeof o.footerHtml === 'string' ? o.footerHtml : '<button type="button" data-close="1">Close</button>';
+      var modalClass = typeof o.modalClass === 'string' ? o.modalClass : '';
+      lastFocused = o.opener || document.activeElement || null;
+
+      root.innerHTML = '';
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop is-open';
+      var modal = document.createElement('div');
+      modal.className = 'modal is-open' + (modalClass ? ' ' + modalClass : '');
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+
+      var panel = document.createElement('div');
+      panel.className = 'modal__panel';
+
+      var header = document.createElement('div');
+      header.className = 'modal__header';
+
+      var titleEl = document.createElement('h2');
+      titleEl.className = 'modal__title';
+      titleEl.textContent = title;
+      header.appendChild(titleEl);
+
+      var closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'modal__close';
+      closeBtn.setAttribute('aria-label', 'Close dialog');
+      closeBtn.innerHTML = '&times;';
+      closeBtn.addEventListener('click', function(){ close(false); });
+      header.appendChild(closeBtn);
+
+      var body = document.createElement('div');
+      body.className = 'modal__body';
+      body.innerHTML = bodyHtml;
+
+      var footer = document.createElement('div');
+      footer.className = 'modal__footer';
+      footer.innerHTML = footerHtml;
+
+      panel.appendChild(header);
+      panel.appendChild(body);
+      panel.appendChild(footer);
+      modal.appendChild(panel);
+      root.appendChild(backdrop);
+      root.appendChild(modal);
+      root.hidden = false;
+
+      var closeNodes = root.querySelectorAll('[data-close],[data-modal-close]');
+      for(var i = 0; i < closeNodes.length; i++){
+        var node = closeNodes[i];
+        if(node.tagName === 'BUTTON' && !node.getAttribute('type')){
+          node.setAttribute('type', 'button');
+        }
+        node.addEventListener('click', function(){ close(false); });
+      }
+
+      backdrop.addEventListener('click', function(evt){
+        if(evt.target === backdrop){
+          close(false);
+        }
+      });
+
+      rootEscListener = function(event){
+        if(event.key === 'Escape'){ close(false); }
+      };
+      document.addEventListener('keydown', rootEscListener);
+
+      trapFocus(panel);
+    }
+
+    return { open: open, close: close };
+  })();
 })();
+</script>

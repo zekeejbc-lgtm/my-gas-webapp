@@ -3,20 +3,6 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--space-lg);
   align-items: stretch;
-  min-height: clamp(520px, 70vh, 760px);
-}
-
-@media (min-width: 960px) {
-  #login-panel {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
-    align-items: center;
-  }
-}
-
-@media (min-width: 1280px) {
-  #login-panel {
-    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
-  }
 }
 
 #main-menu-panel .panel-header {
