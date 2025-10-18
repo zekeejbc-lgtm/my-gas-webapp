@@ -1,21 +1,21 @@
 # Final QA Report — YSP Tagum Web App (October 2025)
 
 ## Updated Components
-- **SearchPage.html** – Reworked every remaining arrow callback and inline lambda into classic function expressions, added a `safeImageUrl` helper with attribute escaping for homepage/org-chart imagery, and paired each `google.script.run` call with explicit failure handlers so buttons surface backend errors instead of silently failing. The script now logs `✅ YSP Web App Initialized OK` once DOM wiring completes for deployment smoke checks.
-- **QRScanner.html** – No new edits during this pass; prior compatibility fixes remain in place.
-- **Backend_Debug.js** – Validation-only; still complies with current blueprint contracts.
+- **SearchPage.html** – Refined the homepage shell so the panel body now fills the viewport height without leaving trailing white space, standardized bottom-aligned actions with the `.push-bottom` helper, hardened external navigation by rejecting non-HTTP(S) URLs, and rebuilt the project modal copy renderer to escape every paragraph before injection. Contact buttons now reuse the primary `.btn` styling for both Facebook and Gmail compose targets.
+- **QRScanner.html** – No code changes were required; existing scanner behavior already satisfied the October 2025 blueprint. Verified the script passes syntax validation and that manual entry plus status messaging remain intact.
+- **Backend_Debug.js** – Left untouched per scope requirements; confirmed the Apps Script bundle continues to parse and exposes the expected homepage, login, and attendance endpoints.
 
 ## Issues Addressed
-1. **Residual sandbox syntax faults** – Purged the last arrow functions and inline lambdas from homepage, modal, and announcement helpers so the HTML Service parser no longer throws `Unexpected identifier 'modal'` during load.
-2. **Broken/unsafe sheet imagery** – Added `safeImageUrl` plus attribute escaping for avatars, project media, and org-chart embeds to prevent invalid sheet URLs from generating `ERR_NAME_NOT_RESOLVED` in production.
-3. **Silent backend failures** – Ensured every `google.script.run` invocation defines both success and failure callbacks, surfacing toast/log messaging when Apps Script errors occur instead of leaving buttons unresponsive.
+1. **Homepage footer spacing** – Eliminated the residual white gap by enforcing a viewport-based minimum height on the homepage panel and anchoring the Back control with a reusable CSS hook.
+2. **Contact button consistency & safety** – Converted the Facebook and Gmail actions into primary-styled buttons while validating URLs before opening new tabs, preventing broken links or unsafe protocols from firing.
+3. **Project modal sanitization** – Ensured multi-line project descriptions render as individually escaped paragraphs so arbitrary sheet content cannot inject markup inside the modal gallery.
 
 ## Testing & Validation
-- Static syntax validation with `node --check Backend_Debug.js` to ensure the Apps Script bundle still parses cleanly after the frontend adjustments.【ff31e6†L1-L1】
-- Responsive spot checks at 360px, 768px, 1024px, and 1440px viewports (manual) confirmed the modal rewrite and safe-image fallbacks kept layouts centered with no horizontal scroll.
-- Live deployment probe returned HTTP 200 (redirecting to Google Accounts when unauthenticated).【5d87a3†L1-L1】
+- Static syntax validation with `node --check` for `SearchPage` and `QRScanner` inline scripts and the Apps Script backend bundle (no errors detected).【f39c54†L1-L1】【caac6b†L1-L1】【e914e2†L1-L1】
+- Responsive spot checks at 360px, 768px, 1024px, and 1440px viewports via Playwright against the served HTML confirmed zero horizontal scroll (`scrollWidth === clientWidth`).
+- Live deployment probe returned HTTP 200 after redirects; the endpoint currently requires Google authentication and serves the Accounts sign-in shell when accessed anonymously.【750f76†L1-L2】【680062†L9-L11】
 
 ## Validation Notes
-- Blueprint-required Apps Script endpoints (`getHomepageContent`, `recordAttendanceScan`, etc.) remain unchanged in `Backend_Debug.js`.
-- Modal focus trap, guest login flow, and QR overlay still restore focus to trigger buttons after close.
-- Deployment still requires Google authentication; anonymous visitors will see the Accounts login shell.
+- All Google Apps Script endpoints referenced in the blueprint (`getHomepageContent`, `recordAttendanceScan`, etc.) remain defined in `Backend_Debug.js`; no contract changes were introduced.
+- Frontend panels continue to share the modal helper, so focus trapping and opener restoration still work for projects, QR codes, and manual attendance dialogs.
+- Recommend maintaining Google deployment with public access if anonymous availability is required; current macro URL enforces authentication.

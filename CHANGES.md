@@ -1,13 +1,12 @@
 # Change Log
 
 ## SearchPage.html
-- Eliminated the remaining arrow callbacks and inline lambdas from the modal, navigation, and announcement helpers so every handler is declared with classic functions that the HTML Service parser accepts.
-- Added a `safeImageUrl` helper plus attribute escaping for avatars, project media, and org-chart imagery to prevent `ERR_NAME_NOT_RESOLVED` errors when sheet URLs are empty or malformed.
-- Extended every `google.script.run` invocation with paired failure handlers to surface backend errors gracefully in the UI and avoid silent button stalls.
-- Logged `✅ YSP Web App Initialized OK` after the DOM wiring finishes so deployment smoke tests can verify the sandboxed script completed without syntax errors.
+- Applied a viewport-aware minimum height to the homepage panel and introduced the `.push-bottom` helper so the login return control anchors consistently on both mobile and desktop.
+- Upgraded contact buttons to share the `.btn-primary` styling, validated outbound URLs before opening new tabs, and guarded Gmail compose links behind the helper sanitizer.
+- Escaped multi-line project descriptions when building modal content, trimming empty lines and preventing HTML injection while preserving the fade/scale animation.
 
 ## QRScanner.html
-- No changes in this pass; previous compatibility hardening remains valid.
+- No source edits required; retained the October 2025 blueprint implementation after syntax validation.
 
 ## Backend_Debug.js
-- Validation only; no source edits required.
+- No modifications per scope (validation only).
