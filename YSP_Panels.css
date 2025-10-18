@@ -1,0 +1,104 @@
+#login-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-lg);
+  align-items: stretch;
+  min-height: clamp(520px, 70vh, 760px);
+}
+
+@media (min-width: 960px) {
+  #login-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    align-items: center;
+  }
+}
+
+@media (min-width: 1280px) {
+  #login-panel {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+}
+
+#main-menu-panel .panel-header {
+  align-items: flex-start;
+}
+
+#projects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-md);
+}
+
+.project-card {
+  display: grid;
+  gap: var(--space-sm);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+}
+
+.project-card img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+}
+
+#projects-grid .project-card .project-body {
+  padding: 0 1rem 1rem;
+  color: var(--text-muted);
+}
+
+#directory-result {
+  min-height: 160px;
+}
+
+#announcement-list .announcement-card,
+#my-feedback-list .feedback-card,
+#feedback-admin-list .feedback-card,
+#scan-output .scan-entry,
+#events-rows tr,
+#attendance-rows tr,
+#access-log-rows tr {
+  transition: background 0.2s ease;
+}
+
+#scan-output .scan-entry.success {
+  border-color: rgba(46, 204, 113, 0.4);
+  background: rgba(46, 204, 113, 0.14);
+}
+
+#scan-output .scan-entry.error {
+  border-color: rgba(255, 59, 48, 0.4);
+  background: rgba(255, 59, 48, 0.14);
+}
+
+.table-wrapper table tr:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+#toast-root {
+  position: fixed;
+  inset: auto 50% 32px 50%;
+  transform: translateX(-50%);
+  width: min(100%, 420px);
+  pointer-events: none;
+  display: grid;
+  gap: 12px;
+  z-index: 2000;
+}
+
+@media (max-width: 720px) {
+  #toast-root {
+    inset: auto 16px 16px 16px;
+    transform: none;
+    width: auto;
+  }
+}

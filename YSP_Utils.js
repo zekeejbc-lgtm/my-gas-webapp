@@ -1,0 +1,283 @@
+
+(function (root) {
+  'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  var doc = root.document;
+  var historyApi = root.history;
+  var locationApi = root.location;
+  var setTimeoutFn = typeof root.setTimeout === 'function' ? root.setTimeout.bind(root) : function (fn) {
+    return fn();
+  };
+
+  var globalYsp = (root.YSP = root.YSP || {});
+  globalYsp.state = globalYsp.state || { session: null };
+
+  var isReady = false;
+  var readyQueue = [];
+  var toastTimers = [];
+  var toastRoot = null;
+
+  function onReady(fn) {
+    if (typeof fn !== 'function') {
+      return;
+    }
+    if (isReady) {
+      fn();
+    } else {
+      readyQueue.push(fn);
+    }
+  }
+
+  function flushReady() {
+    if (isReady) {
+      return;
+    }
+    isReady = true;
+    readyQueue.splice(0).forEach(function (fn) {
+      try {
+        fn();
+      } catch (err) {
+        console.error('onReady handler failed', err);
+      }
+    });
+  }
+
+  if (doc && doc.readyState === 'loading') {
+    doc.addEventListener('DOMContentLoaded', flushReady, { once: true });
+  } else if (doc) {
+    flushReady();
+  }
+
+  function $(selector, scope) {
+    var ctx = scope || doc;
+    if (!ctx || typeof ctx.querySelector !== 'function') {
+      return null;
+    }
+    return ctx.querySelector(selector);
+  }
+
+  function $$(selector, scope) {
+    var ctx = scope || doc;
+    if (!ctx || typeof ctx.querySelectorAll !== 'function') {
+      return [];
+    }
+    return Array.prototype.slice.call(ctx.querySelectorAll(selector));
+  }
+
+  function esc(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function resolveFunction(path) {
+    if (!path) {
+      return null;
+    }
+    return String(path)
+      .split('.')
+      .reduce(function (acc, key) {
+        if (acc && acc[key] != null) {
+          return acc[key];
+        }
+        return undefined;
+      }, root);
+  }
+
+  function show(id) {
+    if (!id) {
+      return;
+    }
+    var target = doc ? doc.getElementById(id) : null;
+    if (!target) {
+      console.warn('Panel not found', id);
+      return;
+    }
+    if (doc) {
+      $$('.panel').forEach(function (panel) {
+        var isTarget = panel === target;
+        panel.classList.toggle('active', isTarget);
+        panel.classList.toggle('hidden', !isTarget);
+      });
+    }
+    try {
+      if (historyApi && typeof historyApi.replaceState === 'function') {
+        historyApi.replaceState(null, '', '#' + id);
+      } else {
+        if (locationApi) {
+          locationApi.hash = '#' + id;
+        }
+      }
+    } catch (err) {
+      // ignore
+    }
+    var handlerName = target.getAttribute('data-load');
+    var handler = resolveFunction(handlerName);
+    if (typeof handler === 'function') {
+      try {
+        handler(target);
+      } catch (err) {
+        console.error('Panel load handler failed', handlerName, err);
+      }
+    }
+    if (target && typeof target.dispatchEvent === 'function' && root.CustomEvent) {
+      target.dispatchEvent(new root.CustomEvent('panel:show', { detail: { panel: target } }));
+    }
+  }
+
+  function ensureToastRoot() {
+    if (!doc) {
+      return null;
+    }
+    if (!toastRoot) {
+      toastRoot = doc.getElementById('toast-root');
+      if (!toastRoot && doc.body) {
+        toastRoot = doc.createElement('div');
+        toastRoot.id = 'toast-root';
+        toastRoot.className = 'toast-container';
+        doc.body.appendChild(toastRoot);
+      }
+    }
+    if (toastRoot) {
+      toastRoot.classList.add('toast-container');
+    }
+    return toastRoot;
+  }
+
+  function toast(message, opts) {
+    var root = ensureToastRoot();
+    var text = message ? String(message) : 'Action completed.';
+    if (!root || !doc) {
+      return null;
+    }
+    var toastEl = doc.createElement('div');
+    toastEl.className = 'toast';
+    toastEl.textContent = text;
+    root.appendChild(toastEl);
+
+    var duration = (opts && opts.duration) || 3200;
+    var timer = setTimeoutFn(function () {
+      toastEl.classList.add('is-leaving');
+      toastEl.addEventListener(
+        'transitionend',
+        function () {
+          toastEl.remove();
+        },
+        { once: true }
+      );
+      toastEl.style.opacity = '0';
+    }, duration);
+    toastTimers.push(timer);
+    return toastEl;
+  }
+
+  function openSafe(url) {
+    try {
+      var trimmed = String(url || '').trim();
+      if (!trimmed) {
+        return;
+      }
+      var withProto = /^https?:/i.test(trimmed) ? trimmed : 'https://' + trimmed;
+      var parsed = new URL(withProto);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        throw new Error('Invalid protocol');
+      }
+      var win = root.open ? root.open(parsed.toString(), '_blank', 'noopener') : null;
+      if (win) {
+        win.opener = null;
+      }
+    } catch (err) {
+      console.warn('Unable to open link', err);
+      toast('Cannot open link. Please try again later.');
+    }
+  }
+
+  function hasServer() {
+    return (
+      typeof google !== 'undefined' &&
+      google.script &&
+      google.script.run &&
+      typeof google.script.run.withSuccessHandler === 'function'
+    );
+  }
+
+  function callServer(method, args, onSuccess, onFailure, mock) {
+    var params = Array.isArray(args) ? args : [];
+    var successHandler = typeof onSuccess === 'function' ? onSuccess : function () {};
+    var failureHandler = typeof onFailure === 'function' ? onFailure : function (err) {
+      console.error('Server call failed', method, err);
+      toast('Something went wrong.');
+    };
+
+    if (hasServer()) {
+      try {
+        var runner = google.script.run
+          .withSuccessHandler(function (response) {
+            successHandler(response);
+          })
+          .withFailureHandler(function (error) {
+            failureHandler(error);
+          });
+        if (typeof runner[method] === 'function') {
+          runner[method].apply(runner, params);
+        } else {
+          throw new Error('Method ' + method + ' not found');
+        }
+      } catch (err) {
+        failureHandler(err);
+      }
+    } else {
+      setTimeoutFn(function () {
+        if (mock !== undefined) {
+          successHandler(mock);
+        } else {
+          failureHandler(new Error('Offline preview')); 
+        }
+      }, 150);
+    }
+  }
+
+  function bindBackButtons() {
+    $$('.back-btn').forEach(function (btn) {
+      if (btn.dataset.bound === '1') {
+        return;
+      }
+      btn.dataset.bound = '1';
+      btn.addEventListener('click', function (event) {
+        event.preventDefault();
+        var explicit = btn.getAttribute('data-target');
+        var parentPanel = btn.closest('.panel');
+        var fallback = parentPanel && parentPanel.id === 'homepage-panel' ? 'login-panel' : 'main-menu-panel';
+        var target = explicit || fallback;
+        if (parentPanel && parentPanel.id === 'homepage-panel') {
+          // ensure homepage back always returns to login
+          target = 'login-panel';
+        }
+        if (btn.id === 'logout-btn') {
+          target = 'login-panel';
+        }
+        show(target);
+      });
+    });
+  }
+
+  root.onReady = onReady;
+  root.$ = $;
+  root.$$ = $$;
+  root.esc = esc;
+  root.show = show;
+  root.toast = toast;
+  root.openSafe = openSafe;
+  root.bindBackButtons = bindBackButtons;
+  globalYsp.utils = globalYsp.utils || {};
+  globalYsp.utils.callServer = callServer;
+  globalYsp.utils.hasServer = hasServer;
+  globalYsp.utils.resolveFunction = resolveFunction;
+})(typeof window !== 'undefined' ? window : typeof globalThis !== 'undefined' ? globalThis : null);
