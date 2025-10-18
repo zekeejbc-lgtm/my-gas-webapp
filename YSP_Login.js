@@ -1,5 +1,61 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
+
+  if (!root || !root.document) {
+    return;
+  }
+
+  var doc = root.document;
+  var YSP = (root.YSP = root.YSP || {});
+  YSP.state = YSP.state || { session: null };
+  var utils = (YSP.utils = YSP.utils || {});
+  var callServer = typeof utils.callServer === 'function' ? utils.callServer : function () {};
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var showFn = typeof root.show === 'function' ? root.show : function () {};
+  var showModalFn = typeof root.showModal === 'function' ? root.showModal : function () { return doc.createElement('div'); };
+  var closeModalFn = typeof root.closeModal === 'function' ? root.closeModal : function () {};
+  var select = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var escFn = typeof root.esc === 'function'
+    ? root.esc
+    : function (value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+  var setTimeoutFn = typeof root.setTimeout === 'function' ? root.setTimeout.bind(root) : function (fn) {
+    fn();
+  };
+  var bindDirectoryFn = typeof root.bindDirectory === 'function' ? root.bindDirectory : function () {};
+  var bindManualAttendanceFn = typeof root.bindManualAttendance === 'function' ? root.bindManualAttendance : function () {};
+  var setupManualAttendanceFn = typeof root.setupManualAttendance === 'function' ? root.setupManualAttendance : function () {};
+  var setupQrAttendanceFn = typeof root.setupQrAttendance === 'function' ? root.setupQrAttendance : function () {};
+  var loadHomepageFn = typeof root.loadHomepage === 'function' ? root.loadHomepage : function () {};
+  var loadMyAttendanceFn = typeof root.loadMyAttendance === 'function' ? root.loadMyAttendance : function () {};
+  var loadKpisFn = typeof root.loadKpis === 'function' ? root.loadKpis : function () {};
+  var loadEventsFn = typeof root.loadEvents === 'function' ? root.loadEvents : function () {};
+  var loadAnnouncementsFn = typeof root.loadAnnouncements === 'function' ? root.loadAnnouncements : function () {};
+  var loadMyFeedbackFn = typeof root.loadMyFeedback === 'function' ? root.loadMyFeedback : function () {};
+  var loadFeedbackAdminFn = typeof root.loadFeedbackAdmin === 'function' ? root.loadFeedbackAdmin : function () {};
+  var loadAccessLogsFn = typeof root.loadAccessLogs === 'function' ? root.loadAccessLogs : function () {};
 
   var loginBound = false;
   var qrCodeInstance = null;
@@ -27,19 +83,22 @@
       return;
     }
     loginBound = true;
-    var usernameInput = $('#username');
-    var passwordInput = $('#password');
-    var loginBtn = $('#login-btn');
-    var guestBtn = $('#guest-login-btn');
-    var eyeToggle = $('#eye-toggle');
+    var usernameInput = select('#username');
+    var passwordInput = select('#password');
+    var loginBtn = select('#login-btn');
+    var guestBtn = select('#guest-login-btn');
+    var eyeToggle = select('#eye-toggle');
 
     function toggleEye() {
+      if (!passwordInput || !eyeToggle) {
+        return;
+      }
       var reveal = passwordInput.getAttribute('type') === 'password';
       passwordInput.setAttribute('type', reveal ? 'text' : 'password');
       eyeToggle.setAttribute('aria-pressed', reveal ? 'true' : 'false');
       eyeToggle.classList.toggle('is-visible', reveal);
       eyeToggle.classList.add('is-animating');
-      window.setTimeout(function () {
+      setTimeoutFn(function () {
         eyeToggle.classList.remove('is-animating');
       }, 350);
     }
@@ -76,7 +135,7 @@
   }
 
   function openGuestModal(opener) {
-    var panel = showModal({
+    var panel = showModalFn({
       title: 'Guest Login',
       opener: opener,
       bodyHtml:
@@ -86,38 +145,51 @@
         '<button type="button" class="btn btn-outline" data-close="1">Cancel</button>' +
         '<button type="button" class="btn btn-primary" id="guest-submit">Continue</button>',
     });
+    if (!panel || typeof panel.querySelector !== 'function') {
+      return;
+    }
     var input = panel.querySelector('#guest-name');
     var submit = panel.querySelector('#guest-submit');
+
     function submitGuest() {
-      var name = normalizeName(input.value);
+      var name = normalizeName(input && input.value);
       if (!name) {
-        toast('Please enter your name.');
+        toastFn('Please enter your name.');
         return;
       }
-      submit.disabled = true;
-      YSP.utils.callServer(
+      if (submit) {
+        submit.disabled = true;
+      }
+      callServer(
         'guestLogin',
         [name],
         function (res) {
-          submit.disabled = false;
-          closeModal();
+          if (submit) {
+            submit.disabled = false;
+          }
+          closeModalFn();
           if (res && res.success && res.user) {
             res.user.isGuest = true;
             setSession(res.user);
-            show('homepage-panel');
-            loadHomepage();
+            showFn('homepage-panel');
+            loadHomepageFn();
           } else {
-            toast((res && res.message) || 'Unable to start guest session.');
+            toastFn((res && res.message) || 'Unable to start guest session.');
           }
         },
         function (err) {
-          submit.disabled = false;
-          toast('Guest login failed.');
-          console.error(err);
+          if (submit) {
+            submit.disabled = false;
+          }
+          toastFn('Guest login failed.');
+          if (root.console && typeof root.console.error === 'function') {
+            root.console.error(err);
+          }
         },
-        { success: true, user: { name: name, role: 'Guest' } }
+        { success: true, user: { name: name, role: 'Guest', isGuest: true } }
       );
     }
+
     if (submit) {
       submit.addEventListener('click', submitGuest);
     }
@@ -128,26 +200,28 @@
           submitGuest();
         }
       });
-      window.setTimeout(function () {
-        input.focus();
+      setTimeoutFn(function () {
+        if (typeof input.focus === 'function') {
+          input.focus();
+        }
       }, 20);
     }
   }
 
   function doLogin() {
-    var usernameInput = $('#username');
-    var passwordInput = $('#password');
-    var loginBtn = $('#login-btn');
+    var usernameInput = select('#username');
+    var passwordInput = select('#password');
+    var loginBtn = select('#login-btn');
     var username = usernameInput ? usernameInput.value.trim() : '';
     var password = passwordInput ? passwordInput.value.trim() : '';
     if (!username || !password) {
-      toast('Enter both username and password.');
+      toastFn('Enter both username and password.');
       return;
     }
     if (loginBtn) {
       loginBtn.disabled = true;
     }
-    YSP.utils.callServer(
+    callServer(
       'validateLogin',
       [username, password],
       function (res) {
@@ -156,17 +230,19 @@
         }
         if (res && res.success && res.user) {
           setSession(res.user);
-          show('main-menu-panel');
+          showFn('main-menu-panel');
         } else {
-          toast((res && res.message) || 'Invalid credentials.');
+          toastFn((res && res.message) || 'Invalid credentials.');
         }
       },
       function (err) {
         if (loginBtn) {
           loginBtn.disabled = false;
         }
-        toast('Login failed. Please try again.');
-        console.error(err);
+        toastFn('Login failed. Please try again.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
       },
       {
         success: true,
@@ -183,155 +259,51 @@
   function setSession(user) {
     var safeUser = user || {};
     YSP.state.session = safeUser;
-    window.__SESSION__ = safeUser;
-    $('#welcome-name').textContent = normalizeName(safeUser.name || safeUser.fullName || 'Member');
-    if ($('#password')) {
-      $('#password').value = '';
-      $('#password').setAttribute('type', 'password');
+    root.__SESSION__ = safeUser;
+    var welcome = select('#welcome-name');
+    if (welcome) {
+      welcome.textContent = normalizeName(safeUser.name || safeUser.fullName || 'Member');
     }
-    if ($('#username')) {
-      $('#username').value = safeUser.email || '';
+    var passwordInput = select('#password');
+    if (passwordInput) {
+      passwordInput.value = '';
+      passwordInput.setAttribute('type', 'password');
     }
-    var eyeToggle = $('#eye-toggle');
+    var usernameInput = select('#username');
+    if (usernameInput) {
+      usernameInput.value = safeUser.email || '';
+    }
+    var eyeToggle = select('#eye-toggle');
     if (eyeToggle) {
       eyeToggle.classList.remove('is-visible');
       eyeToggle.setAttribute('aria-pressed', 'false');
     }
     buildDashboard(safeUser);
     buildProfile(safeUser);
-    loadHomepage();
-    bindDirectory();
-    bindManualAttendance();
+    loadHomepageFn();
+    bindDirectoryFn();
+    bindManualAttendanceFn();
   }
 
   function buildDashboard(user) {
-    var tilesRoot = $('#dashboard-tiles');
-    if (!tilesRoot) {
+    var tilesRoot = select('#dashboard-tiles');
+    if (!tilesRoot || !doc) {
       return;
     }
     tilesRoot.innerHTML = '';
     var dashboardConfig = [
-      {
-        id: 'home',
-        label: 'Homepage',
-        description: 'News, mission, projects and contacts.',
-        icon: '🏠',
-        target: 'homepage-panel',
-        action: function () {
-          loadHomepage();
-        },
-      },
-      {
-        id: 'profile',
-        label: 'Profile & QR ID',
-        description: 'View your membership details.',
-        icon: '🪪',
-        target: 'profile-panel',
-        action: function () {
-          buildProfile(user);
-        },
-      },
-      {
-        id: 'qr-scan',
-        label: 'QR Attendance',
-        description: 'Scan member QR codes for events.',
-        icon: '📷',
-        target: 'qr-attendance-panel',
-        action: function () {
-          setupQrAttendance();
-        },
-      },
-      {
-        id: 'manual',
-        label: 'Manual Attendance',
-        description: 'Search members and record attendance.',
-        icon: '📝',
-        target: 'manual-attendance-panel',
-        action: function () {
-          setupManualAttendance();
-          bindManualAttendance();
-        },
-      },
-      {
-        id: 'kpi',
-        label: 'Attendance Dashboard',
-        description: 'Charts of attendance trends.',
-        icon: '📊',
-        target: 'attendance-dashboard-panel',
-        action: function () {
-          loadKpis();
-        },
-      },
-      {
-        id: 'transparency',
-        label: 'Attendance Transparency',
-        description: 'Your attendance records.',
-        icon: '📅',
-        target: 'attendance-trans-panel',
-        action: function () {
-          loadMyAttendance();
-        },
-      },
-      {
-        id: 'events',
-        label: 'Manage Events',
-        description: 'Create and manage activities.',
-        icon: '🎪',
-        target: 'manage-events-panel',
-        action: function () {
-          loadEvents();
-        },
-      },
-      {
-        id: 'directory',
-        label: 'Directory',
-        description: 'Find officers and members.',
-        icon: '🧑‍🤝‍🧑',
-        target: 'directory-panel',
-        action: function () {
-          bindDirectory();
-        },
-      },
-      {
-        id: 'announcements',
-        label: 'Announcements',
-        description: 'Publish updates to members.',
-        icon: '📣',
-        target: 'announcements-panel',
-        action: function () {
-          loadAnnouncements();
-        },
-      },
-      {
-        id: 'feedback',
-        label: 'Submit Feedback',
-        description: 'Share your thoughts with the council.',
-        icon: '💬',
-        target: 'submit-feedback-panel',
-        action: function () {
-          loadMyFeedback();
-        },
-      },
-      {
-        id: 'feedback-admin',
-        label: 'Feedback Inbox',
-        description: 'Review feedback submissions.',
-        icon: '📥',
-        target: 'view-feedback-panel',
-        action: function () {
-          loadFeedbackAdmin();
-        },
-      },
-      {
-        id: 'access-logs',
-        label: 'Access Logs',
-        description: 'Monitor sign-in activity.',
-        icon: '🗒️',
-        target: 'view-logs-panel',
-        action: function () {
-          loadAccessLogs();
-        },
-      },
+      { id: 'home', label: 'Homepage', description: 'News, mission, projects and contacts.', icon: '🏠', target: 'homepage-panel', action: loadHomepageFn },
+      { id: 'profile', label: 'Profile & QR ID', description: 'View your membership details.', icon: '🪪', target: 'profile-panel', action: function () { buildProfile(user); } },
+      { id: 'qr-scan', label: 'QR Attendance', description: 'Scan member QR codes for events.', icon: '📷', target: 'qr-attendance-panel', action: setupQrAttendanceFn },
+      { id: 'manual', label: 'Manual Attendance', description: 'Search members and record attendance.', icon: '📝', target: 'manual-attendance-panel', action: function () { setupManualAttendanceFn(); bindManualAttendanceFn(); } },
+      { id: 'kpi', label: 'Attendance Dashboard', description: 'Charts of attendance trends.', icon: '📊', target: 'attendance-dashboard-panel', action: loadKpisFn },
+      { id: 'transparency', label: 'Attendance Transparency', description: 'Your attendance records.', icon: '📅', target: 'attendance-trans-panel', action: loadMyAttendanceFn },
+      { id: 'events', label: 'Manage Events', description: 'Create and manage activities.', icon: '🎪', target: 'manage-events-panel', action: loadEventsFn },
+      { id: 'directory', label: 'Directory', description: 'Find officers and members.', icon: '🧑‍🤝‍🧑', target: 'directory-panel', action: bindDirectoryFn },
+      { id: 'announcements', label: 'Announcements', description: 'Publish updates to members.', icon: '📣', target: 'announcements-panel', action: loadAnnouncementsFn },
+      { id: 'feedback', label: 'Submit Feedback', description: 'Share your thoughts with the council.', icon: '💬', target: 'submit-feedback-panel', action: loadMyFeedbackFn },
+      { id: 'feedback-admin', label: 'Feedback Inbox', description: 'Review feedback submissions.', icon: '📥', target: 'view-feedback-panel', action: loadFeedbackAdminFn },
+      { id: 'access-logs', label: 'Access Logs', description: 'Monitor sign-in activity.', icon: '🗒️', target: 'view-logs-panel', action: loadAccessLogsFn },
     ];
 
     var allowedTargets;
@@ -352,7 +324,7 @@
         return !!allowedTargets[config.target];
       })
       .forEach(function (config) {
-        var tile = document.createElement('button');
+        var tile = doc.createElement('button');
         tile.type = 'button';
         tile.className = 'tile';
         tile.setAttribute('role', 'listitem');
@@ -361,10 +333,10 @@
           config.icon +
           '</span>' +
           '<span class="tile-title">' +
-          esc(config.label) +
+          escFn(config.label) +
           '</span>' +
           '<span class="muted">' +
-          esc(config.description) +
+          escFn(config.description) +
           '</span>';
         tile.addEventListener('click', function () {
           try {
@@ -372,14 +344,16 @@
               config.action();
             }
           } catch (err) {
-            console.error('Tile action failed', config.id, err);
+            if (root.console && typeof root.console.error === 'function') {
+              root.console.error('Tile action failed', config.id, err);
+            }
           }
-          show(config.target);
+          showFn(config.target);
         });
         tilesRoot.appendChild(tile);
       });
 
-    var logoutTile = document.createElement('button');
+    var logoutTile = doc.createElement('button');
     logoutTile.type = 'button';
     logoutTile.className = 'tile';
     logoutTile.id = 'logout-tile';
@@ -394,60 +368,73 @@
   }
 
   function performLogout() {
-    YSP.utils.callServer(
+    callServer(
       'logout',
       [],
       function () {
         YSP.state.session = null;
-        window.__SESSION__ = null;
-        if ($('#username')) {
-          $('#username').value = '';
+        root.__SESSION__ = null;
+        var usernameInput = select('#username');
+        if (usernameInput) {
+          usernameInput.value = '';
         }
-        if ($('#password')) {
-          $('#password').value = '';
-          $('#password').setAttribute('type', 'password');
+        var passwordInput = select('#password');
+        if (passwordInput) {
+          passwordInput.value = '';
+          passwordInput.setAttribute('type', 'password');
         }
-        var eyeToggle = $('#eye-toggle');
+        var eyeToggle = select('#eye-toggle');
         if (eyeToggle) {
           eyeToggle.classList.remove('is-visible');
           eyeToggle.setAttribute('aria-pressed', 'false');
         }
-        show('login-panel');
-        toast('Signed out successfully.');
+        showFn('login-panel');
+        toastFn('Signed out successfully.');
       },
       function (err) {
-        console.error(err);
-        toast('Unable to log out right now.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to log out right now.');
       },
       { success: true }
     );
   }
 
   function buildProfile(user) {
-    var profileName = $('#profile-name');
-    var profileRole = $('#profile-role');
-    var profileEmail = $('#profile-email');
-    var profileId = $('#profile-id');
-    var avatar = $('#profile-avatar');
-    var qrContainer = $('#qrid');
-    var downloadBtn = $('#btn-download-qr');
+    var profileName = select('#profile-name');
+    var profileRole = select('#profile-role');
+    var profileEmail = select('#profile-email');
+    var profileId = select('#profile-id');
+    var avatar = select('#profile-avatar');
+    var qrContainer = select('#qrid');
+    var downloadBtn = select('#btn-download-qr');
 
-    if (!qrContainer) {
+    if (!qrContainer || !doc) {
       return;
     }
 
-    profileName.textContent = normalizeName(user && (user.fullName || user.name));
-    profileRole.textContent = user && (user.role || user.position || 'Member');
-    profileEmail.textContent = user && (user.email || 'no-email@ysp.org');
-    profileId.textContent = user && (user.id || user.memberId || 'ID unavailable');
+    if (profileName) {
+      profileName.textContent = normalizeName(user && (user.fullName || user.name));
+    }
+    if (profileRole) {
+      profileRole.textContent = user && (user.role || user.position || 'Member');
+    }
+    if (profileEmail) {
+      profileEmail.textContent = user && (user.email || 'no-email@ysp.org');
+    }
+    if (profileId) {
+      profileId.textContent = user && (user.id || user.memberId || 'ID unavailable');
+    }
     if (avatar) {
       var avatarUrl = (user && user.avatarUrl) || 'https://placehold.co/400x400?text=Member';
       avatar.src = avatarUrl;
     }
 
     qrContainer.innerHTML = '';
-    if (typeof QRCode === 'function') {
-      qrCodeInstance = new QRCode(qrContainer, {
+    var QRCodeCtor = root.QRCode;
+    if (typeof QRCodeCtor === 'function') {
+      qrCodeInstance = new QRCodeCtor(qrContainer, {
         text: String(user && (user.id || user.memberId || user.email || 'YSP')),
         width: 180,
         height: 180,
@@ -470,22 +457,33 @@
           href = img.src;
         }
         if (!href) {
-          toast('QR image not ready yet.');
+          toastFn('QR image not ready yet.');
           return;
         }
-        var link = document.createElement('a');
+        var link = doc.createElement('a');
         link.href = href;
         link.download = (user && user.id ? user.id : 'ysp-id') + '-qr.png';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
+        if (doc.body) {
+          doc.body.appendChild(link);
+          if (typeof link.click === 'function') {
+            link.click();
+          }
+          link.remove();
+        }
       });
     }
   }
 
-  window.bindLogin = bindLogin;
-  window.doLogin = doLogin;
-  window.setSession = setSession;
-  window.buildDashboard = buildDashboard;
-  window.buildProfile = buildProfile;
-})();
+  YSP.login = YSP.login || {};
+  YSP.login.bindLogin = bindLogin;
+  YSP.login.doLogin = doLogin;
+  YSP.login.setSession = setSession;
+  YSP.login.buildDashboard = buildDashboard;
+  YSP.login.buildProfile = buildProfile;
+
+  root.bindLogin = bindLogin;
+  root.doLogin = doLogin;
+  root.setSession = setSession;
+  root.buildDashboard = buildDashboard;
+  root.buildProfile = buildProfile;
+});

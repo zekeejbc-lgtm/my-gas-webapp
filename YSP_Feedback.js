@@ -1,5 +1,47 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  if (!root.document) {
+    root.loadMyFeedback = root.loadMyFeedback || function () {};
+    root.loadFeedbackAdmin = root.loadFeedbackAdmin || function () {};
+    return;
+  }
+
+  var $ = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var callServer = root.YSP && root.YSP.utils && typeof root.YSP.utils.callServer === 'function'
+    ? root.YSP.utils.callServer
+    : function () {};
+  var escFn = typeof root.esc === 'function'
+    ? root.esc
+    : function (value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
 
   var feedbackBound = false;
 
@@ -11,7 +53,7 @@
         sendBtn.addEventListener('click', submitFeedback);
       }
     }
-    YSP.utils.callServer(
+    callServer(
       'listMyFeedback',
       [],
       function (res) {
@@ -19,8 +61,10 @@
         renderFeedbackList('#my-feedback-list', list, true);
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load your feedback.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load your feedback.');
       },
       [
         { id: 'FB-001', body: 'Great job on the last outreach!', createdAt: '2024-02-01' },
@@ -35,27 +79,29 @@
     }
     var text = String(textarea.value || '').trim();
     if (!text) {
-      toast('Please write your feedback first.');
+      toastFn('Please write your feedback first.');
       return;
     }
-    YSP.utils.callServer(
+    callServer(
       'sendFeedback',
       [text],
       function (res) {
         textarea.value = '';
-        toast(res && res.message ? res.message : 'Feedback submitted.');
+        toastFn(res && res.message ? res.message : 'Feedback submitted.');
         loadMyFeedback();
       },
       function (err) {
-        console.error(err);
-        toast('Unable to send feedback.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to send feedback.');
       },
       { success: true, message: 'Feedback received. Thank you!' }
     );
   }
 
   function loadFeedbackAdmin() {
-    YSP.utils.callServer(
+    callServer(
       'listAllFeedback',
       [],
       function (res) {
@@ -63,8 +109,10 @@
         renderFeedbackList('#feedback-admin-list', list, false);
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load feedback inbox.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load feedback inbox.');
       },
       [
         { id: 'FB-100', body: 'Request more leadership workshops.', member: 'Maria Santos', createdAt: '2024-02-12' },
@@ -85,13 +133,18 @@
     list.forEach(function (item) {
       var card = document.createElement('article');
       card.className = 'card feedback-card';
-      var header = item.member ? '<h3>' + esc(item.member) + '</h3>' : '';
-      var date = includeDate || item.createdAt ? '<p class="muted">' + esc(item.createdAt || '') + '</p>' : '';
-      card.innerHTML = header + '<p>' + esc(item.body || '') + '</p>' + date;
+      var header = item.member ? '<h3>' + escFn(item.member) + '</h3>' : '';
+      var date = includeDate || item.createdAt ? '<p class="muted">' + escFn(item.createdAt || '') + '</p>' : '';
+      card.innerHTML = header + '<p>' + escFn(item.body || '') + '</p>' + date;
       container.appendChild(card);
     });
   }
 
-  window.loadMyFeedback = loadMyFeedback;
-  window.loadFeedbackAdmin = loadFeedbackAdmin;
-})();
+  root.YSP = root.YSP || {};
+  root.YSP.feedback = root.YSP.feedback || {};
+  root.YSP.feedback.loadMyFeedback = loadMyFeedback;
+  root.YSP.feedback.loadFeedbackAdmin = loadFeedbackAdmin;
+
+  root.loadMyFeedback = loadMyFeedback;
+  root.loadFeedbackAdmin = loadFeedbackAdmin;
+});

@@ -1,5 +1,54 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  if (!root.document) {
+    root.loadHomepage = root.loadHomepage || function () {};
+    root.renderHome = root.renderHome || function () {};
+    root.deriveProjectsFromFlat = root.deriveProjectsFromFlat || function () { return []; };
+    root.renderProjects = root.renderProjects || function () {};
+    root.openProjectModal = root.openProjectModal || function () {};
+    root.renderContacts = root.renderContacts || function () {};
+    return;
+  }
+
+  var doc = root.document;
+  var YSP = (root.YSP = root.YSP || {});
+  var utils = (YSP.utils = YSP.utils || {});
+  var callServer = typeof utils.callServer === 'function' ? utils.callServer : function () {};
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var showModalFn = typeof root.showModal === 'function' ? root.showModal : function () { return doc.createElement('div'); };
+  var closeModalFn = typeof root.closeModal === 'function' ? root.closeModal : function () {};
+  var $ = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var escFn = typeof root.esc === 'function'
+    ? root.esc
+    : function (value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
 
   var state = {
     loaded: false,
@@ -11,7 +60,7 @@
       renderHome(state.data || {});
       return;
     }
-    YSP.utils.callServer(
+    callServer(
       'getHomepageContent',
       [],
       function (res) {
@@ -21,8 +70,10 @@
         renderHome(payload || {});
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load homepage right now.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load homepage right now.');
         renderHome(state.data || {});
       },
       {
@@ -64,7 +115,6 @@
     var objectivesEl = $('#home-objectives');
     var orgChart = $('#home-org-chart');
     var developerInfo = $('#developer-info');
-    var contactsSection = $('#contacts-section');
 
     if (aboutEl) {
       aboutEl.textContent = home && home.about ? home.about : 'Welcome to YSP Tagum.';
@@ -85,7 +135,10 @@
         objectives = ['Promote peace initiatives.', 'Develop youth leadership skills.'];
       }
       objectives.forEach(function (item) {
-        var li = document.createElement('li');
+        if (!doc || typeof doc.createElement !== 'function') {
+          return;
+        }
+        var li = doc.createElement('li');
         li.textContent = item;
         objectivesEl.appendChild(li);
       });
@@ -142,86 +195,120 @@
       return;
     }
     projects.forEach(function (project) {
-      var card = document.createElement('button');
+      if (!doc || typeof doc.createElement !== 'function') {
+        return;
+      }
+      var card = doc.createElement('button');
       card.type = 'button';
       card.className = 'project-card';
       card.innerHTML =
         '<img src="' +
-        esc(project.imageUrl || 'https://placehold.co/640x360?text=YSP+Project') +
+        escFn(project.imageUrl || 'https://placehold.co/640x360?text=YSP+Project') +
         '" alt="' +
-        esc(project.title || 'YSP Project') +
+        escFn(project.title || 'YSP Project') +
         '" />' +
         '<div class="project-body">' +
         '<h4>' +
-        esc(project.title || 'YSP Initiative') +
+        escFn(project.title || 'YSP Initiative') +
         '</h4>' +
         '<p>' +
-        esc(project.description || 'More details coming soon.') +
+        escFn(project.description || 'More details coming soon.') +
         '</p>' +
         '</div>';
       card.addEventListener('click', function (event) {
-        openProjectModal(project, card);
+        openProjectModal(project, event && event.currentTarget);
       });
       grid.appendChild(card);
     });
   }
 
   function openProjectModal(project, opener) {
-    var title = project && project.title ? project.title : 'Project Highlight';
-    var modal = showModal({
-      title: title,
+    if (!project) {
+      return;
+    }
+    var safeProject = project || {};
+    var panel = showModalFn({
+      title: safeProject.title || 'Project Details',
       opener: opener,
       bodyHtml:
-        '<div class="ratio ratio-16x9"><img src="' +
-        esc(project && project.imageUrl ? project.imageUrl : 'https://placehold.co/960x540?text=Project') +
+        '<div class="ratio ratio-16x9 modal-image">' +
+        '<img src="' +
+        escFn(safeProject.imageUrl || 'https://placehold.co/960x540?text=YSP+Project') +
         '" alt="' +
-        esc(title) +
-        '" /></div>' +
-        '<p>' +
-        esc(project && project.description ? project.description : 'Details will be available soon.') +
+        escFn(safeProject.title || 'Project image') +
+        '" />' +
+        '</div>' +
+        '<p class="muted">' +
+        escFn(safeProject.description || 'Project description will appear here.') +
         '</p>',
       footerHtml: '<button type="button" class="btn btn-primary" data-close="1">Close</button>',
     });
-    return modal;
+    return panel;
   }
 
   function renderContacts(home) {
-    var facebookBtn = $('#contact-facebook');
-    var emailBtn = $('#contact-email');
-    var facebookUrl = home && (home.facebookUrl || home.facebook);
-    var email = home && (home.email || home.emailAddress);
-
-    if (facebookBtn && facebookBtn.dataset.bound !== '1') {
-      facebookBtn.dataset.bound = '1';
-      facebookBtn.addEventListener('click', function () {
-        if (facebookUrl) {
-          openSafe(facebookUrl);
-        } else {
-          toast('No Facebook link available yet.');
-        }
-      });
+    var issuesCard = $('#contact-issues');
+    var developerCard = $('#contact-developer');
+    if (!issuesCard && !developerCard) {
+      return;
     }
-
-    if (emailBtn && emailBtn.dataset.bound !== '1') {
-      emailBtn.dataset.bound = '1';
-      emailBtn.addEventListener('click', function () {
-        if (!email) {
-          toast('No email address available yet.');
-          return;
-        }
-        var composeUrl =
-          'https://mail.google.com/mail/?view=cm&fs=1&to=' +
+    if (issuesCard) {
+      var fbUrl = YSP.safeUrl ? YSP.safeUrl(home && home.facebookUrl) : home && home.facebookUrl;
+      var email = home && home.email ? String(home.email).trim() : '';
+      var mailUrl = email
+        ? 'https://mail.google.com/mail/?view=cm&fs=1&to=' +
           encodeURIComponent(email) +
-          '&su=%5BYSP%5D%20Issue%20Report';
-        openSafe(composeUrl);
-      });
+          '&su=%5BYSP%5D%20Issue%20Report'
+        : '';
+      issuesCard.innerHTML =
+        '<h3>Report Issues</h3>' +
+        '<p class="muted">Need help with the web app? Contact us.</p>' +
+        '<div class="btn-group">' +
+        '<button type="button" class="btn btn-primary" id="btn-contact-fb">Facebook</button>' +
+        '<button type="button" class="btn btn-outline" id="btn-contact-email">Email</button>' +
+        '</div>';
+      var fbBtn = $('#btn-contact-fb', issuesCard);
+      if (fbBtn) {
+        fbBtn.addEventListener('click', function () {
+          if (fbUrl) {
+            root.openSafe ? root.openSafe(fbUrl) : root.open(fbUrl, '_blank');
+          } else {
+            toastFn('Facebook link unavailable.');
+          }
+        });
+      }
+      var emailBtn = $('#btn-contact-email', issuesCard);
+      if (emailBtn) {
+        emailBtn.addEventListener('click', function () {
+          if (mailUrl) {
+            root.openSafe ? root.openSafe(mailUrl) : root.open(mailUrl, '_blank');
+          } else {
+            toastFn('Email unavailable.');
+          }
+        });
+      }
+    }
+    if (developerCard) {
+      developerCard.innerHTML =
+        '<h3>Web App Developer</h3>' +
+        '<p class="muted">' +
+        escFn((home && home.developer) || 'Maintained by YSP Tagum Digital Services.') +
+        '</p>';
     }
   }
 
-  window.loadHomepage = loadHomepage;
-  window.renderHome = renderHome;
-  window.deriveProjectsFromFlat = deriveProjectsFromFlat;
-  window.renderProjects = renderProjects;
-  window.openProjectModal = openProjectModal;
-  window.renderContacts = renderContacts;
-})();
+  YSP.homepage = YSP.homepage || {};
+  YSP.homepage.loadHomepage = loadHomepage;
+  YSP.homepage.renderHome = renderHome;
+  YSP.homepage.deriveProjectsFromFlat = deriveProjectsFromFlat;
+  YSP.homepage.renderProjects = renderProjects;
+  YSP.homepage.openProjectModal = openProjectModal;
+  YSP.homepage.renderContacts = renderContacts;
+
+  root.loadHomepage = loadHomepage;
+  root.renderHome = renderHome;
+  root.deriveProjectsFromFlat = deriveProjectsFromFlat;
+  root.renderProjects = renderProjects;
+  root.openProjectModal = openProjectModal;
+  root.renderContacts = renderContacts;
+});

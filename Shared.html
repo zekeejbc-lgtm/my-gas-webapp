@@ -1,7 +1,29 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
-  window.YSP = window.YSP || {};
-  YSP.ns = function (path) {
+
+  if (!root) {
+    return;
+  }
+
+  var globalYsp = (root.YSP = root.YSP || {});
+
+  globalYsp.ns = function (path) {
     return String(path || '')
       .split('.')
       .filter(function (segment) {
@@ -12,7 +34,7 @@
           acc[key] = {};
         }
         return acc[key];
-      }, YSP);
+      }, globalYsp);
   };
 
   function ensureUrl(value, fallback) {
@@ -32,15 +54,15 @@
     }
   }
 
-  YSP.safeUrl = function (value) {
+  globalYsp.safeUrl = function (value) {
     return ensureUrl(value, '');
   };
 
-  YSP.safeImage = function (value) {
+  globalYsp.safeImage = function (value) {
     return ensureUrl(value, 'https://placehold.co/960x540?text=YSP');
   };
 
-  window.onerror = function (msg, src, line, col, err) {
+  var onError = function (msg, src, line, col, err) {
     try {
       if (
         typeof google !== 'undefined' &&
@@ -51,8 +73,16 @@
         google.script.run.logClientError(String(msg), String(src), Number(line) || 0, Number(col) || 0);
       }
     } catch (loggingError) {
-      // swallow logging errors
+      // ignore logging errors
     }
-    console.error('Global JS Error:', msg, 'at', src, line, col, err);
+    if (root.console && typeof root.console.error === 'function') {
+      root.console.error('Global JS Error:', msg, 'at', src, line, col, err);
+    }
   };
-})();
+
+  try {
+    root.onerror = onError;
+  } catch (assignErr) {
+    // ignore inability to assign handler
+  }
+});

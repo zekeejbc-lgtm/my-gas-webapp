@@ -1,5 +1,40 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  if (!root.document) {
+    root.loadEvents = root.loadEvents || function () {};
+    root.renderEvents = root.renderEvents || function () {};
+    root.populateActiveEvents = root.populateActiveEvents || function () {};
+    return;
+  }
+
+  var $ = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var showModalFn = typeof root.showModal === 'function' ? root.showModal : function () { return document.createElement('div'); };
+  var closeModalFn = typeof root.closeModal === 'function' ? root.closeModal : function () {};
+  var callServer = root.YSP && root.YSP.utils && typeof root.YSP.utils.callServer === 'function'
+    ? root.YSP.utils.callServer
+    : function () {};
 
   var eventsCache = null;
   var createBound = false;
@@ -12,7 +47,7 @@
         createBtn.addEventListener('click', openCreateEventModal);
       }
     }
-    YSP.utils.callServer(
+    callServer(
       'listEvents',
       [],
       function (res) {
@@ -21,8 +56,10 @@
         renderEvents(list);
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load events.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load events.');
       },
       [
         { id: 'EVT-001', name: 'Leadership Summit', date: '2024-03-20', active: true },
@@ -74,7 +111,7 @@
     if (!select) {
       return;
     }
-    YSP.utils.callServer(
+    callServer(
       'getActiveEvents',
       [],
       function (res) {
@@ -82,8 +119,10 @@
         renderEventOptions(select, events);
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load events.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load events.');
       },
       [{ id: 'EVT-001', name: 'Leadership Summit' }]
     );
@@ -103,23 +142,25 @@
     if (!id) {
       return;
     }
-    YSP.utils.callServer(
+    callServer(
       'toggleEventActive',
       [id],
       function (res) {
-        toast(res && res.message ? res.message : 'Event updated.');
+        toastFn(res && res.message ? res.message : 'Event updated.');
         loadEvents();
       },
       function (err) {
-        console.error(err);
-        toast('Unable to update event.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to update event.');
       },
       { success: true, message: 'Event updated.' }
     );
   }
 
   function openCreateEventModal() {
-    var panel = showModal({
+    var panel = showModalFn({
       title: 'Create Event',
       bodyHtml:
         '<div class="form-group"><label>Name<input id="event-name" type="text" placeholder="Event name" /></label></div>' +
@@ -128,26 +169,33 @@
         '<button type="button" class="btn btn-outline" data-close="1">Cancel</button>' +
         '<button type="button" class="btn btn-primary" id="event-save">Save Event</button>',
     });
+    if (!panel || typeof panel.querySelector !== 'function') {
+      return;
+    }
     var saveBtn = panel.querySelector('#event-save');
     if (saveBtn) {
       saveBtn.addEventListener('click', function () {
-        var name = String($('#event-name').value || '').trim();
-        var date = $('#event-date').value;
+        var nameInput = $('#event-name');
+        var dateInput = $('#event-date');
+        var name = String((nameInput && nameInput.value) || '').trim();
+        var date = dateInput ? dateInput.value : '';
         if (!name || !date) {
-          toast('Provide event name and date.');
+          toastFn('Provide event name and date.');
           return;
         }
-        YSP.utils.callServer(
+        callServer(
           'createEvent',
           [{ name: name, date: date }],
           function (res) {
-            closeModal();
-            toast(res && res.message ? res.message : 'Event created.');
+            closeModalFn();
+            toastFn(res && res.message ? res.message : 'Event created.');
             loadEvents();
           },
           function (err) {
-            console.error(err);
-            toast('Unable to create event.');
+            if (root.console && typeof root.console.error === 'function') {
+              root.console.error(err);
+            }
+            toastFn('Unable to create event.');
           },
           { success: true, message: 'Event created.' }
         );
@@ -155,7 +203,13 @@
     }
   }
 
-  window.loadEvents = loadEvents;
-  window.renderEvents = renderEvents;
-  window.populateActiveEvents = populateActiveEvents;
-})();
+  root.YSP = root.YSP || {};
+  root.YSP.events = root.YSP.events || {};
+  root.YSP.events.loadEvents = loadEvents;
+  root.YSP.events.renderEvents = renderEvents;
+  root.YSP.events.populateActiveEvents = populateActiveEvents;
+
+  root.loadEvents = loadEvents;
+  root.renderEvents = renderEvents;
+  root.populateActiveEvents = populateActiveEvents;
+});

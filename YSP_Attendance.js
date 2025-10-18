@@ -1,8 +1,41 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
 
+  var doc = root.document || null;
+  var globalYsp = (root.YSP = root.YSP || {});
+  var utils = (globalYsp.utils = globalYsp.utils || {});
+  var callServer = typeof utils.callServer === 'function' ? utils.callServer : function () {};
+  var selectOne = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var escapeHtml = typeof root.esc === 'function'
+    ? root.esc
+    : function (value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+
   function loadMyAttendance() {
-    YSP.utils.callServer(
+    callServer(
       'getMyAttendance',
       [],
       function (res) {
@@ -10,8 +43,10 @@
         renderAttendanceTable(rows);
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load attendance records.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load attendance records.');
       },
       [
         { date: '2024-01-12', event: 'Leadership Summit', timeIn: '08:00', timeOut: '17:00' },
@@ -21,33 +56,42 @@
   }
 
   function renderAttendanceTable(rows) {
-    var tbody = $('#attendance-rows');
+    var tbody = selectOne('#attendance-rows');
     if (!tbody) {
       return;
     }
     tbody.innerHTML = '';
     if (!rows || !rows.length) {
-      var empty = document.createElement('tr');
-      empty.innerHTML = '<td colspan="4" class="muted">No attendance records yet.</td>';
-      tbody.appendChild(empty);
+      if (doc && typeof doc.createElement === 'function') {
+        var empty = doc.createElement('tr');
+        empty.innerHTML = '<td colspan="4" class="muted">No attendance records yet.</td>';
+        tbody.appendChild(empty);
+      }
       return;
     }
     rows.forEach(function (row) {
-      var tr = document.createElement('tr');
+      if (!doc || typeof doc.createElement !== 'function') {
+        return;
+      }
+      var tr = doc.createElement('tr');
       tr.innerHTML =
         '<td>' +
-        esc(row.date || row[0] || '') +
+        escapeHtml(row.date || row[0] || '') +
         '</td><td>' +
-        esc(row.event || row[1] || '') +
+        escapeHtml(row.event || row[1] || '') +
         '</td><td>' +
-        esc(row.timeIn || row[2] || '') +
+        escapeHtml(row.timeIn || row[2] || '') +
         '</td><td>' +
-        esc(row.timeOut || row[3] || '') +
+        escapeHtml(row.timeOut || row[3] || '') +
         '</td>';
       tbody.appendChild(tr);
     });
   }
 
-  window.loadMyAttendance = loadMyAttendance;
-  window.renderAttendanceTable = renderAttendanceTable;
-})();
+  globalYsp.attendance = globalYsp.attendance || {};
+  globalYsp.attendance.loadMyAttendance = loadMyAttendance;
+  globalYsp.attendance.renderAttendanceTable = renderAttendanceTable;
+
+  root.loadMyAttendance = loadMyAttendance;
+  root.renderAttendanceTable = renderAttendanceTable;
+});

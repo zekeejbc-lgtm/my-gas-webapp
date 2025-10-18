@@ -1,12 +1,60 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  if (!root.document) {
+    root.setupManualAttendance = root.setupManualAttendance || function () {};
+    root.bindManualAttendance = root.bindManualAttendance || function () {};
+    return;
+  }
+
+  var $ = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var callServer = root.YSP && root.YSP.utils && typeof root.YSP.utils.callServer === 'function'
+    ? root.YSP.utils.callServer
+    : function () {};
+  var escFn = typeof root.esc === 'function'
+    ? root.esc
+    : function (value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+  var setTimeoutFn = typeof root.setTimeout === 'function' ? root.setTimeout.bind(root) : function (fn) {
+    fn();
+  };
+  var clearTimeoutFn = typeof root.clearTimeout === 'function' ? root.clearTimeout.bind(root) : function () {};
 
   var manualBound = false;
   var manualSelected = null;
   var manualDebounce = null;
 
   function setupManualAttendance() {
-    populateActiveEvents('#manual-event');
+    if (typeof root.populateActiveEvents === 'function') {
+      root.populateActiveEvents('#manual-event');
+    }
     var suggestions = $('#manual-suggestions');
     if (suggestions) {
       suggestions.innerHTML = '';
@@ -28,13 +76,13 @@
     manualBound = true;
     input.addEventListener('input', function () {
       var query = input.value.trim();
-      window.clearTimeout(manualDebounce);
-      manualDebounce = window.setTimeout(function () {
+      clearTimeoutFn(manualDebounce);
+      manualDebounce = setTimeoutFn(function () {
         fetchManualSuggestions(query);
       }, query ? 200 : 0);
     });
     list.addEventListener('click', function (event) {
-      var item = event.target.closest('li[data-id]');
+      var item = event.target && event.target.closest ? event.target.closest('li[data-id]') : null;
       if (!item) {
         return;
       }
@@ -66,7 +114,7 @@
     if (!query) {
       return;
     }
-    YSP.utils.callServer(
+    callServer(
       'officerSuggestions',
       [query],
       function (res) {
@@ -77,13 +125,15 @@
           var name = item.name || item.fullName || 'Member';
           li.dataset.id = id;
           li.dataset.name = name;
-          li.innerHTML = '<strong>' + esc(name) + '</strong><span class="muted">' + esc(id || '') + '</span>';
+          li.innerHTML = '<strong>' + escFn(name) + '</strong><span class="muted">' + escFn(id || '') + '</span>';
           list.appendChild(li);
         });
       },
       function (err) {
-        console.error(err);
-        toast('Unable to load suggestions.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load suggestions.');
       },
       [{ id: 'YSP0001', name: 'Juan Dela Cruz' }]
     );
@@ -93,27 +143,34 @@
     var eventSelect = $('#manual-event');
     var eventId = eventSelect && eventSelect.value;
     if (!manualSelected || !manualSelected.id) {
-      toast('Select a member first.');
+      toastFn('Select a member first.');
       return;
     }
     if (!eventId) {
-      toast('Choose an event.');
+      toastFn('Choose an event.');
       return;
     }
-    YSP.utils.callServer(
+    callServer(
       'manualAttendance',
       [manualSelected.id, eventId, action],
       function (res) {
-        toast(res && res.message ? res.message : 'Attendance saved.');
+        toastFn(res && res.message ? res.message : 'Attendance saved.');
       },
       function (err) {
-        console.error(err);
-        toast('Unable to record attendance.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to record attendance.');
       },
       { success: true, message: 'Attendance recorded.' }
     );
   }
 
-  window.setupManualAttendance = setupManualAttendance;
-  window.bindManualAttendance = bindManualAttendance;
-})();
+  root.YSP = root.YSP || {};
+  root.YSP.manual = root.YSP.manual || {};
+  root.YSP.manual.setupManualAttendance = setupManualAttendance;
+  root.YSP.manual.bindManualAttendance = bindManualAttendance;
+
+  root.setupManualAttendance = setupManualAttendance;
+  root.bindManualAttendance = bindManualAttendance;
+});

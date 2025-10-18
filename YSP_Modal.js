@@ -1,28 +1,60 @@
-(function () {
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
   'use strict';
 
-  var root = null;
+  if (!root || !root.document) {
+    return;
+  }
+
+  var doc = root.document;
+  var body = doc.body || doc.documentElement;
+  var modalRoot = null;
   var lastFocused = null;
   var trapHandler = null;
+  var setTimeoutFn = typeof root.setTimeout === 'function' ? root.setTimeout.bind(root) : function (fn) {
+    fn();
+  };
 
   function ensureRoot() {
-    if (!root) {
-      root = document.getElementById('modal-root');
-      if (!root) {
-        root = document.createElement('div');
-        root.id = 'modal-root';
-        root.className = 'modal-root';
-        root.hidden = true;
-        document.body.appendChild(root);
+    if (!modalRoot) {
+      modalRoot = doc.getElementById('modal-root');
+      if (!modalRoot) {
+        modalRoot = doc.createElement('div');
+        modalRoot.id = 'modal-root';
+        modalRoot.className = 'modal-root';
+        modalRoot.hidden = true;
+        if (body && typeof body.appendChild === 'function') {
+          body.appendChild(modalRoot);
+        }
       }
     }
-    root.classList.add('modal-root');
-    return root;
+    if (modalRoot) {
+      modalRoot.classList.add('modal-root');
+    }
+    return modalRoot;
   }
 
   function focusables(panel) {
     var selectors =
       'a[href], area[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    if (!panel || typeof panel.querySelectorAll !== 'function') {
+      return [];
+    }
     var nodes = panel.querySelectorAll(selectors);
     var items = [];
     for (var i = 0; i < nodes.length; i += 1) {
@@ -49,18 +81,20 @@
         return;
       }
       if (event.shiftKey) {
-        if (document.activeElement === first) {
+        if (doc.activeElement === first) {
           event.preventDefault();
           last.focus();
         }
-      } else if (document.activeElement === last) {
+      } else if (doc.activeElement === last) {
         event.preventDefault();
         first.focus();
       }
     };
     panel.addEventListener('keydown', trapHandler);
-    window.setTimeout(function () {
-      first.focus();
+    setTimeoutFn(function () {
+      if (first && typeof first.focus === 'function') {
+        first.focus();
+      }
     }, 20);
   }
 
@@ -72,48 +106,56 @@
   }
 
   function closeModal(opts) {
-    if (!root) {
+    if (!modalRoot) {
       return;
     }
     var skipRestore = opts && opts.skipFocusRestore;
-    var panel = root.querySelector('.modal__panel');
+    var panel = modalRoot.querySelector('.modal__panel');
     removeTrap(panel);
-    root.innerHTML = '';
-    root.hidden = true;
-    document.body.style.overflow = '';
+    modalRoot.innerHTML = '';
+    modalRoot.hidden = true;
+    if (body) {
+      body.style.overflow = '';
+    }
     if (!skipRestore && lastFocused && typeof lastFocused.focus === 'function') {
       try {
         lastFocused.focus();
       } catch (err) {
-        // ignore
+        // ignore focus errors
       }
     }
     lastFocused = null;
   }
 
   function showModal(config) {
+    if (!doc || !body) {
+      return null;
+    }
     var options = config || {};
     ensureRoot();
-    root.innerHTML = '';
-    document.body.style.overflow = 'hidden';
-    lastFocused = options.opener || document.activeElement;
+    modalRoot.innerHTML = '';
+    modalRoot.hidden = false;
+    if (body) {
+      body.style.overflow = 'hidden';
+    }
+    lastFocused = options.opener || doc.activeElement;
 
-    var backdrop = document.createElement('div');
+    var backdrop = doc.createElement('div');
     backdrop.className = 'modal-backdrop is-open';
-    var modal = document.createElement('div');
+    var modal = doc.createElement('div');
     modal.className = 'modal is-open';
     modal.setAttribute('role', 'dialog');
     modal.setAttribute('aria-modal', 'true');
 
-    var panel = document.createElement('div');
+    var panel = doc.createElement('div');
     panel.className = 'modal__panel';
 
-    var header = document.createElement('div');
+    var header = doc.createElement('div');
     header.className = 'modal__header';
-    var title = document.createElement('h2');
+    var title = doc.createElement('h2');
     title.className = 'modal__title';
     title.textContent = options.title || 'Dialog';
-    var closeBtn = document.createElement('button');
+    var closeBtn = doc.createElement('button');
     closeBtn.type = 'button';
     closeBtn.className = 'modal__close';
     closeBtn.setAttribute('aria-label', 'Close dialog');
@@ -122,23 +164,22 @@
     header.appendChild(title);
     header.appendChild(closeBtn);
 
-    var body = document.createElement('div');
-    body.className = 'modal__body';
-    body.innerHTML = options.bodyHtml || '';
+    var bodySection = doc.createElement('div');
+    bodySection.className = 'modal__body';
+    bodySection.innerHTML = options.bodyHtml || '';
 
-    var footer = document.createElement('div');
+    var footer = doc.createElement('div');
     footer.className = 'modal__footer';
     footer.innerHTML = options.footerHtml || '<button type="button" class="btn btn-outline" data-close="1">Close</button>';
 
     panel.appendChild(header);
-    panel.appendChild(body);
+    panel.appendChild(bodySection);
     panel.appendChild(footer);
     modal.appendChild(panel);
-    root.appendChild(backdrop);
-    root.appendChild(modal);
-    root.hidden = false;
+    modalRoot.appendChild(backdrop);
+    modalRoot.appendChild(modal);
 
-    var closeElements = root.querySelectorAll('[data-close]');
+    var closeElements = modalRoot.querySelectorAll('[data-close]');
     closeElements.forEach(function (btn) {
       btn.addEventListener('click', function () {
         closeModal({ skipFocusRestore: !!btn.dataset.skipRestore });
@@ -155,16 +196,22 @@
       if (event.key === 'Escape') {
         event.preventDefault();
         closeModal();
-        document.removeEventListener('keydown', escListener);
+        doc.removeEventListener('keydown', escListener);
       }
     }
-    document.addEventListener('keydown', escListener);
+
+    doc.addEventListener('keydown', escListener);
 
     trapFocus(panel);
 
     return panel;
   }
 
-  window.showModal = showModal;
-  window.closeModal = closeModal;
-})();
+  var globalYsp = (root.YSP = root.YSP || {});
+  globalYsp.modal = globalYsp.modal || {};
+  globalYsp.modal.showModal = showModal;
+  globalYsp.modal.closeModal = closeModal;
+
+  root.showModal = showModal;
+  root.closeModal = closeModal;
+});
