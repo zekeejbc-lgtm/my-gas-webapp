@@ -167,6 +167,7 @@
   <input type="file" id="qr-file-input" accept="image/*" hidden>
 
 
+
   <?!= include('Shared'); ?>
 <script>
 (function(){
@@ -179,8 +180,6 @@
   }
 
   onReady(function(){
-    var ScannerNS = YSP.ns('Scanner');
-    ScannerNS.init = function(){
     var html5QrCode = null;
     var availableCameras = [];
     var activeCameraIndex = 0;
@@ -188,9 +187,12 @@
     var resizeTimer = null;
 
     var statusMsg = document.getElementById('status-msg');
+    var modal = document.getElementById('modal-backdrop');
+    var manualIdInput = document.getElementById('manual-id');
+    var manualStatusSelect = document.getElementById('manual-status');
     var manualEntryBtn = document.getElementById('manual-entry-btn');
-    var uploadButton = document.getElementById('upload-qr-btn');
-    var fileInput = document.getElementById('qr-file-input');
+    var cancelManualBtn = document.getElementById('cancel-manual');
+    var saveManualBtn = document.getElementById('save-manual');
     var flipCameraBtn = document.getElementById('flip-camera-btn');
     var backBtn = document.getElementById('back-btn');
 
@@ -295,154 +297,76 @@
 
     function handleScan(idCode){
       if(!idCode){ return; }
-      submitAttendance(idCode, 'Present');
-    }
-
-    function submitAttendance(idCode, status){
-      if(!idCode){ return; }
-      var safeStatus = status || 'Present';
-      showStatus('Recording ' + idCode + ' as ' + safeStatus + '...');
-      if(typeof google === 'undefined' || !google.script || !google.script.run){
-        setTimeout(function(){
-          showStatus('(Local preview) ' + idCode + ' marked as ' + safeStatus, 'success');
-        }, 600);
+      showStatus('Processing ' + idCode + '...', 'success');
+      if(typeof google === 'undefined' || !google.script){
+        setTimeout(function(){ showStatus('(Local test) Marked ' + idCode + ' as Present', 'success'); }, 1000);
         return;
       }
-      google.script.run
-        .withSuccessHandler(function(res){
-          if(res && res.success){
-            showStatus('✅ ' + idCode + ' marked as ' + safeStatus, 'success');
-          } else {
-            showStatus(res && res.message ? res.message : 'Failed to record attendance.', 'error');
-          }
-        })
-        .withFailureHandler(function(err){
-          console.error(err);
-          showStatus('Connection error.', 'error');
-        })
-        .recordManualAttendance(idCode, safeStatus);
-    }
-
-    function openManualEntryModal(){
-      if(!manualEntryBtn){ return; }
-      YSP.modal.open({
-        title: 'Manual Attendance Entry',
-        modalClass: 'manual-entry-modal',
-        opener: manualEntryBtn,
-        bodyHtml: '<div class="manual-entry-form">' +
-          '<label for="manual-entry-id">Member ID Code</label>' +
-          '<input type="text" id="manual-entry-id" placeholder="e.g. YSPTMB-25901" autocomplete="off">' +
-          '<label for="manual-entry-status">Status</label>' +
-          '<select id="manual-entry-status">' +
-            '<option value="Present">Present</option>' +
-            '<option value="Late">Late</option>' +
-            '<option value="Absent">Absent</option>' +
-            '<option value="Excused">Excused</option>' +
-          '</select>' +
-        '</div>',
-        footerHtml: '<div style="display:flex;gap:10px;justify-content:flex-end">' +
-          '<button class="btn secondary" data-close="1">Cancel</button>' +
-          '<button class="btn" id="manual-entry-save">Save</button>' +
-        '</div>'
-      });
-
-      setTimeout(function(){
-        var idInput = document.getElementById('manual-entry-id');
-        var statusSelect = document.getElementById('manual-entry-status');
-        var saveBtn = document.getElementById('manual-entry-save');
-        if(idInput){
-          try { idInput.focus({ preventScroll: true }); } catch(e){ idInput.focus(); }
+      google.script.run.withSuccessHandler(function(res){
+        if(res && res.success){
+          showStatus('✅ ' + idCode + ' marked as Present', 'success');
+        } else {
+          showStatus(res && res.message ? res.message : 'Failed to record.', 'error');
         }
-        function complete(){
-          if(!idInput){ return; }
-          var idVal = idInput.value.trim();
-          var statusVal = statusSelect ? statusSelect.value : 'Present';
-          if(!idVal){
-            showStatus('Please enter an ID code.', 'error', true);
-            idInput.focus();
-            return;
-          }
-          YSP.modal.close({ skipFocusRestore: true });
-          submitAttendance(idVal, statusVal);
-        }
-        if(saveBtn){
-          saveBtn.addEventListener('click', complete);
-        }
-        if(idInput){
-          idInput.addEventListener('keydown', function(evt){
-            if(evt.key === 'Enter'){
-              evt.preventDefault();
-              complete();
-            }
-          });
-        }
-      }, 20);
-    }
-
-    if(manualEntryBtn){
-      manualEntryBtn.addEventListener('click', openManualEntryModal);
-    }
-
-    function decodeImageFile(file){
-      if(!file){ return; }
-      showStatus('Decoding uploaded QR…', 'success', true);
-      var scanner = html5QrCode;
-      var createdTempScanner = false;
-      if(!scanner){
-        try {
-          scanner = new Html5Qrcode('reader');
-          createdTempScanner = true;
-        } catch(err){
-          console.error(err);
-          showStatus('Scanner unavailable for image decoding.', 'error', true);
-          if(fileInput){ fileInput.value = ''; }
-          return;
-        }
-      } else if(typeof scanner.pause === 'function'){
-        try { scanner.pause(); } catch(e){}
-      }
-
-      if(typeof scanner.scanFile !== 'function'){
-        showStatus('Image decoding is not supported in this browser.', 'error', true);
-        if(!createdTempScanner && scanner && typeof scanner.resume === 'function'){
-          try { scanner.resume(); } catch(e){}
-        }
-        if(createdTempScanner && typeof scanner.clear === 'function'){
-          scanner.clear().catch(function(){});
-        }
-        if(fileInput){ fileInput.value = ''; }
-        return;
-      }
-
-      scanner.scanFile(file, true).then(function(decodedText){
-        submitAttendance(decodedText, 'Present');
-      }).catch(function(err){
+      }).withFailureHandler(function(err){
         console.error(err);
-        showStatus('Unable to decode image.', 'error');
-      }).finally(function(){
-        if(fileInput){ fileInput.value = ''; }
-        if(createdTempScanner){
-          if(typeof scanner.clear === 'function'){
-            scanner.clear().catch(function(){});
-          }
-        } else if(typeof scanner.resume === 'function'){
-          scanner.resume().catch(function(){});
-        }
-      });
+        showStatus('Connection error.', 'error');
+      }).recordAttendanceScan(idCode);
     }
 
-    if(uploadButton && fileInput){
-      uploadButton.addEventListener('click', function(){
-        fileInput.value = '';
-        fileInput.click();
-      });
-      fileInput.addEventListener('change', function(evt){
-        var file = evt.target && evt.target.files ? evt.target.files[0] : null;
-        if(file){
-          decodeImageFile(file);
+    function toggleModal(open){
+      if(!modal) return;
+      modal.style.display = open ? 'flex' : 'none';
+      modal.setAttribute('aria-hidden', open ? 'false' : 'true');
+      if(open){
+        try{
+          manualIdInput.focus({ preventScroll: true });
+        } catch(e){
+          manualIdInput.focus();
         }
-      });
+      } else {
+        manualIdInput.value = '';
+        manualStatusSelect.value = 'Present';
+      }
     }
+
+    manualEntryBtn.addEventListener('click', function(){ toggleModal(true); });
+    cancelManualBtn.addEventListener('click', function(){ toggleModal(false); });
+    modal.addEventListener('click', function(event){
+      if(event.target === modal){
+        toggleModal(false);
+      }
+    });
+    document.addEventListener('keydown', function(event){
+      if(event.key === 'Escape' && modal.style.display === 'flex'){
+        toggleModal(false);
+      }
+    });
+
+    saveManualBtn.addEventListener('click', function(){
+      var id = manualIdInput.value.trim();
+      var status = manualStatusSelect.value;
+      if(!id){
+        showStatus('Please enter an ID code.', 'error');
+        return;
+      }
+      toggleModal(false);
+      showStatus('Recording ' + id + ' as ' + status + '...');
+      if(typeof google === 'undefined' || !google.script){
+        setTimeout(function(){ showStatus('(Local test) Recorded ' + id + ' as ' + status, 'success'); }, 1000);
+        return;
+      }
+      google.script.run.withSuccessHandler(function(res){
+        if(res && res.success){
+          showStatus('✅ ' + id + ' marked as ' + status, 'success');
+        } else {
+          showStatus(res && res.message ? res.message : 'Failed to record.', 'error');
+        }
+      }).withFailureHandler(function(err){
+        console.error(err);
+        showStatus('Connection error.', 'error');
+      }).recordManualAttendance(id, status);
+    });
 
     flipCameraBtn.addEventListener('click', function(){
       if(!availableCameras.length){
@@ -474,11 +398,6 @@
     });
 
     window.addEventListener('load', function(){ setupScanner(); });
-
-    console.log('✅ YSP QR Scanner Initialized OK');
-    };
-
-    ScannerNS.init();
   });
 })();
 </script>
