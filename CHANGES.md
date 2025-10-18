@@ -1,7 +1,10 @@
 # Change Log
 
 ## SearchPage.html
-- Implemented the blueprint homepage layout: container-based sections, project gallery card grid, split contact cards, and a back-to-login control so the panel fills the viewport without lingering whitespace.
-- Added UI tokens for `.container`, cards, buttons, and the redesigned modal system (backdrop, focus-trapped panel, 16:9 media wrappers) to satisfy accessibility, animation, and responsive requirements.
-- Rebuilt `loadHomepage()` to sanitize sheet data, derive project pairs when the array is missing, validate URLs before opening Facebook/Gmail compose actions, and surface resilient offline/error states.
-- Introduced safe helper utilities (`textOrEmpty`, `isSafeHttpUrl`, `buildGmailComposeUrl`, `openExternal`) plus hash-aware `switchPanels()` updates so navigation, action buttons, and modal focus restoration behave consistently across roles and devices.
+- Inlined all theme styles and feature scripts so the entire frontend lives inside a single HTML file without Apps Script includes.
+- Removed references to decentralized partials and ensured the login panel remains the initial active view.
+- Verified every panel script (login, homepage, directory, attendance, events, announcements, feedback, logs) loads from the consolidated bundle to keep buttons responsive.
+
+## Backend_Debug.js
+- Simplified `doGet` to always serve `SearchPage.html`, aligning with the single-frontend deployment model while preserving the health probe.
+- Left the remaining backend endpoints intact so the consolidated UI can continue calling them.
