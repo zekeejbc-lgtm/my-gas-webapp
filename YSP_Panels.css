@@ -3,6 +3,51 @@
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: var(--space-lg);
   align-items: stretch;
+  min-height: clamp(520px, 70vh, 760px);
+}
+
+#login-panel .login-form {
+  width: min(100%, 420px);
+  margin: 0 auto;
+}
+
+@media (min-width: 960px) {
+  #login-panel {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    align-items: center;
+  }
+
+  #login-panel .login-form {
+    margin: 0;
+  }
+}
+
+@media (min-width: 1280px) {
+  #login-panel {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  }
+}
+
+#main-menu-panel,
+#homepage-panel,
+#profile-panel,
+#qr-attendance-panel,
+#manual-attendance-panel,
+#attendance-dashboard-panel,
+#attendance-trans-panel,
+#manage-events-panel,
+#directory-panel,
+#announcements-panel,
+#submit-feedback-panel,
+#view-feedback-panel,
+#view-logs-panel {
+  max-width: 100%;
+}
+
+.panel .panel-body,
+.panel .card,
+.panel .section { 
+  width: 100%;
 }
 
 #main-menu-panel .panel-header {
@@ -79,6 +124,16 @@
   display: grid;
   gap: 12px;
   z-index: 2000;
+}
+
+@media (min-width: 1024px) {
+  #projects-grid {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  }
+
+  .tile-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
 }
 
 @media (max-width: 720px) {

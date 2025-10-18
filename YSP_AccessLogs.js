@@ -45,5 +45,11 @@
     });
   }
 
-  window.loadAccessLogs = loadAccessLogs;
-})();
+  globalYsp.accessLogs = globalYsp.accessLogs || {};
+  globalYsp.accessLogs.loadAccessLogs = loadAccessLogs;
+  globalYsp.accessLogs.renderAccessLogs = renderAccessLogs;
+
+  if (typeof root.loadAccessLogs !== 'function') {
+    root.loadAccessLogs = loadAccessLogs;
+  }
+});
