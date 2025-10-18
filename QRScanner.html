@@ -105,8 +105,18 @@
   .error{ animation:fadeout 4s forwards }
   @keyframes fadeout{0%{opacity:1}90%{opacity:1}100%{opacity:0}}
   /* Modal for manual attendance */
-  #modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000; padding:16px; }
-  .modal{ background:var(--card-bg); border-radius:16px; padding:clamp(20px,4vw,28px); width:90%; max-width:420px; text-align:left; box-shadow:0 14px 32px rgba(0,0,0,0.18); display:flex; flex-direction:column; gap:12px; max-height:90vh; overflow:auto; }
+  .modal-root{ position:fixed; inset:0; pointer-events:none; z-index:1000; }
+  .modal-backdrop{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,0.45); opacity:0; transition:opacity .24s ease; pointer-events:auto; }
+  .modal-backdrop.is-open{ opacity:1; }
+  .modal{ background:var(--card-bg); border-radius:18px; padding:clamp(20px,4vw,28px); width:min(90vw,420px); box-shadow:0 18px 40px rgba(0,0,0,0.22); opacity:0; transform:translateY(16px); transition:transform .24s ease, opacity .24s ease; }
+  .modal.is-open{ opacity:1; transform:translateY(0); }
+  .modal__panel{ display:flex; flex-direction:column; gap:12px; max-height:85vh; overflow:auto; }
+  .modal__header{ display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:8px; }
+  .modal__title{ font-family:'Lexend'; color:var(--primary); font-size:1.18rem; margin:0; }
+  .modal__close{ background:none; border:none; font-size:1.6rem; line-height:1; cursor:pointer; color:var(--primary); padding:4px 8px; border-radius:8px; }
+  .modal__close:hover{ background:rgba(0,0,0,0.05); }
+  .modal__body{ display:flex; flex-direction:column; gap:12px; font-size:0.95rem; }
+  .modal__footer{ display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:8px; }
   label{ display:block; font-weight:600; margin-bottom:0.4rem }
   input, select{
     width:100%; padding:0.75rem 0.9rem;
@@ -145,6 +155,7 @@
 
     <div class="action-group">
       <button class="btn" id="manual-entry-btn">Manual Entry</button>
+      <button class="btn secondary" id="upload-qr-btn">Upload QR Image</button>
       <button class="btn secondary" id="flip-camera-btn" hidden>Flip Camera</button>
       <button class="btn secondary" id="back-btn">Back to Menu</button>
     </div>
@@ -153,25 +164,7 @@
     <div id="status-msg" class="status-muted" role="status" aria-live="polite">Initializing camera…</div>
   </div>
 
-  <!-- Modal for Manual Attendance -->
-  <div id="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="manual-entry-heading">
-      <h3 id="manual-entry-heading" style="font-family:'Lexend';color:var(--primary)">Manual Attendance Entry</h3>
-      <label for="manual-id">Member ID Code</label>
-      <input type="text" id="manual-id" placeholder="e.g. YSPTMB-25901">
-      <label for="manual-status">Status</label>
-      <select id="manual-status">
-        <option value="Present">Present</option>
-        <option value="Late">Late</option>
-        <option value="Absent">Absent</option>
-        <option value="Excused">Excused</option>
-      </select>
-      <div style="text-align:right">
-        <button class="btn secondary" id="cancel-manual">Cancel</button>
-        <button class="btn" id="save-manual">Save</button>
-      </div>
-    </div>
-  </div>
+  <input type="file" id="qr-file-input" accept="image/*" hidden>
 
 
 <script>

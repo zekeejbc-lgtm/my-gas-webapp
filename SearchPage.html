@@ -662,6 +662,7 @@
   </main>
 
   <!-- ---------------- JS: UI logic ---------------- -->
+  <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
   <script>
   (function(){
     function onReady(fn){
@@ -845,9 +846,7 @@
         }
         modalRoot.innerHTML = '';
         modalRoot.hidden = true;
-        modalState.backdrop = null;
-        modalState.modal = null;
-        modalState.panel = null;
+        document.body.appendChild(modalRoot);
       }
 
       modalState.lastFocused = opener || document.activeElement || null;
@@ -976,6 +975,7 @@
       if(modalState.modal){
         modalState.modal.classList.remove('is-open');
       }
+    }
 
       setTimeout(function(){
         modalRoot.innerHTML = '';
