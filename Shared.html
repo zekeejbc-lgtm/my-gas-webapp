@@ -1,0 +1,88 @@
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
+  'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  var globalYsp = (root.YSP = root.YSP || {});
+
+  globalYsp.ns = function (path) {
+    return String(path || '')
+      .split('.')
+      .filter(function (segment) {
+        return !!segment;
+      })
+      .reduce(function (acc, key) {
+        if (!acc[key]) {
+          acc[key] = {};
+        }
+        return acc[key];
+      }, globalYsp);
+  };
+
+  function ensureUrl(value, fallback) {
+    try {
+      var raw = String(value || '').trim();
+      if (!raw) {
+        return fallback;
+      }
+      var withProto = /^https?:/i.test(raw) ? raw : 'https://' + raw;
+      var parsed = new URL(withProto);
+      if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+        return parsed.toString();
+      }
+      return fallback;
+    } catch (err) {
+      return fallback;
+    }
+  }
+
+  globalYsp.safeUrl = function (value) {
+    return ensureUrl(value, '');
+  };
+
+  globalYsp.safeImage = function (value) {
+    return ensureUrl(value, 'https://placehold.co/960x540?text=YSP');
+  };
+
+  var onError = function (msg, src, line, col, err) {
+    try {
+      if (
+        typeof google !== 'undefined' &&
+        google.script &&
+        google.script.run &&
+        typeof google.script.run.logClientError === 'function'
+      ) {
+        google.script.run.logClientError(String(msg), String(src), Number(line) || 0, Number(col) || 0);
+      }
+    } catch (loggingError) {
+      // ignore logging errors
+    }
+    if (root.console && typeof root.console.error === 'function') {
+      root.console.error('Global JS Error:', msg, 'at', src, line, col, err);
+    }
+  };
+
+  try {
+    root.onerror = onError;
+  } catch (assignErr) {
+    // ignore inability to assign handler
+  }
+});
