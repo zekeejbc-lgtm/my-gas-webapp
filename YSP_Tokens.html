@@ -1,0 +1,138 @@
+<style>
+:root {
+  --font-display: 'Lexend', sans-serif;
+  --font-body: 'Roboto', sans-serif;
+  --primary: #f6421f;
+  --primary-strong: #d83819;
+  --secondary: #ee8724;
+  --accent: #fbcb29;
+  --surface: rgba(255, 255, 255, 0.96);
+  --surface-muted: rgba(255, 255, 255, 0.72);
+  --text-dark: #1d1d1f;
+  --text-muted: rgba(0, 0, 0, 0.62);
+  --shadow-lg: 0 20px 45px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 12px 28px rgba(0, 0, 0, 0.14);
+  --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.1);
+  --radius-xl: 28px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+  --radius-sm: 10px;
+  --space-xs: clamp(6px, 0.75vw, 12px);
+  --space-sm: clamp(10px, 1vw, 16px);
+  --space-md: clamp(16px, 1.8vw, 24px);
+  --space-lg: clamp(24px, 2.6vw, 36px);
+  --space-xl: clamp(32px, 3.5vw, 48px);
+  --gradient-bg: linear-gradient(135deg, rgba(246, 66, 31, 0.95), rgba(238, 135, 36, 0.92), rgba(251, 203, 41, 0.9));
+  color-scheme: light;
+  font-size: 16px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text-dark);
+  background: var(--gradient-bg);
+  background-size: 200% 200%;
+  animation: gradient-shift 24s ease infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(24px, 6vw, 64px) clamp(12px, 4vw, 48px);
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 20px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+  }
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05));
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-shell {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 1180px);
+  display: grid;
+  gap: var(--space-lg);
+}
+
+@media (min-width: 1440px) {
+  .app-shell {
+    width: min(100%, 1320px);
+    gap: clamp(28px, 3vw, 48px);
+  }
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  margin: 0 0 var(--space-sm);
+  line-height: 1.2;
+}
+
+p {
+  margin: 0 0 var(--space-sm);
+  line-height: 1.6;
+}
+
+a {
+  color: inherit;
+}
+
+ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(246, 66, 31, 0.35);
+  outline-offset: 3px;
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+</style>
