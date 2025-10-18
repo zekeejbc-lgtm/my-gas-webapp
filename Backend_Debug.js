@@ -85,7 +85,7 @@ function include(filename) {
   if (!name) {
     throw new Error('include: filename is required');
   }
-  name = name.replace(/\.(?:html|gs)$/i, '');
+  name = name.replace(/\.(?:html|gs|css|js)$/gi, '');
   try {
     return HtmlService.createHtmlOutputFromFile(name).getContent();
   } catch (err) {
