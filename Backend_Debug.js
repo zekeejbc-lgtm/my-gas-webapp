@@ -81,7 +81,17 @@ function doGet(e) {
 }
 
 function include(filename) {
-  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+  var name = String(filename == null ? '' : filename).trim();
+  if (!name) {
+    throw new Error('include: filename is required');
+  }
+  name = name.replace(/\.(?:html|gs)$/i, '');
+  try {
+    return HtmlService.createHtmlOutputFromFile(name).getContent();
+  } catch (err) {
+    console.error('include error for', name, err);
+    throw err;
+  }
 }
 
 function getQrScannerUrl() {
