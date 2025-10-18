@@ -105,8 +105,18 @@
   .error{ animation:fadeout 4s forwards }
   @keyframes fadeout{0%{opacity:1}90%{opacity:1}100%{opacity:0}}
   /* Modal for manual attendance */
-  #modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:1000; padding:16px; }
-  .modal{ background:var(--card-bg); border-radius:16px; padding:clamp(20px,4vw,28px); width:90%; max-width:420px; text-align:left; box-shadow:0 14px 32px rgba(0,0,0,0.18); display:flex; flex-direction:column; gap:12px; max-height:90vh; overflow:auto; }
+  .modal-root{ position:fixed; inset:0; pointer-events:none; z-index:1000; }
+  .modal-backdrop{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(0,0,0,0.45); opacity:0; transition:opacity .24s ease; pointer-events:auto; }
+  .modal-backdrop.is-open{ opacity:1; }
+  .modal{ background:var(--card-bg); border-radius:18px; padding:clamp(20px,4vw,28px); width:min(90vw,420px); box-shadow:0 18px 40px rgba(0,0,0,0.22); opacity:0; transform:translateY(16px); transition:transform .24s ease, opacity .24s ease; }
+  .modal.is-open{ opacity:1; transform:translateY(0); }
+  .modal__panel{ display:flex; flex-direction:column; gap:12px; max-height:85vh; overflow:auto; }
+  .modal__header{ display:flex; align-items:center; justify-content:space-between; gap:12px; border-bottom:1px solid rgba(0,0,0,0.08); padding-bottom:8px; }
+  .modal__title{ font-family:'Lexend'; color:var(--primary); font-size:1.18rem; margin:0; }
+  .modal__close{ background:none; border:none; font-size:1.6rem; line-height:1; cursor:pointer; color:var(--primary); padding:4px 8px; border-radius:8px; }
+  .modal__close:hover{ background:rgba(0,0,0,0.05); }
+  .modal__body{ display:flex; flex-direction:column; gap:12px; font-size:0.95rem; }
+  .modal__footer{ display:flex; justify-content:flex-end; flex-wrap:wrap; gap:10px; margin-top:8px; }
   label{ display:block; font-weight:600; margin-bottom:0.4rem }
   input, select{
     width:100%; padding:0.75rem 0.9rem;
@@ -145,6 +155,7 @@
 
     <div class="action-group">
       <button class="btn" id="manual-entry-btn">Manual Entry</button>
+      <button class="btn secondary" id="upload-qr-btn">Upload QR Image</button>
       <button class="btn secondary" id="flip-camera-btn" hidden>Flip Camera</button>
       <button class="btn secondary" id="back-btn">Back to Menu</button>
     </div>
@@ -153,227 +164,323 @@
     <div id="status-msg" class="status-muted" role="status" aria-live="polite">Initializing camera…</div>
   </div>
 
-  <!-- Modal for Manual Attendance -->
-  <div id="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="manual-entry-heading">
-      <h3 id="manual-entry-heading" style="font-family:'Lexend';color:var(--primary)">Manual Attendance Entry</h3>
-      <label for="manual-id">Member ID Code</label>
-      <input type="text" id="manual-id" placeholder="e.g. YSPTMB-25901">
-      <label for="manual-status">Status</label>
-      <select id="manual-status">
-        <option value="Present">Present</option>
-        <option value="Late">Late</option>
-        <option value="Absent">Absent</option>
-        <option value="Excused">Excused</option>
-      </select>
-      <div style="text-align:right">
-        <button class="btn secondary" id="cancel-manual">Cancel</button>
-        <button class="btn" id="save-manual">Save</button>
-      </div>
-    </div>
-  </div>
+  <input type="file" id="qr-file-input" accept="image/*" hidden>
 
+
+  <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
 <script>
-let html5QrCode;
-let availableCameras = [];
-let activeCameraIndex = 0;
-let isStartingScanner = false;
-let resizeTimer = null;
-
-const statusMsg = document.getElementById('status-msg');
-const modal = document.getElementById('modal-backdrop');
-const manualIdInput = document.getElementById('manual-id');
-const manualStatusSelect = document.getElementById('manual-status');
-const manualEntryBtn = document.getElementById('manual-entry-btn');
-const cancelManualBtn = document.getElementById('cancel-manual');
-const saveManualBtn = document.getElementById('save-manual');
-const flipCameraBtn = document.getElementById('flip-camera-btn');
-const backBtn = document.getElementById('back-btn');
-
-function showStatus(message, type='success', persist=false){
-  if(!statusMsg) return;
-  statusMsg.textContent = message;
-  if(type){
-    statusMsg.dataset.state = type;
-  } else {
-    statusMsg.removeAttribute('data-state');
+(function(){
+  function onReady(fn){
+    if(document.readyState === 'loading'){
+      document.addEventListener('DOMContentLoaded', fn);
+    } else {
+      fn();
+    }
   }
-  statusMsg.classList.remove('status-muted');
-  if(!persist){
-    const currentMessage = message;
-    setTimeout(()=>{
-      if(statusMsg.textContent === currentMessage){
-        statusMsg.textContent = '';
+
+  onReady(function(){
+    var ScannerNS = YSP.ns('Scanner');
+    ScannerNS.init = function(){
+    var html5QrCode = null;
+    var availableCameras = [];
+    var activeCameraIndex = 0;
+    var isStartingScanner = false;
+    var resizeTimer = null;
+
+    var statusMsg = document.getElementById('status-msg');
+    var manualEntryBtn = document.getElementById('manual-entry-btn');
+    var uploadButton = document.getElementById('upload-qr-btn');
+    var fileInput = document.getElementById('qr-file-input');
+    var flipCameraBtn = document.getElementById('flip-camera-btn');
+    var backBtn = document.getElementById('back-btn');
+
+    function showStatus(message, type, persist){
+      if(!statusMsg) return;
+      var nextType = typeof type === 'string' ? type : '';
+      statusMsg.textContent = message || '';
+      if(nextType){
+        statusMsg.dataset.state = nextType;
+      } else {
         statusMsg.removeAttribute('data-state');
-        statusMsg.classList.add('status-muted');
       }
-    }, 4000);
-  }
-}
-
-function computeQrBox(){
-  const maxSize = Math.min(window.innerWidth - 80, 420);
-  const size = Math.max(220, Math.min(maxSize, window.innerHeight * 0.45));
-  return { width: size, height: size };
-}
-
-async function startScanner(cameraId){
-  if(isStartingScanner) return;
-  if(typeof Html5Qrcode === 'undefined'){
-    showStatus('Scanner library missing.', 'error', true);
-    return;
-  }
-  isStartingScanner = true;
-  try{
-    if(html5QrCode){
-      await html5QrCode.stop().catch(()=>{});
-      await html5QrCode.clear().catch(()=>{});
+      if(!message){
+        statusMsg.classList.add('status-muted');
+      } else {
+        statusMsg.classList.remove('status-muted');
+      }
+      if(persist){
+        return;
+      }
+      var currentMessage = message;
+      setTimeout(function(){
+        if(statusMsg.textContent === currentMessage){
+          statusMsg.textContent = '';
+          statusMsg.removeAttribute('data-state');
+          statusMsg.classList.add('status-muted');
+        }
+      }, 4000);
     }
-    html5QrCode = new Html5Qrcode('reader');
-    const config = { fps:12, qrbox: computeQrBox() };
-    const cameraConfig = cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'environment' };
-    await html5QrCode.start(cameraConfig, config, onScanSuccess, () => {});
-  } catch(err){
-    console.error(err);
-    showStatus('Camera access error.', 'error', true);
-  } finally {
-    isStartingScanner = false;
-  }
-}
 
-function onScanSuccess(decodedText){
-  if(!decodedText) return;
-  try{
-    html5QrCode.pause();
-  } catch(_){}
-  handleScan(decodedText);
-  setTimeout(()=> html5QrCode && html5QrCode.resume().catch(()=>{}), 2200);
-}
-
-async function setupScanner(){
-  if(typeof Html5Qrcode === 'undefined'){
-    showStatus('Scanner library missing.', 'error', true);
-    return;
-  }
-  showStatus('Requesting camera access…', 'success', true);
-  try{
-    availableCameras = await Html5Qrcode.getCameras();
-  } catch(err){
-    console.error(err);
-    availableCameras = [];
-  }
-  flipCameraBtn.hidden = !availableCameras || availableCameras.length < 2;
-  const cameraId = availableCameras.length ? availableCameras[activeCameraIndex].id : undefined;
-  await startScanner(cameraId);
-  if(availableCameras.length){
-    const label = availableCameras[activeCameraIndex].label || 'camera';
-    showStatus(`Camera ready (${label}). Point to a member QR.`, 'success');
-  } else {
-    showStatus('Camera ready. Point to a member QR.', 'success');
-  }
-}
-
-// Handle scanned code
-function handleScan(idCode){
-  if(!idCode) return;
-  showStatus(`Processing ${idCode}...`, 'success');
-  if(typeof google === 'undefined' || !google.script){
-    setTimeout(()=> showStatus(`(Local test) Marked ${idCode} as Present`, 'success'), 1000);
-    return;
-  }
-  google.script.run.withSuccessHandler(res=>{
-    if(res && res.success){
-      showStatus(`✅ ${idCode} marked as Present`, 'success');
-    } else {
-      showStatus(res && res.message ? res.message : 'Failed to record.', 'error');
+    function computeQrBox(){
+      var maxSize = Math.min(window.innerWidth - 80, 420);
+      var size = Math.max(220, Math.min(maxSize, window.innerHeight * 0.45));
+      return { width: size, height: size };
     }
-  }).withFailureHandler(err=>{
-    console.error(err);
-    showStatus('Connection error.', 'error');
-  }).recordAttendanceScan(idCode);
-}
 
-function toggleModal(open){
-  modal.style.display = open ? 'flex' : 'none';
-  modal.setAttribute('aria-hidden', open ? 'false' : 'true');
-  if(open){
-    try{
-      manualIdInput.focus({ preventScroll:true });
-    } catch(_) {
-      manualIdInput.focus();
+    function startScanner(cameraId){
+      if(isStartingScanner){ return Promise.resolve(); }
+      if(typeof Html5Qrcode === 'undefined'){
+        showStatus('Scanner library missing.', 'error', true);
+        return Promise.resolve();
+      }
+      isStartingScanner = true;
+      var cameraConfig = cameraId ? { deviceId: { exact: cameraId } } : { facingMode: 'environment' };
+      var config = { fps: 12, qrbox: computeQrBox() };
+      var cleanupPromise = Promise.resolve();
+      if(html5QrCode){
+        cleanupPromise = html5QrCode.stop().catch(function(){}).then(function(){
+          return html5QrCode.clear().catch(function(){});
+        });
+      }
+      return cleanupPromise.then(function(){
+        html5QrCode = new Html5Qrcode('reader');
+        return html5QrCode.start(cameraConfig, config, onScanSuccess, function(){});
+      }).catch(function(err){
+        console.error(err);
+        showStatus('Camera access error.', 'error', true);
+      }).then(function(){
+        isStartingScanner = false;
+      });
     }
-  } else {
-    manualIdInput.value = '';
-    manualStatusSelect.value = 'Present';
-  }
-}
 
-manualEntryBtn.addEventListener('click', ()=> toggleModal(true));
-cancelManualBtn.addEventListener('click', ()=> toggleModal(false));
-modal.addEventListener('click', (event) => {
-  if(event.target === modal){
-    toggleModal(false);
-  }
-});
-document.addEventListener('keydown', (event) => {
-  if(event.key === 'Escape' && modal.style.display === 'flex'){
-    toggleModal(false);
-  }
-});
-
-saveManualBtn.addEventListener('click', ()=>{
-  const id = manualIdInput.value.trim();
-  const status = manualStatusSelect.value;
-  if(!id){ showStatus("Please enter an ID code.","error"); return; }
-  toggleModal(false);
-  showStatus(`Recording ${id} as ${status}...`);
-  if(typeof google === 'undefined' || !google.script){
-    setTimeout(()=> showStatus(`(Local test) Recorded ${id} as ${status}`,'success'),1000);
-    return;
-  }
-  google.script.run.withSuccessHandler(res=>{
-    if(res && res.success){
-      showStatus(`✅ ${id} marked as ${status}`,'success');
-    } else {
-      showStatus(res.message || "Failed to record.","error");
+    function onScanSuccess(decodedText){
+      if(!decodedText){ return; }
+      try{ if(html5QrCode){ html5QrCode.pause(); } } catch(e){}
+      handleScan(decodedText);
+      setTimeout(function(){
+        if(html5QrCode){
+          html5QrCode.resume().catch(function(){});
+        }
+      }, 2200);
     }
-  }).withFailureHandler(err=>{
-    console.error(err);
-    showStatus("Connection error.","error");
-  }).recordManualAttendance(id,status);
-});
 
-flipCameraBtn.addEventListener('click', async () => {
-  if(!availableCameras.length){
-    showStatus('No additional cameras detected.', 'error');
-    return;
-  }
-  activeCameraIndex = (activeCameraIndex + 1) % availableCameras.length;
-  const cameraId = availableCameras[activeCameraIndex].id;
-  await startScanner(cameraId);
-  const label = availableCameras[activeCameraIndex].label || 'camera';
-  showStatus(`Switched to ${label}.`, 'success');
-});
+    function setupScanner(){
+      if(typeof Html5Qrcode === 'undefined'){
+        showStatus('Scanner library missing.', 'error', true);
+        return;
+      }
+      showStatus('Requesting camera access…', 'success', true);
+      Html5QrCodePromise().then(function(){
+        flipCameraBtn.hidden = !availableCameras || availableCameras.length < 2;
+        var cameraId = availableCameras.length ? availableCameras[activeCameraIndex].id : undefined;
+        return startScanner(cameraId);
+      }).then(function(){
+        if(availableCameras.length){
+          var label = availableCameras[activeCameraIndex].label || 'camera';
+          showStatus('Camera ready (' + label + '). Point to a member QR.', 'success');
+        } else {
+          showStatus('Camera ready. Point to a member QR.', 'success');
+        }
+      });
+    }
 
-// Back to menu
-backBtn.addEventListener('click', ()=>{
-  if(typeof google !== 'undefined' && google.script){
-    google.script.host.close();
-  } else {
-    window.close();
-  }
-});
+    function Html5QrCodePromise(){
+      return Html5Qrcode.getCameras().then(function(cameras){
+        availableCameras = Array.isArray(cameras) ? cameras : [];
+      }).catch(function(err){
+        console.error(err);
+        availableCameras = [];
+      });
+    }
 
-window.addEventListener('resize', () => {
-  clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(() => {
-    const cameraId = availableCameras.length ? availableCameras[activeCameraIndex].id : undefined;
-    startScanner(cameraId);
-  }, 320);
-});
+    function handleScan(idCode){
+      if(!idCode){ return; }
+      submitAttendance(idCode, 'Present');
+    }
 
-// Start camera when ready
-window.addEventListener('load', setupScanner);
+    function submitAttendance(idCode, status){
+      if(!idCode){ return; }
+      var safeStatus = status || 'Present';
+      showStatus('Recording ' + idCode + ' as ' + safeStatus + '...');
+      if(typeof google === 'undefined' || !google.script || !google.script.run){
+        setTimeout(function(){
+          showStatus('(Local preview) ' + idCode + ' marked as ' + safeStatus, 'success');
+        }, 600);
+        return;
+      }
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(res && res.success){
+            showStatus('✅ ' + idCode + ' marked as ' + safeStatus, 'success');
+          } else {
+            showStatus(res && res.message ? res.message : 'Failed to record attendance.', 'error');
+          }
+        })
+        .withFailureHandler(function(err){
+          console.error(err);
+          showStatus('Connection error.', 'error');
+        })
+        .recordManualAttendance(idCode, safeStatus);
+    }
+
+    function openManualEntryModal(){
+      if(!manualEntryBtn){ return; }
+      YSP.modal.open({
+        title: 'Manual Attendance Entry',
+        modalClass: 'manual-entry-modal',
+        opener: manualEntryBtn,
+        bodyHtml: '<div class="manual-entry-form">' +
+          '<label for="manual-entry-id">Member ID Code</label>' +
+          '<input type="text" id="manual-entry-id" placeholder="e.g. YSPTMB-25901" autocomplete="off">' +
+          '<label for="manual-entry-status">Status</label>' +
+          '<select id="manual-entry-status">' +
+            '<option value="Present">Present</option>' +
+            '<option value="Late">Late</option>' +
+            '<option value="Absent">Absent</option>' +
+            '<option value="Excused">Excused</option>' +
+          '</select>' +
+        '</div>',
+        footerHtml: '<div style="display:flex;gap:10px;justify-content:flex-end">' +
+          '<button class="btn secondary" data-close="1">Cancel</button>' +
+          '<button class="btn" id="manual-entry-save">Save</button>' +
+        '</div>'
+      });
+
+      setTimeout(function(){
+        var idInput = document.getElementById('manual-entry-id');
+        var statusSelect = document.getElementById('manual-entry-status');
+        var saveBtn = document.getElementById('manual-entry-save');
+        if(idInput){
+          try { idInput.focus({ preventScroll: true }); } catch(e){ idInput.focus(); }
+        }
+        function complete(){
+          if(!idInput){ return; }
+          var idVal = idInput.value.trim();
+          var statusVal = statusSelect ? statusSelect.value : 'Present';
+          if(!idVal){
+            showStatus('Please enter an ID code.', 'error', true);
+            idInput.focus();
+            return;
+          }
+          YSP.modal.close({ skipFocusRestore: true });
+          submitAttendance(idVal, statusVal);
+        }
+        if(saveBtn){
+          saveBtn.addEventListener('click', complete);
+        }
+        if(idInput){
+          idInput.addEventListener('keydown', function(evt){
+            if(evt.key === 'Enter'){
+              evt.preventDefault();
+              complete();
+            }
+          });
+        }
+      }, 20);
+    }
+
+    if(manualEntryBtn){
+      manualEntryBtn.addEventListener('click', openManualEntryModal);
+    }
+
+    function decodeImageFile(file){
+      if(!file){ return; }
+      showStatus('Decoding uploaded QR…', 'success', true);
+      var scanner = html5QrCode;
+      var createdTempScanner = false;
+      if(!scanner){
+        try {
+          scanner = new Html5Qrcode('reader');
+          createdTempScanner = true;
+        } catch(err){
+          console.error(err);
+          showStatus('Scanner unavailable for image decoding.', 'error', true);
+          if(fileInput){ fileInput.value = ''; }
+          return;
+        }
+      } else if(typeof scanner.pause === 'function'){
+        try { scanner.pause(); } catch(e){}
+      }
+
+      if(typeof scanner.scanFile !== 'function'){
+        showStatus('Image decoding is not supported in this browser.', 'error', true);
+        if(!createdTempScanner && scanner && typeof scanner.resume === 'function'){
+          try { scanner.resume(); } catch(e){}
+        }
+        if(createdTempScanner && typeof scanner.clear === 'function'){
+          scanner.clear().catch(function(){});
+        }
+        if(fileInput){ fileInput.value = ''; }
+        return;
+      }
+
+      scanner.scanFile(file, true).then(function(decodedText){
+        submitAttendance(decodedText, 'Present');
+      }).catch(function(err){
+        console.error(err);
+        showStatus('Unable to decode image.', 'error');
+      }).finally(function(){
+        if(fileInput){ fileInput.value = ''; }
+        if(createdTempScanner){
+          if(typeof scanner.clear === 'function'){
+            scanner.clear().catch(function(){});
+          }
+        } else if(typeof scanner.resume === 'function'){
+          scanner.resume().catch(function(){});
+        }
+      });
+    }
+
+    if(uploadButton && fileInput){
+      uploadButton.addEventListener('click', function(){
+        fileInput.value = '';
+        fileInput.click();
+      });
+      fileInput.addEventListener('change', function(evt){
+        var file = evt.target && evt.target.files ? evt.target.files[0] : null;
+        if(file){
+          decodeImageFile(file);
+        }
+      });
+    }
+
+    flipCameraBtn.addEventListener('click', function(){
+      if(!availableCameras.length){
+        showStatus('No additional cameras detected.', 'error');
+        return;
+      }
+      activeCameraIndex = (activeCameraIndex + 1) % availableCameras.length;
+      var cameraId = availableCameras[activeCameraIndex].id;
+      startScanner(cameraId).then(function(){
+        var label = availableCameras[activeCameraIndex].label || 'camera';
+        showStatus('Switched to ' + label + '.', 'success');
+      });
+    });
+
+    backBtn.addEventListener('click', function(){
+      if(typeof google !== 'undefined' && google.script && google.script.host){
+        google.script.host.close();
+      } else {
+        window.close();
+      }
+    });
+
+    window.addEventListener('resize', function(){
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function(){
+        var cameraId = availableCameras.length ? availableCameras[activeCameraIndex].id : undefined;
+        startScanner(cameraId);
+      }, 320);
+    });
+
+    window.addEventListener('load', function(){ setupScanner(); });
+
+    console.log('✅ YSP QR Scanner Initialized OK');
+    };
+
+    ScannerNS.init();
+  });
+})();
 </script>
 </body>
 </html>
