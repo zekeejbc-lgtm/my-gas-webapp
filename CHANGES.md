@@ -1,12 +1,12 @@
 # Change Log
 
 ## SearchPage.html
-- Switched the shared helper include to the project-level `include()` wrapper so GAS renders `Shared.html` server-side instead of surfacing the raw directive behind the login panel.
-- Added defensive fallbacks for `YSP.openExternal` and `YSP.modal` so modal errors no longer short-circuit script execution when the shared bundle is missing or trimmed by the sandbox.
-- Hardened `callServer` to always reach live GAS endpoints (and surface explicit errors when a handler is missing) rather than silently routing through mock data, keeping login/guest actions responsive.
+- Applied a viewport-aware minimum height to the homepage panel and introduced the `.push-bottom` helper so the login return control anchors consistently on both mobile and desktop.
+- Upgraded contact buttons to share the `.btn-primary` styling, validated outbound URLs before opening new tabs, and guarded Gmail compose links behind the helper sanitizer.
+- Escaped multi-line project descriptions when building modal content, trimming empty lines and preventing HTML injection while preserving the fade/scale animation.
 
 ## QRScanner.html
-- No code changes this pass; prior DOMContentLoaded wiring and modal helpers remain valid.
+- No source edits required; retained the October 2025 blueprint implementation after syntax validation.
 
 ## Backend_Debug.js
-- Validation only; endpoints unchanged.
+- No modifications per scope (validation only).

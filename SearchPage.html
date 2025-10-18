@@ -208,9 +208,68 @@
 
     .btn-danger { background: var(--danger); color: #fff; }
 
-    .btn:focus-visible {
-      outline: 3px solid rgba(251,203,41,0.5);
-      outline-offset: 2px;
+    /* lists / cards */
+    .card {
+      background:#fff;
+      padding:16px;
+      border-radius:12px;
+      border:1px solid var(--input-border);
+      box-shadow:0 6px 24px rgba(0,0,0,0.08);
+    }
+    .avatar { width:86px; height:86px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.05); }
+
+    /* homepage content */
+    #homepage-panel .panel-body {
+      display:flex;
+      flex-direction:column;
+      min-height:min(100%, calc(100dvh - 180px));
+    }
+    .homepage-layout { display:flex; flex-direction:column; gap:24px; flex:1; }
+    .homepage-layout .container { width:100%; }
+    #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); display:flex; flex-direction:column; gap:16px; }
+    .homepage-section-block h3 { font-family:'Lexend',sans-serif; margin:0 0 8px; font-size:1.1rem; color:var(--primary); }
+    .homepage-section-block p { margin:0; font-size:0.95rem; line-height:1.6; }
+    .homepage-lede { font-size:1.05rem; font-weight:500; }
+    .homepage-meta { display:flex; flex-direction:column; gap:4px; font-size:0.94rem; }
+    .homepage-meta strong { font-family:'Lexend',sans-serif; font-size:1rem; }
+    .homepage-org-chart { border-radius:12px; overflow:hidden; background:#fff; }
+    .homepage-org-chart img { width:100%; display:block; }
+    .homepage-contact-grid { display:grid; gap:16px; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); }
+    .homepage-contact-grid .card { display:flex; flex-direction:column; gap:12px; }
+    .homepage-contact-grid .card p { margin:0; }
+    .homepage-contact-grid .card h3 { font-family:'Lexend',sans-serif; margin:0; font-size:1.1rem; color:var(--primary); }
+    .homepage-action-stack { display:flex; flex-wrap:wrap; gap:12px; }
+    .panel-actions.push-bottom { margin-top:auto; }
+    #project-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding-block:12px; }
+    .project-card {
+      width:100%;
+      border-radius:12px;
+      cursor:pointer;
+      transition:transform .18s ease, box-shadow .18s ease;
+      background:#fff;
+      border:1px solid rgba(0,0,0,0.08);
+      box-shadow:0 6px 20px rgba(0,0,0,0.08);
+      display:flex;
+      flex-direction:column;
+      text-align:left;
+      padding:0;
+      color:var(--text-dark);
+    }
+    .project-card:focus-visible { outline:3px solid rgba(246,66,31,0.35); outline-offset:2px; }
+    .project-card__media {
+      border-radius:12px 12px 0 0;
+      overflow:hidden;
+    }
+    .project-card__title {
+      font-family:'Lexend',sans-serif;
+      font-size:1.05rem;
+      color:var(--primary);
+      margin:12px 12px 4px;
+    }
+    .project-card__copy {
+      margin:0 12px 16px;
+      color:var(--text-dark);
+      font-size:0.95rem;
     }
 
     .btn:hover { transform: translateY(-1px); }
@@ -254,10 +313,14 @@
       gap: var(--space-sm);
     }
 
-    .tile-grid {
-      display: grid;
-      gap: var(--space-sm);
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    .guest-modal{ display:flex; flex-direction:column; gap:var(--space-sm); }
+    .guest-modal__status{ min-height:20px; font-size:0.92rem; color:var(--muted); transition:color .18s ease; }
+    .guest-modal__status.is-error{ color:var(--danger); }
+
+    .info-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+      gap:var(--space-sm);
     }
 
     .tile {
@@ -527,8 +590,8 @@
           <input id="password" type="password" autocomplete="current-password" placeholder="Enter your password" />
         </div>
         <div class="panel-actions">
-          <button id="login-btn" class="btn btn-primary" type="button">Log In</button>
-          <button id="guest-login-btn" class="btn btn-secondary" type="button">Log In as Guest</button>
+          <button id="login-btn" class="btn" type="button">Log In</button>
+          <button id="guest-login-btn" class="btn secondary" type="button">Log in as Guest</button>
         </div>
         <p id="login-status" class="text-muted" role="status" aria-live="polite"></p>
       </div>
@@ -544,29 +607,13 @@
       </div>
     </section>
 
-    <section id="homepage-panel" class="panel" aria-labelledby="homepage-title">
-      <button class="btn btn-secondary back-btn" type="button" data-target="login-panel">Back to Login</button>
-      <header class="panel-header">
-        <h1 id="homepage-title">YSP Tagum Homepage</h1>
-      </header>
-      <div class="panel-body">
-        <article class="card">
-          <h3>About</h3>
-          <p id="home-about">Loading...</p>
-        </article>
-        <div class="card-list">
-          <article class="card">
-            <h3>Mission</h3>
-            <p id="home-mission">Loading...</p>
-          </article>
-          <article class="card">
-            <h3>Vision</h3>
-            <p id="home-vision">Loading...</p>
-          </article>
-          <article class="card">
-            <h3>Objectives</h3>
-            <p id="home-objectives">Loading...</p>
-          </article>
+      <div class="panel-body is-wide">
+        <div class="media-stack">
+          <img id="user-avatar" src="https://placehold.co/120x120?text=Avatar" alt="avatar" class="avatar">
+          <div class="panel-section" style="flex:1;">
+            <div id="user-details" style="line-height:1.2"></div>
+            <div><span id="ann-badge"></span></div>
+          </div>
         </div>
         <section class="card">
           <h3>Organizational Chart</h3>
@@ -662,9 +709,9 @@
           <input id="manual-member" type="text" placeholder="Search member" autocomplete="off" />
           <ul id="manual-suggestions" class="suggestion-list" hidden></ul>
         </div>
-        <div class="panel-actions">
-          <button id="manual-time-in" class="btn btn-primary" type="button">Time In</button>
-          <button id="manual-time-out" class="btn btn-secondary" type="button">Time Out</button>
+
+        <div class="panel-actions push-bottom">
+          <button id="homepage-back-btn" class="btn secondary back-btn" data-target="login-panel">Back to Login</button>
         </div>
         <div id="manual-status" class="text-muted" role="status" aria-live="polite"></div>
       </div>
@@ -772,28 +819,167 @@
   <div id="modal-root" hidden></div>
   <div id="toast-container" class="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
 
-  <?!= include('Shared'); ?>
+  <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
 
+  <!-- ---------------- JS: UI logic ---------------- -->
+  <?!= HtmlService.createHtmlOutputFromFile('Shared').getContent(); ?>
   <script>
-    (function(){
-      'use strict';
+  (function(){
+    function onReady(fn){
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', fn);
+      } else {
+        fn();
+      }
+    }
 
-      if(!window.YSP){ window.YSP = {}; }
-      if(typeof YSP.openExternal !== 'function'){
-        YSP.openExternal = function(url){
-          try {
-            var value = String(url || '').trim();
-            if(!value){ return; }
-            if(!/^https?:\/\//i.test(value)){ value = 'https://' + value; }
-            var parsed = new URL(value);
-            if(parsed.protocol === 'http:' || parsed.protocol === 'https:'){
-              var win = window.open(parsed.toString(), '_blank', 'noopener');
-              if(win){ win.opener = null; }
-            }
-          } catch (err) {
-            console.warn('openExternal fallback rejected URL', err);
-          }
-        };
+    onReady(function(){
+    // Shortcuts + state
+    function $(s){ return document.querySelector(s); }
+    function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+    const panels = $$('.panel');
+    const panelHashMap = {
+      'login-panel': '#login',
+      'main-menu-panel': '#dashboard',
+      'homepage-panel': '#homepage',
+      'search-panel': '#search',
+      'announcements-panel': '#announcements',
+      'view-feedback-panel': '#feedback',
+      'view-logs-panel': '#logs',
+      'attendance-trans-panel': '#attendance'
+    };
+    let appState = {
+      currentUser: null,
+      officerData: [],
+      events: [],
+      announcements: [],
+      unreadCount: 0
+    };
+
+    // Elements
+    const loginPanel = $('#login-panel');
+    const loginBtn = $('#login-btn');
+    const guestLoginBtn = $('#guest-login-btn');
+    const usernameInput = $('#username-input');
+    const passwordInput = $('#password-input');
+    const eyeToggle = $('#eye-toggle');
+    const loginStatus = $('#login-status');
+
+    const mainMenuPanel = $('#main-menu-panel');
+    const welcomeMessage = $('#welcome-message');
+    const userDetailsDiv = $('#user-details');
+    const userAvatar = $('#user-avatar');
+    const mainMenuButtons = $('#main-menu-buttons');
+    const annBadge = $('#ann-badge');
+
+    const homepagePanel = $('#homepage-panel');
+    const homepageContent = $('#homepage-content');
+    const projectGallery = $('#project-gallery');
+    const homepageContacts = $('#homepage-contacts');
+
+    const searchPanel = $('#search-panel');
+    const searchInput = $('#search-input');
+    const suggestionsList = $('#suggestions-list');
+    const resultBox = $('#result-box');
+
+    const feedbackContainer = $('#feedback-container');
+    const logsContainer = $('#access-logs-container');
+    const profileContainer = $('#profile-container');
+
+    const announcementsPanel = $('#announcements-panel');
+    const annList = $('#ann-list');
+    const createAnnBtn = $('#create-ann-btn');
+    const annFilter = $('#ann-filter');
+
+    const attendanceTransPanel = $('#attendance-trans-panel');
+    const attendanceTable = $('#attendance-table');
+
+
+    var modalRoot = $('#modal-root');
+    var modalState = {
+      escListener: null,
+      trapCleanup: null,
+      lastFocused: null,
+      backdrop: null,
+      modal: null,
+      panel: null
+    };
+    const htmlEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => htmlEscapeMap[ch] || ch);
+    const escapeAttr = value => escapeHtml(value);
+    const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
+    const isSafeHttpUrl = (value) => {
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch(e){
+        return false;
+      }
+    };
+    const normalizeExternalUrl = (value) => {
+      const raw = textOrEmpty(value);
+      if(!raw) return '';
+      const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      if(!isSafeHttpUrl(withProtocol)) return '';
+      try {
+        return new URL(withProtocol).toString();
+      } catch(err){
+        return '';
+      }
+    };
+    const buildGmailComposeUrl = (email) => {
+      const safeEmail = textOrEmpty(email);
+      if(!safeEmail) return '';
+      const compose = new URL('https://mail.google.com/mail/');
+      compose.searchParams.set('view','cm');
+      compose.searchParams.set('fs','1');
+      compose.searchParams.set('to', safeEmail);
+      compose.searchParams.set('su','[YSP] Issue Report');
+      return compose.toString();
+    };
+    const openExternal = (url) => {
+      if(!isSafeHttpUrl(url)) return;
+      try {
+        const win = window.open(safeUrl, '_blank', 'noopener');
+        if(win){ win.opener = null; }
+      } catch(err){
+        console.warn('Unable to open link', err);
+      }
+    }
+
+    // Utilities
+    function switchPanels(targetId){
+      panels.forEach(function(p){
+        if(p.id === targetId){
+          p.classList.remove('hidden');
+          p.classList.add('active');
+          p.style.display = 'flex';
+          p.setAttribute('aria-hidden','false');
+        } else {
+          fn();
+        }
+      });
+      // small scroll to top for panel
+      const t = $('#'+targetId);
+      if(t) t.scrollTop = 0;
+      const hash = panelHashMap[targetId];
+      if(hash){
+        location.hash = hash;
+      }
+    }
+
+    function showStatusFor(idSelectorOrText, text, timeout){
+      const numericTimeout = typeof timeout === 'number' ? timeout : Number(timeout);
+      const displayDuration = !isNaN(numericTimeout) ? numericTimeout : 4200;
+      // convenience: if idSelectorOrText equals 'login' show in login-status
+      const el = (typeof idSelectorOrText === 'string' && idSelectorOrText.startsWith('#')) ? document.querySelector(idSelectorOrText) : document.getElementById(idSelectorOrText + '-status');
+      const target = el || (typeof idSelectorOrText === 'string' ? document.getElementById(idSelectorOrText) : null);
+      if(target){
+        target.textContent = text;
+        target.classList.add('show');
+        setTimeout(function(){ target.classList.remove('show'); }, displayDuration);
+      } else {
+        console.warn('Status element not found for', idSelectorOrText);
       }
       if(!YSP.modal || typeof YSP.modal.open !== 'function' || typeof YSP.modal.close !== 'function'){
         YSP.modal = (function(){
@@ -813,306 +999,434 @@
             return root;
           }
 
-          function close(skipFocusRestore){
-            if(!root){ return; }
-            root.innerHTML = '';
-            root.hidden = true;
-            if(!skipFocusRestore && lastFocused && typeof lastFocused.focus === 'function'){
-              try { lastFocused.focus(); } catch (err) {}
-            }
-            lastFocused = null;
-            document.removeEventListener('keydown', onEsc, true);
-          }
+    // modal helper
+    function showModal(options){
+      const opts = options || {};
+      const title = typeof opts.title === 'string' ? opts.title : '';
+      const bodyHtml = typeof opts.bodyHtml === 'string' ? opts.bodyHtml : '';
+      const footerHtml = typeof opts.footerHtml === 'string' ? opts.footerHtml : '';
+      const modalClass = typeof opts.modalClass === 'string' ? opts.modalClass : '';
+      const opener = opts.opener || null;
+      if(!modalRoot) return;
+      if(!modalRoot.hidden){
+        if(modalState.escListener){
+          document.removeEventListener('keydown', modalState.escListener);
+          modalState.escListener = null;
+        }
+        if(modalState.trapCleanup){
+          modalState.trapCleanup();
+          modalState.trapCleanup = null;
+        }
+        modalRoot.innerHTML = '';
+        modalRoot.hidden = true;
+        document.body.appendChild(modalRoot);
+      }
 
-          function onEsc(event){
-            if(event && event.key === 'Escape'){
-              close(false);
-            }
-          }
+      modalState.lastFocused = opener || document.activeElement || null;
 
-          function open(opts){
-            ensureRoot();
-            var options = opts || {};
-            lastFocused = options.opener || document.activeElement || null;
+      var titleId = 'modal-title-' + Date.now();
+      var descId = 'modal-desc-' + Date.now();
 
-            var backdrop = document.createElement('div');
-            backdrop.className = 'modal-backdrop is-open';
+      var backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
 
-            var modal = document.createElement('div');
-            modal.className = 'modal is-open';
-            modal.setAttribute('role', 'dialog');
-            modal.setAttribute('aria-modal', 'true');
+      var modalElement = document.createElement('div');
+      modalElement.className = 'modal';
+      if(modalClass){ modalElement.className += ' ' + modalClass; }
 
-            var panel = document.createElement('div');
-            panel.className = 'modal__panel';
+      var panel = document.createElement('div');
+      panel.className = 'modal__panel';
+      panel.setAttribute('role', 'dialog');
+      panel.setAttribute('aria-modal', 'true');
+      panel.setAttribute('aria-labelledby', titleId);
+      panel.setAttribute('aria-describedby', descId);
 
-            var header = document.createElement('div');
-            header.className = 'modal__header';
+      var header = document.createElement('div');
+      header.className = 'modal__header';
 
-            var title = document.createElement('h2');
-            title.className = 'modal__title';
-            title.textContent = options.title || 'Dialog';
-            header.appendChild(title);
+      var heading = document.createElement('h2');
+      heading.className = 'modal__title';
+      heading.id = titleId;
+      heading.textContent = title || 'Dialog';
+      header.appendChild(heading);
 
-            var closeBtn = document.createElement('button');
-            closeBtn.type = 'button';
-            closeBtn.className = 'modal__close';
-            closeBtn.setAttribute('aria-label', 'Close dialog');
-            closeBtn.innerHTML = '&times;';
-            closeBtn.addEventListener('click', function(){ close(false); });
-            header.appendChild(closeBtn);
+      var closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'modal__close';
+      closeButton.setAttribute('aria-label', 'Close dialog');
+      closeButton.innerHTML = '&times;';
+      closeButton.addEventListener('click', function(){ closeModal(); });
 
-            var body = document.createElement('div');
-            body.className = 'modal__body';
-            body.innerHTML = options.bodyHtml || '';
+      var body = document.createElement('div');
+      body.className = 'modal__body';
+      body.id = descId;
+      body.innerHTML = bodyHtml;
 
-            var footer = document.createElement('div');
-            footer.className = 'modal__footer';
-            footer.innerHTML = options.footerHtml || '<button type="button" data-close="1">Close</button>';
+      var footer = document.createElement('div');
+      footer.className = 'modal__footer';
+      footer.innerHTML = footerHtml;
+      footer.querySelectorAll('[data-modal-close]').forEach(function(el){
+        if(el.tagName === 'BUTTON' && !el.hasAttribute('type')){
+          el.setAttribute('type','button');
+        }
+        el.addEventListener('click', function(){ closeModal(); });
+      });
 
-            panel.appendChild(header);
-            panel.appendChild(body);
-            panel.appendChild(footer);
-            modal.appendChild(panel);
+      modalElement.appendChild(panel);
 
-            var host = ensureRoot();
-            host.innerHTML = '';
-            host.appendChild(backdrop);
-            host.appendChild(modal);
-            host.hidden = false;
+      modalRoot.innerHTML = '';
+      modalRoot.appendChild(backdrop);
+      modalRoot.appendChild(modalElement);
+      modalRoot.hidden = false;
 
-            var closers = host.querySelectorAll('[data-close]');
-            for(var i = 0; i < closers.length; i++){
-              closers[i].addEventListener('click', function(){ close(false); });
-            }
+      requestAnimationFrame(function(){
+        backdrop.classList.add('is-open');
+        modal.classList.add('is-open');
+      });
 
-            backdrop.addEventListener('click', function(ev){
-              if(ev.target === backdrop){ close(false); }
-            });
+      const focusableSelectors = 'a[href], area[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+      let focusables = Array.from(panel.querySelectorAll(focusableSelectors)).filter(function(el){ return el.offsetParent !== null || el === closeButton; });
+      if(!focusables.length){
+        panel.setAttribute('tabindex', '-1');
+        focusables.push(panel);
+      }
+      focusables[0].focus();
 
-            document.addEventListener('keydown', onEsc, true);
+      const trapHandler = function(event){
+        if(event.key !== 'Tab') return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if(event.shiftKey && document.activeElement === first){
+          event.preventDefault();
+          last.focus();
+        } else if(!event.shiftKey && document.activeElement === last){
+          event.preventDefault();
+          first.focus();
+        }
+      };
+      panel.addEventListener('keydown', trapHandler);
+      modalState.trapCleanup = function(){ panel.removeEventListener('keydown', trapHandler); };
 
-            setTimeout(function(){
-              var first = modal.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-              if(first && typeof first.focus === 'function'){
-                first.focus();
-              }
-            }, 30);
-          }
+      backdrop.addEventListener('click', function(event){
+        if(event.target === backdrop){
+          closeModal();
+        }
+      };
+
+      const escListener = function(event){
+        if(event.key === 'Escape'){
+          event.preventDefault();
+          closeModal();
+        }
+      };
+      document.addEventListener('keydown', escListener);
+
+      modalState.escListener = escListener;
+      modalState.backdrop = backdrop;
+      modalState.modal = modalElement;
+      modalState.panel = panel;
+    }
+
+    function closeModal(options){
+      if(!modalRoot || modalRoot.hidden) return;
+      const opts = options || {};
+      const skipFocusRestore = !!opts.skipFocusRestore;
+      const focusTarget = modalState.lastFocused;
 
           return { open: open, close: close };
         })();
       }
 
-      var session = null;
-      var officerCache = { list: [], map: {} };
-      var officerFetched = false;
-      var homepageLoaded = false;
-      var homepageData = null;
-      var kpiChart = null;
-      var loginBound = false;
-      var directoryBound = false;
-      var manualBound = false;
-      var hashNavigating = false;
-      var html5Qr = null;
-      var fallbackQr = null;
-      var scannerRunning = false;
-      var projectModalOpener = null;
-
-      var mockData = {
-        validateLogin: function(u){
-          return { success: true, user: { name: u || 'Member User', role: 'Member', email: 'member@example.com', id: 'YSP-0000' } };
-        },
-        guestLogin: function(name){
-          return { success: true, user: { name: name || 'Guest', role: 'Guest', email: 'guest@tagum.ysp', id: 'GUEST', isGuest: true } };
-        },
-        getHomepageContent: function(){
-          return {
-            success: true,
-            about: 'The Youth and Students for Peace (YSP) Tagum Chapter empowers the youth through service.',
-            mission: 'Promote peacebuilding programs and community engagement.',
-            vision: 'A united youth community grounded in principles of peace, service, and excellence.',
-            objectives: 'Cultivate leadership, strengthen collaboration, and advance sustainable initiatives.',
-            orgChartUrl: 'https://placehold.co/1024x576?text=Org+Chart',
-            facebookUrl: 'https://www.facebook.com/ysptagum',
-            email: 'support@ysptagum.org',
-            projects: [
-              { title: 'Peace Caravan', description: 'A city-wide caravan promoting youth empowerment.', imageUrl: 'https://placehold.co/640x360?text=Peace+Caravan' },
-              { title: 'Tree Planting', description: 'Reforestation drive with local youth leaders.', imageUrl: 'https://placehold.co/640x360?text=Tree+Planting' }
-            ]
-          };
-        },
-        officerSuggestions: function(q){
-          var items = [
-            { id: 'YSP0001', name: 'Juan Dela Cruz', role: 'President', email: 'juan@ysp.org' },
-            { id: 'YSP0002', name: 'Maria Santos', role: 'Vice President', email: 'maria@ysp.org' },
-            { id: 'YSP0003', name: 'Lee Kim', role: 'Secretary', email: 'lee@ysp.org' }
-          ];
-          if(!q){ return { success: true, suggestions: items }; }
-          var term = String(q).toLowerCase();
-          var filtered = items.filter(function(item){
-            return item.name.toLowerCase().indexOf(term) !== -1 || item.id.toLowerCase().indexOf(term) !== -1;
-          });
-          return { success: true, suggestions: filtered };
-        },
-        getRecordById: function(id){
-          return { success: true, record: { id: id, name: 'Sample Officer', role: 'Officer', email: 'officer@ysp.org', avatar: 'https://placehold.co/640x360?text=Officer' } };
-        },
-        getActiveEvents: function(){
-          return { success: true, events: [ { id: 'EVT1', name: 'Monthly Gathering' }, { id: 'EVT2', name: 'Community Outreach' } ] };
-        },
-        logAttendanceScan: function(code){
-          return { success: true, message: 'Attendance recorded for ' + code };
-        },
-        manualAttendance: function(id, eventId, action){
-          return { success: true, message: 'Recorded ' + action + ' for ' + id + ' in event ' + eventId };
-        },
-        getMyAttendance: function(){
-          return { success: true, rows: [
-            { date: '2024-05-01', event: 'Peace Rally', timeIn: '08:00', timeOut: '12:00' },
-            { date: '2024-05-10', event: 'Workshop', timeIn: '09:00', timeOut: '11:30' }
-          ] };
-        },
-        getAttendanceKPIs: function(){
-          return { success: true, stats: { totalEvents: 8, present: 6, absent: 2, late: 1 }, kpi: {
-            labels: ['Jan','Feb','Mar','Apr'],
-            present: [8,9,7,10],
-            absent: [1,0,2,1]
-          } };
-        },
-        listEvents: function(){
-          return { success: true, events: [
-            { id: 'EVT1', name: 'Peace Summit', date: '2024-06-01', active: true },
-            { id: 'EVT2', name: 'Service Project', date: '2024-06-15', active: false }
-          ] };
-        },
-        toggleEventActive: function(id){ return { success: true, message: 'Toggled ' + id }; },
-        createEvent: function(){ return { success: true, message: 'Event created.' }; },
-        listAnnouncements: function(){
-          return { success: true, announcements: [
-            { id: 'ANN1', title: 'General Assembly', body: 'Join us this Saturday at the city hall.', createdAt: '2024-05-15', isUnread: true },
-            { id: 'ANN2', title: 'Volunteer Drive', body: 'Sign up for our community clean up.', createdAt: '2024-05-10', isUnread: false }
-          ] };
-        },
-        listMyFeedback: function(){
-          return { success: true, feedback: [ { id: 'FDB1', message: 'Great event last week!', createdAt: '2024-05-12' } ] };
-        },
-        listAllFeedback: function(){
-          return { success: true, feedback: [
-            { id: 'FDB1', name: 'Juan', message: 'Loved the program.', createdAt: '2024-05-12' },
-            { id: 'FDB2', name: 'Maria', message: 'More workshops please.', createdAt: '2024-05-14' }
-          ] };
-        },
-        sendFeedback: function(){ return { success: true, message: 'Feedback sent. Thank you!' }; },
-        getAccessLogs: function(){
-          return { success: true, logs: [
-            { timestamp: '2024-05-01 08:00', id: 'YSP0001', name: 'Juan Dela Cruz' },
-            { timestamp: '2024-05-01 08:05', id: 'YSP0002', name: 'Maria Santos' }
-          ] };
-        },
-        getSession: function(){ return { success: false }; },
-        logout: function(){ return { success: true }; }
-      };
-
-      function $(selector, scope){
-        return (scope || document).querySelector(selector);
-      }
-      function $$(selector, scope){
-        return Array.prototype.slice.call((scope || document).querySelectorAll(selector));
-      }
-      function esc(value){
-        return String(value == null ? '' : value)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-      function onReady(fn){
-        if(document.readyState === 'loading'){
-          document.addEventListener('DOMContentLoaded', fn, { once: true });
-        } else {
-          fn();
-        }
-      }
-      function openSafe(url){
-        if(window.YSP && typeof YSP.openExternal === 'function'){
-          YSP.openExternal(url);
-        }
-      }
-      function ensureToastContainer(){
-        var el = $('#toast-container');
-        if(!el){
-          el = document.createElement('div');
-          el.id = 'toast-container';
-          el.className = 'toast-container';
-          document.body.appendChild(el);
-        }
-        return el;
-      }
-      function toast(message){
-        var container = ensureToastContainer();
-        var toastEl = document.createElement('div');
-        toastEl.className = 'toast';
-        toastEl.textContent = String(message || '');
-        container.appendChild(toastEl);
-        setTimeout(function(){ toastEl.classList.add('fade-out'); }, 3800);
-        setTimeout(function(){ if(toastEl.parentNode){ toastEl.parentNode.removeChild(toastEl); } }, 4200);
-      }
-      function asPayload(res){
-        return res && typeof res === 'object' && res !== null && 'data' in res ? res.data : res;
-      }
-      function isSuccess(res){
-        if(!res || typeof res !== 'object'){ return false; }
-        if('success' in res){ return !!res.success; }
-        return true;
-      }
-      function showModal(opts){
-        if(!window.YSP || !YSP.modal || typeof YSP.modal.open !== 'function'){
-          return;
-        }
-        var opener = opts && opts.opener ? opts.opener : document.activeElement;
-        projectModalOpener = opener;
-        YSP.modal.open({
-          title: esc(opts && opts.title ? opts.title : 'Dialog'),
-          bodyHtml: opts && opts.bodyHtml ? opts.bodyHtml : '',
-          footerHtml: opts && opts.footerHtml ? opts.footerHtml : '<button type="button" class="btn btn-secondary" data-close="1">Close</button>'
+      function hideAllPanels(){
+        $$('.panel').forEach(function(panel){
+          panel.classList.remove('active');
+          panel.classList.add('hidden');
         });
       }
-      function closeModal(options){
-        if(window.YSP && YSP.modal && typeof YSP.modal.close === 'function'){
-          YSP.modal.close(options && options.skipFocusRestore === true);
+    }
+
+      setTimeout(function(){
+        modalRoot.innerHTML = '';
+        modalRoot.hidden = true;
+        modalState.backdrop = null;
+        modalState.modal = null;
+        modalState.panel = null;
+        modalState.lastFocused = null;
+        if(!skipFocusRestore && focusTarget && typeof focusTarget.focus === 'function'){
+          try {
+            focusTarget.focus();
+          } catch (e) {
+            setTimeout(function(){
+              try { focusTarget.focus(); } catch(err){}
+            }, 50);
+          }
         }
+      }, 220);
+    }
+
+      function show(id){
+        var target = document.getElementById(id);
+        if(!target){ return; }
+        hideAllPanels();
+        target.classList.remove('hidden');
+        target.classList.add('active');
+        if(!hashNavigating){
+          location.hash = id;
+        }
+        var loader = panelLoaders[id];
+        if(typeof loader === 'function'){
+          loader();
+        }
+      }
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
+
+      if(!window.google || !google.script){
+        // Local preview
+        setTimeout(function(){
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Log In';
+          showStatusFor('login', 'Local preview: google.script.run not available. Deploy to Apps Script to test login.');
+        }, 400);
+        return;
       }
 
-      function callServer(name, args, onSuccess, onFailure){
-        var runner = window.google && google.script && google.script.run;
-        var hasRunner = !!runner;
-        var failure = function(err){
-          console.error('Server call failed:', name, err);
-          toast('⚠️ ' + (err && err.message ? err.message : 'Unable to reach server'));
-          if(onFailure){ onFailure(err); }
-        };
-        if(hasRunner){
-          try {
-            var context = runner.withSuccessHandler(function(result){
-              if(onSuccess){ onSuccess(result); }
-            }).withFailureHandler(failure);
-            if(typeof context[name] === 'function'){
-              context[name].apply(context, args || []);
-            } else {
-              throw new Error('Endpoint ' + name + ' is not defined on google.script.run');
-            }
-          } catch (err){
-            failure(err);
-          }
+      google.script.run.withSuccessHandler(function(resp){
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+        if(resp && resp.success){
+          appState.currentUser = resp.user;
+          populateAfterLogin();
         } else {
-          console.warn('Offline mode: returning mock data for', name);
-          var mock = mockData[name];
-          var value = typeof mock === 'function' ? mock.apply(null, args || []) : mock;
-          setTimeout(function(){ if(onSuccess){ onSuccess(value); } }, 180);
+          showStatusFor('login', resp && resp.message ? resp.message : 'Invalid credentials');
         }
+      }).withFailureHandler(function(err){
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Log In';
+        console.error('checkLogin failed', err);
+        showStatusFor('login', 'Could not connect to server');
+      }).checkLogin({ username, password });
+    }
+
+    function handleGuestLogin(){
+      showModal({
+        title: 'Guest Access',
+        modalClass: 'guest-modal-shell',
+        bodyHtml: `
+          <div class="guest-modal">
+            <p>Enter your full name so we can record your visit in the access logs.</p>
+            <label for="guest-name-input" style="font-weight:600">Full Name</label>
+            <input id="guest-name-input" class="input-field" type="text" placeholder="e.g. Juan Dela Cruz" autocomplete="name" />
+            <p id="guest-modal-status" class="guest-modal__status" role="status" aria-live="polite"></p>
+          </div>
+        `,
+        footerHtml: `
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+            <button type="button" class="btn secondary" data-modal-close="true">Cancel</button>
+            <button type="button" class="btn" id="guest-continue-btn">Continue as Guest</button>
+          </div>
+        `,
+        opener: guestLoginBtn
+      });
+
+      requestAnimationFrame(() => {
+        const nameInput = document.getElementById('guest-name-input');
+        const continueBtn = document.getElementById('guest-continue-btn');
+        const statusEl = document.getElementById('guest-modal-status');
+        if(nameInput){
+          nameInput.focus();
+        }
+        const completeGuestLogin = (guestName) => {
+          appState.currentUser = { name: guestName, role: 'Guest', idCode: 'Visitor', position: 'Guest' };
+          closeModal({ skipFocusRestore: true });
+          loadHomepage();
+          switchPanels('homepage-panel');
+        };
+        const logAndContinue = (guestName) => {
+          if(window.google && google.script && google.script.run){
+            google.script.run
+              .withSuccessHandler(() => completeGuestLogin(guestName))
+              .withFailureHandler(err => {
+                console.warn('Guest logAccess failed', err);
+                completeGuestLogin(guestName);
+              })
+              .logAccess({ idCode: 'Visitor', name: guestName });
+          } else {
+            completeGuestLogin(guestName);
+          }
+        };
+        const handleContinue = () => {
+          if(!nameInput || !continueBtn) return;
+          const guestName = (nameInput.value || '').trim();
+          if(!guestName){
+            if(statusEl){
+              statusEl.textContent = 'Please enter your name to continue.';
+              statusEl.classList.add('is-error');
+            }
+            nameInput.focus();
+            return;
+          }
+          if(statusEl){
+            statusEl.textContent = 'Signing you in as a guest…';
+            statusEl.classList.remove('is-error');
+          }
+          continueBtn.disabled = true;
+          continueBtn.textContent = 'Signing in…';
+          logAndContinue(guestName);
+        };
+        if(continueBtn){
+          continueBtn.addEventListener('click', handleContinue);
+        }
+        if(nameInput){
+          nameInput.addEventListener('keydown', (evt) => {
+            if(evt.key === 'Enter'){
+              evt.preventDefault();
+              handleContinue();
+            }
+          });
+        }
+      });
+    }
+
+    // Eye toggle
+    eyeToggle.addEventListener('click', function(){
+      if(passwordInput.type === 'password'){
+        passwordInput.type = 'text';
+        eyeToggle.classList.add('closed');
+      } else {
+        passwordInput.type = 'password';
+        eyeToggle.classList.remove('closed');
       }
+    });
+
+    // ---------------- After login ----------------
+    function populateAfterLogin(){
+      const u = appState.currentUser || {};
+      const shortName = u.name ? (u.name.split(',')[0] || u.name) : 'Member';
+      welcomeMessage.textContent = `Welcome, ${shortName}`;
+      userDetailsDiv.innerHTML = `
+        <p style="margin:0"><strong>${u.name||''}</strong></p>
+        <p style="margin:6px 0 0 0"><small>${u.position||''} • ${u.role||''}</small></p>
+        <p style="margin:6px 0 0 0;opacity:.8"><small>ID: ${u.idCode||''}</small></p>
+      `;
+      // avatar
+      if(window.google && google.script){
+        google.script.run.withSuccessHandler(function(profile){
+          if(profile && profile.ProfilePictureURL){
+            userAvatar.src = safeImageUrl(profile.ProfilePictureURL, 'https://via.placeholder.com/120');
+          }
+        }).withFailureHandler(function(err){ console.warn('Profile image fetch failed', err); }).getUserProfile(u.idCode);
+      }
+      buildDynamicMenus();
+      loadUnreadAnnouncements();
+      switchPanels('main-menu-panel');
+
+      // Preload officer data & events for privileged roles
+      if(['Admin','Auditor','Head'].includes(u.role) && window.google && google.script){
+        google.script.run.withSuccessHandler(function(res){ if(res && res.success) appState.officerData = res.data || []; }).withFailureHandler(function(err){ console.warn('getOfficerData failed', err); }).getOfficerData();
+        google.script.run.withSuccessHandler(function(res){ if(res && res.success) appState.events = res.data || []; }).withFailureHandler(function(err){ console.warn('getEvents failed', err); }).getEvents();
+      }
+
+    // ---------------- Build dynamic menu ----------------
+    function buildDynamicMenus(){
+      mainMenuButtons.innerHTML = '';
+      const u = appState.currentUser || {};
+
+      // Homepage
+      const homepageBtn = document.createElement('button'); homepageBtn.className='btn secondary'; homepageBtn.textContent='Homepage';
+      homepageBtn.onclick = function(){ loadHomepage(); switchPanels('homepage-panel'); };
+      mainMenuButtons.appendChild(homepageBtn);
+
+      // Attendance details
+      const attendanceDetails = document.createElement('details');
+      attendanceDetails.innerHTML = `<summary>Attendance System</summary>`;
+      const btnMyQr = document.createElement('button'); btnMyQr.className='btn secondary'; btnMyQr.textContent='My QR ID';
+      btnMyQr.onclick = function(){ showMyQr(); };
+      attendanceDetails.appendChild(btnMyQr);
+
+      if(['Admin','Auditor','Head'].includes(u.role)){
+        const btnScan = document.createElement('button'); btnScan.className='btn secondary'; btnScan.textContent='Open Scanner (separate page)';
+        btnScan.onclick = function(){
+          // web apps: instruct to open scanner link (server can provide URL)
+          if(window.google && google.script){
+            // optionally open separate page if backend exposes a URL; otherwise notify user
+            google.script.run
+              .withSuccessHandler(function(url){
+                if(url && typeof url === 'string') {
+                  window.open(url, '_blank', 'noopener');
+                } else {
+                  alert('QR Scanner is a separate page. Open QRScanner.html in a new tab (deployed web app) or use the scanner in Admin console.');
+                }
+              })
+              .withFailureHandler(function(err){
+                console.error('getQrScannerUrl failed', err);
+                alert('QR Scanner link unavailable. Please open the deployed scanner manually.');
+              })
+              .getQrScannerUrl();
+          } else {
+            if(status){ status.textContent = 'Invalid credentials.'; }
+            toast('Invalid credentials.');
+          }
+        };
+        attendanceDetails.appendChild(btnScan);
+
+        const btnManual = document.createElement('button'); btnManual.className='btn secondary'; btnManual.textContent='Manual Attendance';
+        btnManual.onclick = function(){
+          // use the search panel to find a person and mark status — simplified to redirect to search for manual marking
+          switchPanels('search-panel');
+          // instruction: admins can search and then a UI will call manual attendance backend
+        };
+        attendanceDetails.appendChild(btnManual);
+      }
+      mainMenuButtons.appendChild(attendanceDetails);
+
+      // Analytics & Admin
+      const analytics = document.createElement('details'); analytics.innerHTML = `<summary>Analytics & Admin</summary>`;
+      if(['Admin','Auditor','Head'].includes(u.role)){
+        const dirBtn = document.createElement('button'); dirBtn.className='btn secondary'; dirBtn.textContent='Officer Directory Search';
+          dirBtn.onclick = function(){ switchPanels('search-panel'); };
+        analytics.appendChild(dirBtn);
+      }
+      if(['Admin','Auditor'].includes(u.role)){
+        const dashBtn = document.createElement('button'); dashBtn.className='btn secondary'; dashBtn.textContent='Attendance Dashboard';
+          dashBtn.onclick = function(){ switchPanels('attendance-trans-panel'); loadAttendanceTransparency(); };
+        analytics.appendChild(dashBtn);
+
+        const manageBtn = document.createElement('button'); manageBtn.className='btn secondary'; manageBtn.textContent='Manage Events';
+          manageBtn.onclick = function(){ alert('Event creation is done within the Admin Google Sheet (Master Attendance Log columns).'); };
+        analytics.appendChild(manageBtn);
+
+        const viewFeedbackBtn = document.createElement('button'); viewFeedbackBtn.className='btn secondary'; viewFeedbackBtn.textContent='View Feedback';
+          viewFeedbackBtn.onclick = function(){ loadFeedback(); switchPanels('view-feedback-panel'); };
+        analytics.appendChild(viewFeedbackBtn);
+      }
+      if(u.role === 'Auditor'){
+        const logsBtn = document.createElement('button'); logsBtn.className='btn secondary'; logsBtn.textContent='View Access Logs';
+          logsBtn.onclick = function(){ loadAccessLogs(); switchPanels('view-logs-panel'); };
+        analytics.appendChild(logsBtn);
+      }
+      if(analytics.querySelectorAll(':scope > *').length>1) mainMenuButtons.appendChild(analytics);
+
+      // Announcements
+      const annBtn = document.createElement('button'); annBtn.className='btn secondary'; annBtn.textContent='Announcements';
+        annBtn.onclick = function(){ loadAnnouncements(); switchPanels('announcements-panel'); };
+      mainMenuButtons.appendChild(annBtn);
+
+      // Feedback
+      const feedbackBtn = document.createElement('button'); feedbackBtn.className='btn'; feedbackBtn.textContent='Submit Feedback';
+        feedbackBtn.onclick = function(){ switchPanels('view-feedback-panel'); loadFeedback(); };
+      mainMenuButtons.appendChild(feedbackBtn);
+
+      // Profile
+      const profileBtn = document.createElement('button'); profileBtn.className='btn secondary'; profileBtn.textContent='My Profile';
+        profileBtn.onclick = function(){ loadUserProfile(); switchPanels('profile-panel'); };
+      mainMenuButtons.appendChild(profileBtn);
+
+      // Logout
+      const logoutBtn = document.createElement('button'); logoutBtn.className='btn secondary'; logoutBtn.textContent='Log Out';
+        logoutBtn.onclick = function(){ handleLogout(); };
+      mainMenuButtons.appendChild(logoutBtn);
+    }
 
       function hideAllPanels(){
         $$('.panel').forEach(function(panel){
@@ -1136,137 +1450,6 @@
         'view-logs-panel': loadAccessLogs
       };
 
-      function show(id){
-        var target = document.getElementById(id);
-        if(!target){ return; }
-        hideAllPanels();
-        target.classList.remove('hidden');
-        target.classList.add('active');
-        if(!hashNavigating){
-          location.hash = id;
-        }
-        var loader = panelLoaders[id];
-        if(typeof loader === 'function'){
-          loader();
-        }
-      }
-
-      function bindBackButtons(){
-        $$('.back-btn').forEach(function(btn){
-          if(btn.dataset.bound === '1'){ return; }
-          btn.dataset.bound = '1';
-          btn.addEventListener('click', function(){
-            var target = btn.dataset.target || 'main-menu-panel';
-            if(btn.closest('#homepage-panel')){
-              target = 'login-panel';
-            }
-            show(target);
-          });
-        });
-      }
-
-      function bindLogin(){
-        if(loginBound){ return; }
-        loginBound = true;
-        var eyeToggle = $('#eye-toggle');
-        var password = $('#password');
-        var username = $('#username');
-        var loginBtn = $('#login-btn');
-        var guestBtn = $('#guest-login-btn');
-
-        if(eyeToggle){
-          eyeToggle.addEventListener('click', function(){
-            eyeToggle.classList.remove('pulse');
-            void eyeToggle.offsetWidth;
-            eyeToggle.classList.add('pulse');
-            if(password.type === 'password'){
-              password.type = 'text';
-              eyeToggle.setAttribute('aria-pressed', 'true');
-            } else {
-              password.type = 'password';
-              eyeToggle.setAttribute('aria-pressed', 'false');
-            }
-          });
-        }
-
-        function submitOnEnter(ev){
-          if(ev.key === 'Enter'){
-            ev.preventDefault();
-            doLogin();
-          }
-        }
-
-        if(username){ username.addEventListener('keydown', submitOnEnter); }
-        if(password){ password.addEventListener('keydown', submitOnEnter); }
-        if(loginBtn){ loginBtn.addEventListener('click', doLogin); }
-        if(guestBtn){
-          guestBtn.addEventListener('click', function(){
-            var body = '<div class="form-stack">' +
-              '<label for="guest-name">Enter your name</label>' +
-              '<input id="guest-name" type="text" placeholder="Guest name" />' +
-              '</div>';
-            var footer = '<div class="panel-actions">' +
-              '<button type="button" class="btn btn-secondary" data-close="1">Cancel</button>' +
-              '<button type="button" class="btn btn-primary" id="confirm-guest">Continue</button>' +
-              '</div>';
-            showModal({ title: 'Guest Login', bodyHtml: body, footerHtml: footer, opener: guestBtn });
-            var modalRoot = document.getElementById('modal-root');
-            setTimeout(function(){
-              var input = modalRoot ? modalRoot.querySelector('#guest-name') : null;
-              var confirm = modalRoot ? modalRoot.querySelector('#confirm-guest') : null;
-              if(input){ input.focus(); }
-              if(confirm){
-                confirm.addEventListener('click', function(){
-                  var name = input ? input.value.trim() : '';
-                  if(!name){ toast('Please enter your name.'); return; }
-                  callServer('guestLogin', [name], function(res){
-                    closeModal();
-                    var payload = asPayload(res);
-                    var user = payload && payload.user ? payload.user : payload;
-                    if(isSuccess(res) && user){
-                      setSession(user || { name: name, role: 'Guest', isGuest: true });
-                      toast('Welcome, ' + (user.name || name) + '!');
-                      show('homepage-panel');
-                    } else {
-                      toast('Unable to log in as guest.');
-                    }
-                  });
-                });
-              }
-            }, 50);
-          });
-        }
-      }
-
-      function doLogin(){
-        var username = $('#username');
-        var password = $('#password');
-        var status = $('#login-status');
-        var userVal = username ? username.value.trim() : '';
-        var passVal = password ? password.value.trim() : '';
-        if(!userVal || !passVal){
-          toast('Please provide both username and password.');
-          if(status){ status.textContent = 'Please fill in both fields.'; }
-          return;
-        }
-        if(status){ status.textContent = 'Signing in...'; }
-        callServer('validateLogin', [userVal, passVal], function(res){
-          var payload = asPayload(res);
-          var user = payload && payload.user ? payload.user : (payload && payload.name ? payload : null);
-          if(isSuccess(res) && user){
-            if(status){ status.textContent = 'Login successful!'; }
-            setSession(user);
-            toast('Welcome back, ' + (user.name || 'member') + '!');
-            show('main-menu-panel');
-          } else {
-            if(status){ status.textContent = 'Invalid credentials.'; }
-            toast('Invalid credentials.');
-          }
-        }, function(){
-          if(status){ status.textContent = 'Unable to log in.'; }
-        });
-      }
-
       function setSession(user){
         session = user || null;
         window.__SESSION__ = session;
@@ -1285,111 +1468,62 @@
         $('#login-status').textContent = '';
         if($('#eye-toggle')){ $('#eye-toggle').setAttribute('aria-pressed', 'false'); }
       }
+      projectGallery.innerHTML = '';
+      if(homepageContacts){ homepageContacts.innerHTML = ''; }
 
-      function buildDashboard(user){
-        var container = $('#dashboard-tiles');
-        if(!container){ return; }
-        container.innerHTML = '';
-        var isGuest = user && (user.isGuest || String(user.role || '').toLowerCase() === 'guest');
-        var tiles = [
-          { id: 'homepage-panel', title: 'Homepage', desc: 'View announcements and org information.' },
-          { id: 'profile-panel', title: 'Profile', desc: 'Review your member profile and QR ID.' },
-          { id: 'qr-attendance-panel', title: 'QR Attendance', desc: 'Scan members for attendance tracking.' },
-          { id: 'manual-attendance-panel', title: 'Manual Attendance', desc: 'Record attendance without QR.' },
-          { id: 'attendance-trans-panel', title: 'My Attendance', desc: 'View your attendance history.' },
-          { id: 'attendance-dashboard-panel', title: 'KPIs', desc: 'Visualize attendance performance.' },
-          { id: 'manage-events-panel', title: 'Manage Events', desc: 'Create and manage YSP events.' },
-          { id: 'announcements-panel', title: 'Announcements', desc: 'Publish updates to members.' },
-          { id: 'directory-panel', title: 'Directory', desc: 'Search officers and members.' },
-          { id: 'submit-feedback-panel', title: 'Submit Feedback', desc: 'Send feedback to the admins.' },
-          { id: 'view-feedback-panel', title: 'Feedback Inbox', desc: 'Review submitted feedback.' },
-          { id: 'view-logs-panel', title: 'Access Logs', desc: 'Monitor login and attendance logs.' }
-        ];
-        if(isGuest){
-          tiles = tiles.filter(function(tile){
-            return ['homepage-panel','directory-panel','submit-feedback-panel','attendance-trans-panel','profile-panel'].indexOf(tile.id) !== -1;
-          });
+      function renderStatus(message){
+        if(homepageContent){
+          homepageContent.innerHTML = '';
+          const info = document.createElement('p');
+          info.className = 'text-muted';
+          info.textContent = message;
+          homepageContent.appendChild(info);
         }
-        tiles.forEach(function(tile){
-          var el = document.createElement('button');
-          el.type = 'button';
-          el.className = 'tile';
-          el.setAttribute('role', 'listitem');
-          el.innerHTML = '<span class="tile-title">' + esc(tile.title) + '</span>' +
-            '<span class="tile-desc">' + esc(tile.desc) + '</span>';
-          el.addEventListener('click', function(){ show(tile.id); });
-          container.appendChild(el);
-        });
-        var logoutTile = document.createElement('button');
-        logoutTile.type = 'button';
-        logoutTile.className = 'tile';
-        logoutTile.innerHTML = '<span class="tile-title">Log Out</span><span class="tile-desc">Return to login screen.</span>';
-        logoutTile.addEventListener('click', function(){
-          callServer('logout', [], function(){
-            session = null;
-            window.__SESSION__ = null;
-            resetLoginPanel();
-            show('login-panel');
-            toast('Logged out successfully.');
-          });
-        });
-        container.appendChild(logoutTile);
+        projectGallery.innerHTML = '';
       }
 
-      function buildProfile(user){
-        user = user || {};
-        var nameEl = $('#profile-name');
-        var roleEl = $('#profile-role');
-        var emailEl = $('#profile-email');
-        var idEl = $('#profile-id');
-        if(nameEl){ nameEl.textContent = user.name || 'Guest Member'; }
-        if(roleEl){ roleEl.textContent = user.role || 'Guest'; }
-        if(emailEl){ emailEl.textContent = user.email || 'guest@example.com'; }
-        if(idEl){ idEl.textContent = user.id || 'N/A'; }
-        var qrContainer = $('#qrid');
-        if(qrContainer){
-          qrContainer.innerHTML = '';
-          if(window.QRCode){
-            var qr = new QRCode(qrContainer, {
-              text: user.id || 'GUEST',
-              width: 180,
-              height: 180,
-              colorDark: '#000000',
-              colorLight: '#ffffff',
-              correctLevel: QRCode.CorrectLevel.H
-            });
-            setTimeout(function(){
-              var downloadBtn = $('#btn-download-qr');
-              if(downloadBtn){
-                downloadBtn.onclick = function(){
-                  try {
-                    var img = qrContainer.querySelector('img') || qrContainer.querySelector('canvas');
-                    if(img){
-                      var link = document.createElement('a');
-                      link.download = (user.name || 'ysp-member') + '-qr.png';
-                      link.href = img.src || img.toDataURL('image/png');
-                      link.click();
-                    }
-                  } catch (err){
-                    toast('Unable to download QR code.');
-                  }
-                };
-              }
-            }, 80);
-          }
+      function renderContacts(content, options){
+        const opts = options || {};
+        const offline = !!opts.offline;
+        if(!homepageContacts) return;
+        homepageContacts.innerHTML = '';
+
+        const issueCard = document.createElement('article');
+        issueCard.className = 'card';
+        const issueTitle = document.createElement('h3');
+        issueTitle.textContent = 'Report Issues via FB/Email';
+        const issueBody = document.createElement('p');
+        issueBody.textContent = offline ? 'Contact links become active once connected to Google Apps Script.' : 'Reach the Youth Service Philippines Tagum Chapter through the official channels for support.';
+        issueCard.append(issueTitle, issueBody);
+
+        const actionStack = document.createElement('div');
+        actionStack.className = 'homepage-action-stack';
+        let hasActions = false;
+
+        const facebookLink = normalizeExternalUrl(content.facebookUrl);
+        if(facebookLink){
+          const fbBtn = document.createElement('button');
+          fbBtn.type = 'button';
+          fbBtn.className = 'btn btn-primary';
+          fbBtn.textContent = 'Open Facebook Page';
+          fbBtn.setAttribute('aria-label', 'Open the YSP Tagum Facebook page in a new tab');
+          fbBtn.addEventListener('click', () => openExternal(facebookLink));
+          actionStack.appendChild(fbBtn);
+          hasActions = true;
         }
       }
 
-      function deriveProjectsFromFlat(map){
-        if(!map){ return []; }
-        if(map.projects && Array.isArray(map.projects)){ return map.projects; }
-        var projects = [];
-        Object.keys(map).forEach(function(key){
-          if(/^projectImageUrl_/i.test(key)){
-            var idx = key.split('_').pop();
-            var image = map[key];
-            var desc = map['projectDesc_' + idx] || '';
-            projects.push({ title: 'Project ' + idx, description: desc, imageUrl: image });
+        if(content.email){
+          const composeUrl = buildGmailComposeUrl(content.email);
+          if(composeUrl){
+            const emailBtn = document.createElement('button');
+            emailBtn.type = 'button';
+            emailBtn.className = 'btn btn-primary';
+            emailBtn.textContent = 'Email YSP';
+            emailBtn.setAttribute('aria-label', 'Compose an email to YSP Tagum');
+            emailBtn.addEventListener('click', function(){ openExternal(composeUrl); });
+            actionStack.appendChild(emailBtn);
+            hasActions = true;
           }
         });
         return projects;
@@ -1454,13 +1588,16 @@
         renderContacts(data);
       }
 
-      function showHomeError(){
-        toast('Unable to load homepage content.');
+        homepageContacts.append(issueCard, devCard);
       }
 
-      function loadHomepage(){
-        if(homepageLoaded && homepageData){
-          renderHome(homepageData);
+      function renderProjects(projects){
+        projectGallery.innerHTML = '';
+        if(!projects.length){
+          const empty = document.createElement('p');
+          empty.className = 'text-muted';
+          empty.textContent = 'No projects yet.';
+          projectGallery.appendChild(empty);
           return;
         }
         callServer('getHomepageContent', [], function(res){
@@ -1476,28 +1613,188 @@
         }, showHomeError);
       }
 
-      function bindDirectory(){
-        if(directoryBound){ return; }
-        directoryBound = true;
-        var input = $('#search-input');
-        var list = $('#suggestions-list');
-        if(!input || !list){ return; }
-        var debounceTimer = null;
-        function renderSuggestions(items){
-          list.innerHTML = '';
-          if(!items || !items.length){
-            list.hidden = true;
-            return;
-          }
-          items.forEach(function(item){
-            var li = document.createElement('li');
-            li.tabIndex = 0;
-            li.innerHTML = '<strong>' + esc(item.name) + '</strong><span class="text-muted">' + esc(item.id) + ' • ' + esc(item.role || '') + '</span>';
-            li.addEventListener('click', function(){ openOfficer(item.id); list.hidden = true; });
-            li.addEventListener('keydown', function(ev){ if(ev.key === 'Enter'){ openOfficer(item.id); list.hidden = true; } });
-            list.appendChild(li);
+        projects.forEach(function(project, index){
+          const title = textOrEmpty(project.title) || `Project ${index + 1}`;
+          const description = textOrEmpty(project.description);
+          const imageUrl = isValidHttpUrl(project.imageUrl) ? project.imageUrl : '';
+
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'project-card';
+          card.setAttribute('aria-label', `View more about ${title}`);
+
+          const media = document.createElement('div');
+          media.className = 'project-card__media ratio-16x9';
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = `${title} photo`;
+          img.src = imageUrl;
+          media.appendChild(img);
+
+          const heading = document.createElement('p');
+          heading.className = 'project-card__title';
+          heading.textContent = title;
+
+          const copy = document.createElement('p');
+          copy.className = 'project-card__copy';
+          copy.textContent = description ? description.split(/\n+/)[0] : 'Tap to preview details.';
+
+          card.append(media, heading, copy);
+
+          const openProject = () => {
+            const bodyParts = description
+              ? description.split(/\n+/).map(line => {
+                  const trimmed = line.trim();
+                  return trimmed ? `<p>${escapeHtml(trimmed)}</p>` : '';
+                }).filter(Boolean).join('')
+              : '<p>Details coming soon.</p>';
+            const modalImage = escapeAttr(imageUrl || 'https://via.placeholder.com/960x540?text=YSP+Project');
+            showModal({
+              title,
+              modalClass: 'project-modal',
+              bodyHtml: `<div class="project-modal-body"><div class="project-modal-media ratio-16x9"><img src="${modalImage}" alt="${escapeAttr(title)}"></div><div class="project-modal-copy">${bodyParts}</div></div>`,
+              footerHtml: '<button type="button" class="btn secondary" data-modal-close="true">Back</button>',
+              opener: card
+            });
+          };
+          card.addEventListener('click', openProject);
+          card.addEventListener('keydown', function(evt){
+            if(evt.key === 'Enter' || evt.key === ' '){
+              evt.preventDefault();
+              openProject();
+            }
           });
-          list.hidden = false;
+        }
+        input.addEventListener('input', function(){
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(requestSuggestions, 200);
+        });
+      }
+
+      function normalizeContent(raw){
+        const source = raw || {};
+        const normalized = {
+          about: textOrEmpty(source.aboutYSP || source.about),
+          mission: textOrEmpty(source.mission),
+          vision: textOrEmpty(source.vision),
+          objectives: textOrEmpty(source.objectives),
+          founderName: textOrEmpty(source.founderName),
+          orgChartUrl: textOrEmpty(source.orgChartUrl),
+          facebookUrl: textOrEmpty(source.facebookUrl),
+          email: textOrEmpty(source.email),
+          projects: []
+        };
+
+        const incomingProjects = Array.isArray(source.projects) ? source.projects : [];
+        if(incomingProjects.length){
+          normalized.projects = incomingProjects.map(function(proj, idx){
+            return {
+              title: textOrEmpty(proj.title) || `Project ${idx + 1}`,
+              description: textOrEmpty(proj.description),
+              imageUrl: textOrEmpty(proj.imageUrl)
+            };
+          }).filter(function(p){ return p.description || p.imageUrl; });
+        } else {
+          let index = 1;
+          const derived = [];
+          while(source[`projectImageUrl_${index}`] || source[`projectDesc_${index}`]){
+            derived.push({
+              title: `Project ${index}`,
+              description: textOrEmpty(source[`projectDesc_${index}`]),
+              imageUrl: textOrEmpty(source[`projectImageUrl_${index}`])
+            });
+          }
+          normalized.projects = derived.filter(function(p){ return p.description || p.imageUrl; });
+        }
+        return normalized;
+      }
+
+      function renderOverview(content){
+        if(!homepageContent) return;
+        homepageContent.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+
+      function startScanner(){
+        if(scannerRunning){ return; }
+        var select = $('#event-select');
+        if(!select || !select.value){ toast('Select an event first.'); return; }
+        var scannerEl = $('#scanner');
+        if(!scannerEl){ return; }
+        scannerEl.innerHTML = '';
+        if(window.Html5Qrcode){
+          var formats = window.Html5QrcodeSupportedFormats ? [ window.Html5QrcodeSupportedFormats.QR_CODE ] : undefined;
+          html5Qr = new Html5Qrcode('scanner', {});
+          var config = { fps: 10, qrbox: 250 };
+          if(formats){ config.formatsToSupport = formats; }
+          html5Qr.start({ facingMode: 'environment' }, config, function(decodedText){ onScan(decodedText); }, function(err){ onScanError(err); });
+          scannerRunning = true;
+          toast('Scanner started.');
+        } else {
+          toast('Scanner library not available.');
+        }
+      }
+
+      function stopScanner(){
+        if(html5Qr){
+          html5Qr.stop().then(function(){ html5Qr.clear(); html5Qr = null; }).catch(function(err){ console.warn('Unable to stop scanner', err); });
+        }
+        scannerRunning = false;
+        toast('Scanner stopped.');
+      }
+
+        const blockFromText = function(title, value){
+          if(!value) return;
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = title;
+          block.appendChild(heading);
+          const para = document.createElement('p');
+          para.textContent = value;
+          block.appendChild(para);
+          fragment.appendChild(block);
+        };
+
+        blockFromText('Mission', content.mission);
+        blockFromText('Vision', content.vision);
+
+        if(content.objectives){
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = 'Objectives';
+          block.appendChild(heading);
+          const items = content.objectives.split(/\n|•|\u2022/).map(function(item){ return item.trim(); }).filter(Boolean);
+          if(items.length > 1){
+            const list = document.createElement('ul');
+            list.style.paddingLeft = '20px';
+            list.style.margin = '0';
+            items.forEach(function(text){
+              const li = document.createElement('li');
+              li.textContent = text;
+              list.appendChild(li);
+            });
+            block.appendChild(list);
+          } else {
+            showHomeError();
+          }
+        }
+
+        if(content.orgChartUrl && isValidHttpUrl(content.orgChartUrl)){
+          const block = document.createElement('div');
+          block.className = 'homepage-section-block';
+          const heading = document.createElement('h3');
+          heading.textContent = 'Organizational Chart';
+          block.appendChild(heading);
+          const figure = document.createElement('div');
+          figure.className = 'homepage-org-chart ratio-16x9';
+          const img = document.createElement('img');
+          img.loading = 'lazy';
+          img.alt = 'YSP Tagum organizational chart';
+          img.src = safeImageUrl(content.orgChartUrl, 'https://via.placeholder.com/1280x720?text=YSP+Org+Chart');
+          figure.appendChild(img);
+          block.appendChild(figure);
+          fragment.appendChild(block);
         }
         function requestSuggestions(){
           var term = input.value.trim();
@@ -1577,109 +1874,42 @@
         }, function(){ container.innerHTML = '<p class="text-muted">Unable to load profile.</p>'; });
       }
 
-      function populateActiveEvents(selectEl){
-        var select = typeof selectEl === 'string' ? $(selectEl) : selectEl;
-        if(!select){ return; }
-        callServer('getActiveEvents', [], function(res){
-          var payload = asPayload(res);
-          if(payload){
-            var events = payload.events || payload;
-            select.innerHTML = '<option value="">Select an event</option>';
-            events.forEach(function(evt){
-              var option = document.createElement('option');
-              option.value = evt.id;
-              option.textContent = evt.name;
-              select.appendChild(option);
-            });
-          }
-        });
-      }
-
-      function appendScanLog(message, isError){
-        var log = $('#scan-log');
-        if(!log){ return; }
-        var entry = document.createElement('p');
-        entry.textContent = message;
-        if(isError){ entry.style.color = '#a01010'; }
-        log.prepend(entry);
-      }
-
-      function startScanner(){
-        if(scannerRunning){ return; }
-        var select = $('#event-select');
-        if(!select || !select.value){ toast('Select an event first.'); return; }
-        var scannerEl = $('#scanner');
-        if(!scannerEl){ return; }
-        scannerEl.innerHTML = '';
-        if(window.Html5Qrcode){
-          var formats = window.Html5QrcodeSupportedFormats ? [ window.Html5QrcodeSupportedFormats.QR_CODE ] : undefined;
-          html5Qr = new Html5Qrcode('scanner', {});
-          var config = { fps: 10, qrbox: 250 };
-          if(formats){ config.formatsToSupport = formats; }
-          html5Qr.start({ facingMode: 'environment' }, config, function(decodedText){ onScan(decodedText); }, function(err){ onScanError(err); });
-          scannerRunning = true;
-          toast('Scanner started.');
-        } else {
-          toast('Scanner library not available.');
-        }
-      }
-
-      function stopScanner(){
-        if(html5Qr){
-          html5Qr.stop().then(function(){ html5Qr.clear(); html5Qr = null; }).catch(function(err){ console.warn('Unable to stop scanner', err); });
-        }
-        scannerRunning = false;
-        toast('Scanner stopped.');
-      }
-
-      function scanFileUpload(file){
-        if(!file){ toast('Select an image to scan.'); return; }
-        if(scannerRunning){ stopScanner(); }
-        if(!window.Html5Qrcode){ toast('Scanner library not available.'); return; }
-        var targetId = 'scan-fallback-target';
-        if(!fallbackQr){
-          try {
-            fallbackQr = new Html5Qrcode(targetId, {});
-          } catch (err){
-            console.warn('Unable to initialise fallback scanner', err);
-            toast('Unable to initialise fallback scanner.');
+      google.script.run
+        .withSuccessHandler(function(res){
+          if(!res || !res.success){
+            renderStatus('Could not load homepage content.');
+            renderContacts({ facebookUrl: '', email: '' });
+            renderProjects([]);
             return;
           }
-        }
-        fallbackQr.scanFile(file, true).then(function(decodedText){
-          onScan(decodedText);
-        }).catch(function(err){
-          console.warn('File scan failed', err);
-          toast('Unable to read QR from image.');
-        });
-      }
-
-      function onScan(decodedText){
-        var select = $('#event-select');
-        if(!select || !select.value){ toast('Please select an event.'); return; }
-        callServer('logAttendanceScan', [decodedText, select.value], function(res){
-          var payload = asPayload(res);
-          if(isSuccess(res) || (payload && payload.message)){
-            appendScanLog('✅ ' + ((payload && payload.message) || (res && res.message) || 'Attendance recorded.'));
-          } else {
-            appendScanLog('⚠️ Unable to record attendance.', true);
-          }
-        }, function(){ appendScanLog('⚠️ Unable to record attendance.', true); });
-      }
+          const normalized = normalizeContent(res.data || {});
+          renderOverview(normalized);
+          renderContacts(normalized);
+          renderProjects(normalized.projects);
+        })
+        .withFailureHandler(function(err){
+          console.error('getHomepageContent failed', err);
+          renderStatus('Could not load homepage content.');
+          renderContacts({ facebookUrl: '', email: '' });
+          renderProjects([]);
+        })
+        .getHomepageContent();
+    }
 
       function onScanError(err){
         console.warn('Scan error', err);
       }
 
-      function setupQrAttendance(){
-        populateActiveEvents('#event-select');
-        var startBtn = $('#start-scan');
-        var stopBtn = $('#stop-scan');
-        var fileInput = $('#scan-file');
-        var fileBtn = $('#scan-file-btn');
-        if(startBtn && !startBtn.dataset.bound){
-          startBtn.dataset.bound = '1';
-          startBtn.addEventListener('click', startScanner);
+    function setActiveSuggestion(newIndex){
+      const items = suggestionsList.querySelectorAll('.suggestion-item');
+      items.forEach(function(item, idx){
+        if(idx === newIndex){
+          item.classList.add('is-active');
+          item.setAttribute('aria-selected','true');
+          item.scrollIntoView({ block:'nearest' });
+        } else {
+          item.classList.remove('is-active');
+          item.setAttribute('aria-selected','false');
         }
         if(stopBtn && !stopBtn.dataset.bound){
           stopBtn.dataset.bound = '1';
@@ -1755,6 +1985,24 @@
         if(inBtn){ inBtn.addEventListener('click', function(){ submit('in'); }); }
         if(outBtn){ outBtn.addEventListener('click', function(){ submit('out'); }); }
       }
+      suggestionMatches = matches.slice(0,10);
+      suggestionsList.hidden = false;
+      searchInput.setAttribute('aria-expanded','true');
+      suggestionMatches.forEach(function(o, idx){
+        const li = document.createElement('li');
+        li.className = 'suggestion-item';
+        li.textContent = `${o[1] || ''} • ${o[2] || ''} (${o[0] || ''})`;
+        li.setAttribute('role','option');
+        li.setAttribute('id', `suggestion-${idx}`);
+        li.setAttribute('aria-selected','false');
+        li.dataset.index = idx;
+        li.addEventListener('mouseenter', function(){ setActiveSuggestion(idx); });
+        li.addEventListener('mousedown', function(event){ event.preventDefault(); });
+        li.addEventListener('click', function(){ selectSuggestion(idx); });
+        suggestionsList.appendChild(li);
+      });
+      setActiveSuggestion(0);
+    }
 
       function loadMyAttendance(){
         callServer('getMyAttendance', [], function(res){
@@ -1778,27 +2026,13 @@
           if(container){ container.innerHTML = '<div class="list-empty">Unable to load attendance.</div>'; }
         });
       }
-
-      function renderKpiChart(canvas, kpi){
-        if(!canvas || !window.Chart || !kpi){ return; }
-        if(kpiChart){ kpiChart.destroy(); }
-        var ctx = canvas.getContext('2d');
-        kpiChart = new Chart(ctx, {
-          type: 'bar',
-          data: {
-            labels: kpi.labels || [],
-            datasets: [
-              { label: 'Present', backgroundColor: 'rgba(246,66,31,0.85)', data: kpi.present || [] },
-              { label: 'Absent', backgroundColor: 'rgba(0,0,0,0.25)', data: kpi.absent || [] }
-            ]
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { position: 'top' } },
-            scales: { y: { beginAtZero: true } }
-          }
-        });
+      const matches = appState.officerData.filter(function(r){
+        return (r[0]||'').toString().toLowerCase().includes(q) || (r[1]||'').toString().toLowerCase().includes(q);
+      });
+      if(!matches.length){
+        clearSuggestions();
+        resultBox.innerHTML = '<p class="text-muted" style="margin:0">No officers found for that search.</p>';
+        return;
       }
 
       function loadKpis(){
@@ -1824,6 +2058,121 @@
           }
         });
       }
+
+    if(searchInput){
+      searchInput.addEventListener('input', handleSearchInput);
+      searchInput.addEventListener('keydown', handleSearchKeydown);
+      searchInput.addEventListener('blur', function(){ setTimeout(clearSuggestions, 120); });
+    }
+
+    function displayResult(officer){
+      if(!officer){ resultBox.innerHTML = ''; return; }
+      resultBox.innerHTML = `
+        <div class="card directory-result">
+          <div class="directory-meta">
+            <p style="margin:0"><strong>${officer[1] || ''}</strong></p>
+            <p style="margin:0">${officer[2] || ''}</p>
+            <p style="margin:0; opacity:0.75">${officer[0] || ''}</p>
+          </div>
+          <div class="panel-actions" style="justify-content:flex-start;">
+            <button class="btn secondary" id="mark-att-btn">Mark Attendance</button>
+          </div>
+        </div>`;
+      // allow admin to mark status manually
+      const markBtn = document.getElementById('mark-att-btn');
+      if(markBtn){
+        markBtn.onclick = function(){
+          // open modal to choose status and record
+          showModal({
+            title: 'Manual Attendance',
+            bodyHtml: `<div style="display:flex;flex-direction:column;gap:8px">
+              <div><strong>${officer[1] || ''}</strong><div style="opacity:.8">${officer[0] || ''}</div></div>
+              <label style="font-weight:700">Status</label>
+              <select id="manual-att-status" class="input-field">
+                <option value="Present">Present</option>
+                <option value="Late">Late</option>
+                <option value="Absent">Absent</option>
+                <option value="Excused">Excused</option>
+              </select>
+            </div>`,
+            footerHtml: `<button class="btn" id="save-manual-att">Save</button> <button class="btn secondary" id="cancel-manual-att">Cancel</button>`
+          });
+          setTimeout(function(){
+            document.getElementById('cancel-manual-att').onclick = closeModal;
+            document.getElementById('save-manual-att').onclick = function(){
+              const status = document.getElementById('manual-att-status').value;
+              closeModal();
+              // call backend to record manual attendance (supply idCode and status)
+              if(window.google && google.script){
+                google.script.run.withSuccessHandler(function(res){
+                  if(res && res.success) {
+                    alert(`Recorded ${officer[0]} as ${status}`);
+                  } else {
+                    alert(res.message || 'Failed to record.');
+                  }
+                }).withFailureHandler(function(err){ console.error(err); alert('Connection error.'); }).recordManualAttendance(officer[0], status);
+              } else {
+                alert('(Local) Recorded ' + officer[0] + ' as ' + status);
+              }
+            }, 80);
+          });
+        }
+      }
+
+      function loadMyFeedback(){
+        callServer('listMyFeedback', [], function(res){
+          var status = $('#feedback-status');
+          if(status && isSuccess(res)){
+            status.textContent = '';
+          }
+        });
+      }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ feedbackContainer.innerHTML = '<p>No feedback or error.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ feedbackContainer.innerHTML = '<p>No feedback found.</p>'; return; }
+        let html = `<table class="styled-table"><thead><tr><th>Timestamp</th><th>Name</th><th>ID</th><th>Message</th></tr></thead><tbody>`;
+        rows.forEach(function(r){ html += `<tr><td>${r.timestamp||''}</td><td>${r.name||''}</td><td>${r.idCode||''}</td><td>${r.message||''}</td></tr>`; });
+        html += `</tbody></table>`;
+        feedbackContainer.innerHTML = html;
+      }).withFailureHandler(function(err){
+        console.error('getFeedback failed', err);
+        feedbackContainer.innerHTML = '<p>Unable to load feedback at this time.</p>';
+      }).getFeedback();
+    }
+
+    function loadAccessLogs(){
+      logsContainer.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ logsContainer.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ logsContainer.innerHTML = '<p>No logs or error.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ logsContainer.innerHTML = '<p>No access logs found.</p>'; return; }
+        logsContainer.innerHTML = rows.map(function(r){ return `<div class="card" style="margin-bottom:8px"><strong>${r.name}</strong><div style="opacity:.8">${r.idCode} • ${r.timestamp}</div></div>`; }).join('');
+      }).withFailureHandler(function(err){
+        console.error('getAccessLogs failed', err);
+        logsContainer.innerHTML = '<p>Unable to load access logs right now.</p>';
+      }).getAccessLogs();
+    }
+
+    // ---------------- Profile ----------------
+    function loadUserProfile(){
+      profileContainer.innerHTML = 'Loading...';
+      if(!appState.currentUser || !appState.currentUser.idCode){ profileContainer.innerHTML = '<p>No user info</p>'; return; }
+      if(!window.google || !google.script){ profileContainer.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ profileContainer.innerHTML = '<p>Could not load profile.</p>'; return; }
+        const p = res.data || {};
+        const profileImage = escapeAttr(safeImageUrl(p.ProfilePictureURL || p.ProfilePicture || '', 'https://via.placeholder.com/150'));
+        profileContainer.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center">
+            <img src="${profileImage}" class="avatar" style="width:110px;height:110px">
+            <div>
+              <h3 style="margin:0">${p['Full name']||p.FullName||p.Username||appState.currentUser.name||''}</h3>
+              <p style="margin:6px 0 0 0">${p.Position || p.position || ''} • ${p.Role || p.role || ''}</p>
+              <p style="margin:6px 0 0 0;opacity:.8">ID: ${p['ID Code'] || p.IDCode || p.idCode || appState.currentUser.idCode || ''}</p>
+            </div>
+          </div>
 
       function renderEvents(list){
         var container = $('#events-table');
@@ -1968,143 +2317,234 @@
         }
       }
 
-      function loadMyFeedback(){
-        callServer('listMyFeedback', [], function(res){
-          var status = $('#feedback-status');
-          if(status && isSuccess(res)){
-            status.textContent = '';
+          <div style="margin-top:12px" class="card"><strong>About</strong><div style="margin-top:6px">${p.Bio || p.BioText || ''}</div></div>
+        `;
+      }).withFailureHandler(function(err){
+        console.error('getUserProfile failed', err);
+        profileContainer.innerHTML = '<p>Could not load profile.</p>';
+      }).getUserProfile(appState.currentUser.idCode);
+    }
+
+    // ---------------- Announcements ----------------
+    function loadAnnouncements(){
+      annList.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ annList.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ annList.innerHTML = '<p>Could not load announcements.</p>'; return; }
+        appState.announcements = res.data || [];
+        renderAnnouncements();
+      }).withFailureHandler(function(err){
+        console.error('getAnnouncements failed', err);
+        annList.innerHTML = '<p>Could not load announcements.</p>';
+      }).getAnnouncements();
+    }
+
+    function renderAnnouncements(){
+      annList.innerHTML = '';
+      const uId = appState.currentUser && appState.currentUser.idCode;
+      appState.unreadCount = 0;
+      (appState.announcements || []).forEach(function(a){
+        if(a.unread && uId && a.unread[uId]) appState.unreadCount++;
+      });
+      annBadge.innerHTML = appState.unreadCount ? `<span>${appState.unreadCount} new</span>` : '';
+
+      if(!appState.announcements.length){ annList.innerHTML = '<p>No announcements.</p>'; return; }
+
+      appState.announcements.forEach(function(a){
+        const isForMe = !a.recipients || a.recipients.length===0 || (appState.currentUser && a.recipients.includes(appState.currentUser.idCode)) || (a.recipients && a.recipients.includes('all'));
+        const el = document.createElement('div');
+        el.className = 'card';
+        el.style.marginBottom = '8px';
+        el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>${a.title}</strong><div style="font-size:0.9rem;opacity:0.85">${a.timestamp || ''}</div></div>
+          <div><small style="opacity:0.9">${isForMe ? 'To you' : 'Group'}</small></div>
+        </div>
+        <p style="margin:8px 0">${(a.body||'').slice(0,220)}${(a.body||'').length>220 ? '...' : ''}</p>
+        <div style="display:flex;gap:8px"><button class="btn secondary" data-id="${a.id}" data-read="${a.unread && appState.currentUser && a.unread[appState.currentUser.idCode] ? '0' : '1'}">Mark Read</button><button class="btn" data-view="${a.id}">View</button></div>`;
+        annList.appendChild(el);
+
+        el.querySelector('[data-view]').onclick = function(){ viewAnnouncement(a); };
+        el.querySelector('[data-id]').onclick = function(ev){
+          const id = ev.currentTarget.dataset.id;
+          markAnnouncementRead(id);
+        };
+      });
+    }
+
+    function viewAnnouncement(a){
+      showModal({
+        title: a.title,
+        bodyHtml: `<div style="max-height:60vh;overflow:auto"><p style="text-align:justify">${a.body}</p><p style="margin-top:10px"><em>Sent by: ${a.authorName || ''}</em></p></div>`,
+        footerHtml: `<button class="btn secondary" id="close-ann-modal">Close</button>`
+      });
+      setTimeout(function(){ const b = document.getElementById('close-ann-modal'); if(b) b.onclick = closeModal; }, 40);
+      if(a.unread && appState.currentUser && a.unread[appState.currentUser.idCode]) markAnnouncementRead(a.id);
+    }
+
+    function markAnnouncementRead(id){
+      if(!window.google || !google.script){ loadAnnouncements(); return; }
+      google.script.run.withSuccessHandler(function(){ loadAnnouncements(); }).withFailureHandler(function(err){ console.error('markAnnouncementRead failed', err); }).markAnnouncementRead(appState.currentUser.idCode, id);
+    }
+
+    // create announcement (only Admin/Auditor/Head)
+    if(createAnnBtn){
+      createAnnBtn.onclick = function(){
+      const role = appState.currentUser && appState.currentUser.role;
+      if(!['Admin','Auditor','Head'].includes(role)){ alert('Only Admins, Auditors, Heads can create announcements.'); return; }
+      showModal({
+        title: 'Create Announcement',
+        bodyHtml: `<div style="display:flex;flex-direction:column;gap:8px">
+          <input id="ann-title" class="input-field" placeholder="Title">
+          <input id="ann-subject" class="input-field" placeholder="Subject (optional)">
+          <textarea id="ann-body" class="input-field" placeholder="Body"></textarea>
+          <input id="ann-recipients" class="input-field" placeholder="Recipients (comma-separated IDs or 'all' or committee code)">
+          <div style="font-size:0.86rem;color:rgba(0,0,0,0.7)">You can enter: <code>all</code>, <code>heads</code>, committee codes (e.g. <code>YSPTIR</code>), or specific ID codes separated by commas.</div>
+        </div>`,
+        footerHtml: `<button class="btn" id="ann-send">Send</button><button class="btn secondary" id="ann-cancel">Cancel</button>`
+      });
+      setTimeout(function(){
+        $('#ann-cancel').onclick = closeModal;
+        $('#ann-send').onclick = function(){
+          const title = $('#ann-title').value.trim();
+          const body = $('#ann-body').value.trim();
+          const recipientsRaw = $('#ann-recipients').value.trim();
+          if(!title || !body){ alert('Title and body required'); return; }
+          const recipients = recipientsRaw ? recipientsRaw.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : ['all'];
+          const payload = {
+            authorId: appState.currentUser.idCode,
+            authorName: appState.currentUser.name,
+            title,
+            body,
+            recipients
+          };
+          if(!window.google || !google.script){
+            alert('Local: announcement created (not persisted).');
+            closeModal();
+            loadAnnouncements();
+            return;
           }
+          google.script.run.withSuccessHandler(function(res){
+            if(res && res.success){
+              alert('Announcement created and emails queued.');
+              closeModal();
+              loadAnnouncements();
+            } else {
+              alert(res.message || 'Failed to create announcement.');
+            }
+          }).withFailureHandler(function(err){
+            console.error(err);
+            alert('Failed to create announcement (server error).');
+          }).createAnnouncement(payload);
+        };
+      }, 40);
+      };
+    }
+
+    // load unread badge
+    function loadUnreadAnnouncements(){
+      if(!window.google || !google.script) return;
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success) return;
+        appState.announcements = res.data || [];
+        let c = 0; const id = appState.currentUser && appState.currentUser.idCode;
+        (appState.announcements||[]).forEach(function(a){ if(a.unread && id && a.unread[id]) c++; });
+        appState.unreadCount = c;
+        annBadge.innerHTML = c ? `<span>${c} new</span>` : '';
+      }).withFailureHandler(function(err){
+        console.warn('getAnnouncements (badge) failed', err);
+      }).getAnnouncements();
+    }
+
+    // ---------------- Attendance transparency ----------------
+    function loadAttendanceTransparency(){
+      attendanceTable.innerHTML = 'Loading...';
+      if(!window.google || !google.script){ attendanceTable.innerHTML = '<p>Local preview: backend not available.</p>'; return; }
+      google.script.run.withSuccessHandler(function(res){
+        if(!res || !res.success){ attendanceTable.innerHTML = '<p>Could not load attendance data.</p>'; return; }
+        const rows = res.data || [];
+        if(!rows.length){ attendanceTable.innerHTML = '<p>No attendance records.</p>'; return; }
+        let html = `<table class="styled-table"><thead><tr><th>Date</th><th>Event</th><th>Time In</th><th>Time Out</th></tr></thead><tbody>`;
+        rows.forEach(function(r){
+          html += `<tr><td>${r.date||''}</td><td>${r.event||''}</td><td>${r.timeIn||''}</td><td>${r.timeOut||''}</td></tr>`;
         });
-      }
+        html += '</tbody></table>';
+        attendanceTable.innerHTML = html;
+      }).withFailureHandler(function(err){
+        console.error('getAttendanceTransparencyForUser failed', err);
+        attendanceTable.innerHTML = '<p>Could not load attendance data.</p>';
+      }).getAttendanceTransparencyForUser(appState.currentUser.idCode);
+    }
 
-      function loadFeedbackAdmin(){
-        callServer('listAllFeedback', [], function(res){
-          var list = $('#feedback-list');
-          if(!list){ return; }
-          list.innerHTML = '';
-          var payload = asPayload(res);
-          if(payload){
-            var items = payload.feedback || payload;
-            if(!items.length){ list.innerHTML = '<div class="list-empty">No feedback entries.</div>'; return; }
-            items.forEach(function(item){
-              var card = document.createElement('article');
-              card.className = 'card';
-              card.innerHTML = '<h3>' + esc(item.name || 'Anonymous') + '</h3>' +
-                '<p>' + esc(item.message || '') + '</p>' +
-                '<p class="text-muted">' + esc(item.createdAt || '') + '</p>';
-              list.appendChild(card);
-            });
-          }
-        });
-      }
+    // ---------------- My QR ----------------
+    function showMyQr(){
+      const id = appState.currentUser && appState.currentUser.idCode;
+      if(!id){ alert('No ID code'); return; }
+      showModal({
+        title: 'My QR Code',
+        bodyHtml: `<div style="text-align:center"><div id="qr-holder" style="display:inline-block;position:relative"></div><p style="margin-top:10px">${appState.currentUser.name || ''}<br><small style="opacity:.8">${appState.currentUser.position || ''} • ${id}</small></p></div>`,
+        footerHtml: `<button class="btn secondary" id="close-qr-btn">Close</button>`
+      });
+      setTimeout(function(){
+        const qrHolder = document.getElementById('qr-holder');
+        try {
+          qrHolder.innerHTML = '';
+          new QRCode(qrHolder, { text: id, width:220, height:220, correctLevel: QRCode.CorrectLevel.H });
+          // overlay logo - place by absolute positioning
+          const logo = document.createElement('img');
+          logo.src = 'https://i.imgur.com/J4wddTW.png';
+          logo.style.position = 'absolute';
+          logo.style.width = '48px';
+          logo.style.height = '48px';
+          logo.style.left = '50%';
+          logo.style.top = '50%';
+          logo.style.transform = 'translate(-50%,-50%)';
+          logo.style.borderRadius = '8px';
+          logo.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
+          qrHolder.appendChild(logo);
+        } catch(e){ console.warn('QR error', e); }
+        const closeBtn = document.getElementById('close-qr-btn'); if(closeBtn) closeBtn.onclick = closeModal;
+      }, 80);
+    }
 
-      function sendFeedback(){
-        var text = $('#feedback-text');
-        var status = $('#feedback-status');
-        var message = text ? text.value.trim() : '';
-        if(!message){ toast('Please write your feedback.'); return; }
-        callServer('sendFeedback', [message], function(res){
-          var payload = asPayload(res);
-          if(isSuccess(res) || (payload && payload.message)){
-            var note = (payload && payload.message) || (res && res.message) || 'Feedback sent.';
-            toast(note);
-            if(text){ text.value = ''; }
-            if(status){ status.textContent = 'Feedback submitted successfully.'; }
-          } else {
-            toast('Unable to send feedback.');
-            if(status){ status.textContent = 'Unable to send feedback.'; }
-          }
-        }, function(){ if(status){ status.textContent = 'Unable to send feedback.'; } });
-      }
-
-      function loadAccessLogs(){
-        callServer('getAccessLogs', [], function(res){
-          var container = $('#logs-table');
-          if(!container){ return; }
-          var payload = asPayload(res);
-          if(payload){
-            var logs = payload.logs || payload;
-            if(!logs.length){ container.innerHTML = '<div class="list-empty">No logs available.</div>'; return; }
-            var html = '<table><thead><tr><th>Timestamp</th><th>ID Code</th><th>Name</th></tr></thead><tbody>';
-            logs.forEach(function(log){
-              html += '<tr><td>' + esc(log.timestamp || '') + '</td><td>' + esc(log.id || '') + '</td><td>' + esc(log.name || '') + '</td></tr>';
-            });
-            html += '</tbody></table>';
-            container.innerHTML = html;
-          }
-        });
-      }
-
-      function bindFeedbackSend(){
-        var btn = $('#btn-send-feedback');
-        if(btn && !btn.dataset.bound){
-          btn.dataset.bound = '1';
-          btn.addEventListener('click', sendFeedback);
+    // ---------------- Initial wiring ----------------
+    loginBtn.addEventListener('click', handleLogin);
+    guestLoginBtn.addEventListener('click', handleGuestLogin);
+    $$('.back-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const t = btn.dataset.target;
+        if(!t) return;
+        if(t === 'login-panel'){
+          switchPanels(t);
+          if(usernameInput){ setTimeout(function(){ usernameInput.focus(); }, 120); }
+          return;
         }
-      }
+        switchPanels(t);
+      });
+    });
+    [usernameInput, passwordInput].forEach(function(inp){
+      inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') handleLogin(); });
+    });
 
-      function bindHashRouting(){
-        window.addEventListener('hashchange', function(){
-          var id = location.hash.replace('#', '');
-          if(document.getElementById(id)){
-            hashNavigating = true;
-            show(id);
-            hashNavigating = false;
-          }
-        });
-      }
+    // initial panel state
+    panels.forEach(function(p){ if(p.id !== 'login-panel'){ p.classList.add('hidden'); p.style.display = 'none'; }});
+    loginPanel.classList.remove('hidden'); loginPanel.classList.add('active'); loginPanel.style.display = 'flex';
 
-      function attemptRestoreSession(){
-        callServer('getSession', [], function(res){
-          var payload = asPayload(res);
-          var user = payload && payload.user ? payload.user : payload;
-          if(isSuccess(res) && user && user.name){
-            setSession(user);
-            show('main-menu-panel');
-          } else {
-            show('login-panel');
-          }
-        }, function(){ show('login-panel'); });
-      }
+    // expose for debug
+    window.__YSP = {
+      switchPanels, loadHomepage, loadAnnouncements, loadFeedback, loadAccessLogs, loadUserProfile, showMyQr
+    };
 
-      function init(){
-        bindBackButtons();
-        bindLogin();
-        bindDirectory();
-        bindManualAttendance();
-        bindFeedbackSend();
-        bindHashRouting();
-
-        var feedbackText = $('#feedback-text');
-        if(feedbackText){
-          feedbackText.addEventListener('focus', loadMyFeedback, { once: true });
+    // If server has session info, optionally fetch (server-side session login)
+    if(window.google && google.script && typeof google.script.run.getSession === 'function'){
+      google.script.run.withSuccessHandler(function(sess){
+        if(sess && sess.user){
+          appState.currentUser = sess.user;
+          populateAfterLogin();
         }
-
-        var initial = location.hash ? location.hash.replace('#','') : 'login-panel';
-        if(!document.getElementById(initial)){
-          initial = 'login-panel';
-        }
-        hashNavigating = true;
-        show(initial);
-        hashNavigating = false;
-
-        attemptRestoreSession();
-        console.log('✅ YSP Web App Initialized OK');
-      }
-
-      window.onReady = onReady;
-      window.$ = $;
-      window.$$ = $$;
-      window.esc = esc;
-      window.show = show;
-      window.bindBackButtons = bindBackButtons;
-      window.toast = toast;
-      window.openSafe = openSafe;
-      window.showModal = showModal;
-      window.closeModal = closeModal;
-
-      onReady(init);
-    })();
+      }).withFailureHandler(function(err){ console.warn('getSession unavailable', err); }).getSession();
+    }
+    });
+  })();
   </script>
 </body>
 </html>
