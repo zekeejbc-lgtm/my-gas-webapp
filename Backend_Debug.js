@@ -124,8 +124,10 @@ function checkLogin(credentials) {
           idCode: (row[COL.S - 1] || "").toString().trim(),
           position: (row[COL.T - 1] || "").toString().trim(),
           role: (row[COL.U - 1] || "").toString().trim(),
-          username: username
+          username: username,
+          email: (row[COL.B - 1] || "").toString().trim()
         };
+        user.id = user.idCode || user.username || "";
         // log access
         logAccess({ idCode: user.idCode, name: user.name });
         userProps.setProperty('YSP_CURRENT_USER', JSON.stringify({ user }));
@@ -137,6 +139,48 @@ function checkLogin(credentials) {
   } catch (err) {
     Logger.log("checkLogin error: " + err);
     return { success: false, message: "Server error during login." };
+  }
+}
+
+function validateLogin(username, password) {
+  try {
+    var creds = {};
+    if (typeof username === 'object' && username) {
+      creds.username = String(username.username || username.email || '').trim();
+      creds.password = String(username.password || username.pass || '').trim();
+    } else {
+      creds.username = String(username || '').trim();
+      creds.password = String(password || '').trim();
+    }
+    return checkLogin({ username: creds.username, password: creds.password });
+  } catch (err) {
+    Logger.log('validateLogin error: ' + err);
+    return { success: false, message: 'Unable to validate credentials.' };
+  }
+}
+
+function guestLogin(name) {
+  try {
+    var safeName = String(name || '').trim();
+    if (!safeName) {
+      safeName = 'Guest';
+    }
+    var guestId = 'GUEST-' + Utilities.getUuid().slice(-6).toUpperCase();
+    var user = {
+      name: safeName,
+      role: 'Guest',
+      position: 'Guest',
+      idCode: guestId,
+      id: guestId,
+      email: '',
+      isGuest: true
+    };
+    PropertiesService.getUserProperties().setProperty('YSP_CURRENT_USER', JSON.stringify({ user: user }));
+    logAccess({ idCode: user.idCode, name: user.name });
+    return { success: true, user: user };
+  } catch (err) {
+    Logger.log('guestLogin error: ' + err);
+    return { success: false, message: 'Unable to complete guest login.' };
   }
 }
 
@@ -152,6 +196,16 @@ function getSession() {
   } catch (err) {
     Logger.log('getSession error: ' + err);
     return { success: false, user: null };
+  }
+}
+
+function logout() {
+  try {
+    PropertiesService.getUserProperties().deleteProperty('YSP_CURRENT_USER');
+    return { success: true };
+  } catch (err) {
+    Logger.log('logout error: ' + err);
+    return { success: false, message: 'Unable to logout.' };
   }
 }
 
@@ -259,6 +313,60 @@ function getOfficerData() {
   }
 }
 
+function officerSuggestions(query) {
+  try {
+    const res = getOfficerData();
+    if (!res.success) {
+      return res;
+    }
+    const q = String(query || '').trim().toLowerCase();
+    const suggestions = res.data.map(function(row) {
+      return {
+        id: (row[0] || '').toString().trim(),
+        name: (row[1] || '').toString().trim(),
+        role: (row[2] || '').toString().trim(),
+        email: ''
+      };
+    }).filter(function(item) {
+      if (!q) return true;
+      return item.id.toLowerCase().indexOf(q) !== -1 || item.name.toLowerCase().indexOf(q) !== -1 || item.role.toLowerCase().indexOf(q) !== -1;
+    });
+    return { success: true, suggestions: suggestions };
+  } catch (err) {
+    Logger.log('officerSuggestions error: ' + err);
+    return { success: false, message: 'Unable to load suggestions.' };
+  }
+}
+
+function getRecordById(idCode) {
+  try {
+    if (!idCode) {
+      return { success: false, message: 'Missing idCode.' };
+    }
+    const profile = getUserProfile(idCode);
+    if (profile && profile.success && profile.data) {
+      const data = profile.data;
+      const record = {
+        id: data['ID Code (S)'] || idCode,
+        name: data['Full name (D)'] || data['Name'] || '',
+        role: data['Position (T)'] || data['Role (U)'] || '',
+        email: data['Email Address (B)'] || data['Email'] || '',
+        avatar: data['ProfilePictureURL (V)'] || ''
+      };
+      return { success: true, record: record };
+    }
+    const officers = officerSuggestions(idCode);
+    if (officers && officers.success && officers.suggestions && officers.suggestions.length) {
+      const record = officers.suggestions[0];
+      return { success: true, record: record };
+    }
+    return { success: false, message: 'Record not found.' };
+  } catch (err) {
+    Logger.log('getRecordById error: ' + err);
+    return { success: false, message: 'Unable to retrieve record.' };
+  }
+}
+
 // ---------- Access Logging ----------
 function logAccess(userInfo) {
   try {
@@ -292,10 +400,10 @@ function submitFeedback(feedbackData) {
     const sh = _sheet("Feedback");
     sh.appendRow([new Date(), feedbackData.name || "", feedbackData.idCode || "", feedbackData.message || ""]);
     Logger.log("submitFeedback: %s (%s)", feedbackData.name, feedbackData.idCode);
-    return "Success: Your feedback has been submitted.";
+    return { success: true, message: "Feedback submitted." };
   } catch (e) {
     Logger.log("submitFeedback Error: " + e);
-    return "Error: Could not submit feedback.";
+    return { success: false, message: "Could not submit feedback." };
   }
 }
 
@@ -314,6 +422,76 @@ function getFeedback() {
   } catch (err) {
     Logger.log("getFeedback error: " + err);
     return { success: false, message: err.message };
+  }
+}
+
+function listAllFeedback() {
+  try {
+    const res = getFeedback();
+    if (!res.success) {
+      return res;
+    }
+    const feedback = (res.data || []).map(function(item) {
+      return {
+        timestamp: item.timestamp,
+        createdAt: item.timestamp,
+        name: item.name,
+        idCode: item.idCode,
+        message: item.message
+      };
+    });
+    return { success: true, data: { feedback: feedback } };
+  } catch (err) {
+    Logger.log('listAllFeedback error: ' + err);
+    return { success: false, message: 'Unable to load feedback.' };
+  }
+}
+
+function listMyFeedback() {
+  try {
+    const session = getSession();
+    const user = session && session.user ? session.user : null;
+    const idCode = user && (user.idCode || user.id) ? (user.idCode || user.id) : '';
+    const res = getFeedback();
+    if (!res.success) {
+      return res;
+    }
+    const feedback = (res.data || []).filter(function(item) {
+      if (!idCode) { return true; }
+      return (item.idCode || '').toString().trim() === idCode;
+    }).map(function(item) {
+      return {
+        timestamp: item.timestamp,
+        createdAt: item.timestamp,
+        name: item.name,
+        idCode: item.idCode,
+        message: item.message
+      };
+    });
+    return { success: true, data: { feedback: feedback } };
+  } catch (err) {
+    Logger.log('listMyFeedback error: ' + err);
+    return { success: false, message: 'Unable to load feedback.' };
+  }
+}
+
+function sendFeedback(text) {
+  try {
+    const message = String(text || '').trim();
+    if (!message) {
+      return { success: false, message: 'Feedback cannot be empty.' };
+    }
+    const session = getSession();
+    const user = session && session.user ? session.user : {};
+    const payload = {
+      name: user.name || 'Anonymous',
+      idCode: user.idCode || user.id || '',
+      message: message
+    };
+    return submitFeedback(payload);
+  } catch (err) {
+    Logger.log('sendFeedback error: ' + err);
+    return { success: false, message: 'Unable to submit feedback.' };
   }
 }
 
@@ -378,6 +556,121 @@ function createNewEvent(eventName) {
   } catch (e) {
     Logger.log("createNewEvent Error: " + e);
     return "Error: Failed to create event.";
+  }
+}
+
+function _getDisabledEventIds() {
+  try {
+    const raw = PropertiesService.getScriptProperties().getProperty('YSP_DISABLED_EVENTS') || '[]';
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) {
+      return arr;
+    }
+    return [];
+  } catch (err) {
+    Logger.log('_getDisabledEventIds error: ' + err);
+    return [];
+  }
+}
+
+function _saveDisabledEventIds(arr) {
+  try {
+    PropertiesService.getScriptProperties().setProperty('YSP_DISABLED_EVENTS', JSON.stringify(arr || []));
+  } catch (err) {
+    Logger.log('_saveDisabledEventIds error: ' + err);
+  }
+}
+
+function listEvents() {
+  try {
+    const groups = _getAttendanceEventGroups();
+    const disabled = _getDisabledEventIds();
+    const disabledSet = disabled.reduce(function(map, id) { map[id] = true; return map; }, {});
+    const events = groups.map(function(group) {
+      const sampleDate = group.dateCol ? _sampleEventDate(group.dateCol) : '';
+      return {
+        id: group.name,
+        name: group.name,
+        date: sampleDate,
+        active: !disabledSet[group.name]
+      };
+    });
+    return { success: true, data: { events: events } };
+  } catch (err) {
+    Logger.log('listEvents error: ' + err);
+    return { success: false, message: 'Failed to load events.' };
+  }
+}
+
+function _sampleEventDate(dateCol) {
+  try {
+    const sh = _sheet('Master Attendance Log');
+    const range = sh.getRange(2, dateCol, Math.max(sh.getLastRow() - 1, 1), 1).getValues();
+    for (let i = 0; i < range.length; i++) {
+      const value = range[i][0];
+      if (value) {
+        return _formatDateForClient(value);
+      }
+    }
+    return '';
+  } catch (err) {
+    Logger.log('_sampleEventDate error: ' + err);
+    return '';
+  }
+}
+
+function createEvent(payload) {
+  try {
+    if (!payload || !payload.name) {
+      return { success: false, message: 'Event name is required.' };
+    }
+    const message = createNewEvent(payload.name);
+    const disabled = _getDisabledEventIds().filter(function(id) { return id !== payload.name; });
+    _saveDisabledEventIds(disabled);
+    return { success: true, message: message || 'Event created.' };
+  } catch (err) {
+    Logger.log('createEvent error: ' + err);
+    return { success: false, message: 'Unable to create event.' };
+  }
+}
+
+function toggleEventActive(eventId) {
+  try {
+    if (!eventId) {
+      return { success: false, message: 'Missing event id.' };
+    }
+    const disabled = _getDisabledEventIds();
+    const index = disabled.indexOf(eventId);
+    let message;
+    if (index === -1) {
+      disabled.push(eventId);
+      message = 'Event deactivated.';
+    } else {
+      disabled.splice(index, 1);
+      message = 'Event activated.';
+    }
+    _saveDisabledEventIds(disabled);
+    return { success: true, message: message };
+  } catch (err) {
+    Logger.log('toggleEventActive error: ' + err);
+    return { success: false, message: 'Unable to update event.' };
+  }
+}
+
+function getActiveEvents() {
+  try {
+    const groups = _getAttendanceEventGroups();
+    const disabled = _getDisabledEventIds();
+    const disabledSet = disabled.reduce(function(map, id) { map[id] = true; return map; }, {});
+    const events = groups.filter(function(group) {
+      return !disabledSet[group.name];
+    }).map(function(group) {
+      return { id: group.name, name: group.name };
+    });
+    return { success: true, data: { events: events } };
+  } catch (err) {
+    Logger.log('getActiveEvents error: ' + err);
+    return { success: false, message: 'Unable to load active events.' };
   }
 }
 
@@ -515,6 +808,35 @@ function recordManualAttendance(idCode, status, eventName, mode) {
   }
 }
 
+function logAttendanceScan(decodedText, eventId) {
+  try {
+    if (!decodedText) {
+      return { success: false, message: 'Missing QR code value.' };
+    }
+    const payload = {
+      idCode: decodedText,
+      eventName: eventId,
+      mode: 'in',
+      status: 'Present'
+    };
+    return recordAttendanceScan(payload);
+  } catch (err) {
+    Logger.log('logAttendanceScan error: ' + err);
+    return { success: false, message: 'Unable to record scan.' };
+  }
+}
+
+function manualAttendance(idCode, eventId, action) {
+  try {
+    const mode = (action || 'in').toLowerCase() === 'out' ? 'out' : 'in';
+    const status = mode === 'out' ? 'Signed Out' : 'Present';
+    return recordManualAttendance(idCode, status, eventId, mode);
+  } catch (err) {
+    Logger.log('manualAttendance error: ' + err);
+    return { success: false, message: 'Failed to record manual attendance.' };
+  }
+}
+
 // ---------- Attendance Transparency (per user) ----------
 /*
   getAttendanceTransparencyForUser(idCode)
@@ -575,6 +897,69 @@ function _formatDateForClient(v) {
     return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM-dd");
   } catch (e) {
     return v.toString();
+  }
+}
+
+function getMyAttendance() {
+  try {
+    const session = getSession();
+    const user = session && session.user ? session.user : null;
+    if (!user || !(user.idCode || user.id)) {
+      return { success: true, data: [] };
+    }
+    return getAttendanceTransparencyForUser(user.idCode || user.id);
+  } catch (err) {
+    Logger.log('getMyAttendance error: ' + err);
+    return { success: false, message: 'Failed to load attendance.' };
+  }
+}
+
+function getAttendanceKPIs() {
+  try {
+    const sh = _sheet('Master Attendance Log');
+    const data = sh.getDataRange().getValues();
+    if (data.length < 2) {
+      return { success: true, data: { stats: { totalEvents: 0, present: 0, absent: 0, late: 0 }, kpi: { labels: [], present: [], absent: [] } } };
+    }
+    const groups = _getAttendanceEventGroups();
+    const stats = { totalEvents: groups.length, present: 0, absent: 0, late: 0 };
+    const labels = [];
+    const presentCounts = [];
+    const absentCounts = [];
+    for (let gIndex = 0; gIndex < groups.length; gIndex++) {
+      const group = groups[gIndex];
+      let present = 0;
+      let absent = 0;
+      for (let r = 1; r < data.length; r++) {
+        const inVal = (data[r][group.inCol - 1] || '').toString().trim();
+        if (inVal) {
+          present++;
+          if (inVal.toLowerCase().indexOf('late') === 0) {
+            stats.late++;
+          } else {
+            stats.present++;
+          }
+        } else {
+          absent++;
+          stats.absent++;
+        }
+      }
+      labels.push(group.name);
+      presentCounts.push(present);
+      absentCounts.push(absent);
+    }
+    const payload = {
+      stats: stats,
+      kpi: {
+        labels: labels,
+        present: presentCounts,
+        absent: absentCounts
+      }
+    };
+    return { success: true, data: payload };
+  } catch (err) {
+    Logger.log('getAttendanceKPIs error: ' + err);
+    return { success: false, message: 'Failed to load KPIs.' };
   }
 }
 
@@ -681,6 +1066,32 @@ function createAnnouncement(payload) {
   } catch (err) {
     Logger.log("createAnnouncement error: " + err);
     return { success: false, message: "Failed to create announcement." };
+  }
+}
+
+function listAnnouncements(filter) {
+  try {
+    const res = getAnnouncements();
+    if (!res.success) {
+      return res;
+    }
+    const session = getSession();
+    const user = session && session.user ? session.user : null;
+    const currentId = (filter && filter.currentUserId) || (user && (user.idCode || user.id)) || '';
+    const announcements = (res.data || []).map(function(item) {
+      const unreadMap = item.unread || {};
+      return {
+        id: item.id,
+        title: item.title,
+        body: item.body,
+        createdAt: item.timestamp,
+        isUnread: currentId ? !!unreadMap[currentId] : false
+      };
+    });
+    return { success: true, data: { announcements: announcements } };
+  } catch (err) {
+    Logger.log('listAnnouncements error: ' + err);
+    return { success: false, message: 'Unable to load announcements.' };
   }
 }
 

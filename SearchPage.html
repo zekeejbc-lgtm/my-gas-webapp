@@ -981,7 +981,23 @@
       } else {
         console.warn('Status element not found for', idSelectorOrText);
       }
-    }
+      if(!YSP.modal || typeof YSP.modal.open !== 'function' || typeof YSP.modal.close !== 'function'){
+        YSP.modal = (function(){
+          var root = null;
+          var lastFocused = null;
+
+          function ensureRoot(){
+            if(!root){
+              root = document.getElementById('modal-root');
+              if(!root){
+                root = document.createElement('div');
+                root.id = 'modal-root';
+                root.hidden = true;
+                document.body.appendChild(root);
+              }
+            }
+            return root;
+          }
 
     // modal helper
     function showModal(options){
@@ -1117,13 +1133,8 @@
       const skipFocusRestore = !!opts.skipFocusRestore;
       const focusTarget = modalState.lastFocused;
 
-      if(modalState.escListener){
-        document.removeEventListener('keydown', modalState.escListener);
-        modalState.escListener = null;
-      }
-      if(modalState.trapCleanup){
-        modalState.trapCleanup();
-        modalState.trapCleanup = null;
+          return { open: open, close: close };
+        })();
       }
 
       function hideAllPanels(){
@@ -1417,15 +1428,27 @@
       mainMenuButtons.appendChild(logoutBtn);
     }
 
-    function handleLogout(){
-      appState.currentUser = null;
-      usernameInput.value = ''; passwordInput.value = '';
-      passwordInput.type = 'password';
-      eyeToggle.classList.remove('closed');
-      switchPanels('login-panel');
-    }
+      function hideAllPanels(){
+        $$('.panel').forEach(function(panel){
+          panel.classList.remove('active');
+          panel.classList.add('hidden');
+        });
+      }
 
-    // ---------------- Homepage ----------------
+      var panelLoaders = {
+        'homepage-panel': loadHomepage,
+        'profile-panel': function(){ if(session){ buildProfile(session); } },
+        'qr-attendance-panel': setupQrAttendance,
+        'manual-attendance-panel': function(){ setupManualAttendance(); bindManualAttendance(); },
+        'attendance-trans-panel': loadMyAttendance,
+        'attendance-dashboard-panel': loadKpis,
+        'manage-events-panel': loadEvents,
+        'directory-panel': function(){ bindDirectory(); },
+        'announcements-panel': loadAnnouncements,
+        'submit-feedback-panel': function(){ /* placeholder */ },
+        'view-feedback-panel': loadFeedbackAdmin,
+        'view-logs-panel': loadAccessLogs
+      };
 
       function setSession(user){
         session = user || null;
@@ -1753,9 +1776,7 @@
             });
             block.appendChild(list);
           } else {
-            const para = document.createElement('p');
-            para.textContent = content.objectives;
-            block.appendChild(para);
+            showHomeError();
           }
         }
 
@@ -1775,25 +1796,82 @@
           block.appendChild(figure);
           fragment.appendChild(block);
         }
-
-        if(!fragment.childNodes.length){
-          const empty = document.createElement('p');
-          empty.className = 'text-muted';
-          empty.textContent = 'No homepage content yet.';
-          fragment.appendChild(empty);
+        function requestSuggestions(){
+          var term = input.value.trim();
+          callServer('officerSuggestions', [term], function(res){
+            var payload = asPayload(res);
+            if(payload && (payload.suggestions || Array.isArray(payload))){
+              renderSuggestions(payload.suggestions || payload);
+            }
+          });
         }
+        input.addEventListener('input', function(){
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(requestSuggestions, 200);
+        });
+      }
 
-        homepageContent.appendChild(fragment);
-      };
-
-      if(!window.google || !google.script){
-        renderStatus('Local preview: homepage backend not available.');
-        renderContacts({ facebookUrl: '', email: '' }, { offline: true });
-        const offlineProjects = document.createElement('p');
-        offlineProjects.className = 'text-muted';
-        offlineProjects.textContent = 'Projects load once connected.';
-        projectGallery.appendChild(offlineProjects);
-        return;
+      function openOfficer(id){
+        var container = $('#officer-profile');
+        if(!container){ return; }
+        container.innerHTML = '<p class="text-muted">Loading profile...</p>';
+        callServer('getRecordById', [id], function(res){
+          var payload = asPayload(res);
+          if(payload && (payload.record || payload.id || payload.name)){
+            var record = payload.record || payload;
+            container.innerHTML = '<div class="card">' +
+              '<div class="ratio-box"><img src="' + esc(window.YSP ? YSP.safeImage(record.avatar, 'https://placehold.co/640x360?text=Profile') : record.avatar) + '" alt="' + esc(record.name || 'Officer photo') + '"></div>' +
+              '<h3>' + esc(record.name || '') + '</h3>' +
+              '<p>' + esc(record.role || '') + '</p>' +
+              '<p><strong>ID:</strong> ' + esc(record.id || '') + '</p>' +
+              '<p><strong>Email:</strong> ' + esc(record.email || 'N/A') + '</p>' +
+              '<div class="panel-actions"><button type="button" class="btn btn-primary" data-mark-attendance="' + esc(record.id || '') + '">Mark Attendance</button></div>' +
+              '</div>';
+            var markBtn = container.querySelector('[data-mark-attendance]');
+            if(markBtn){
+              markBtn.addEventListener('click', function(){
+                var body = '<div class="form-stack">' +
+                  '<p>Select attendance status for <strong>' + esc(record.name || '') + '</strong>.</p>' +
+                  '<label for="attendance-status">Status</label>' +
+                  '<select id="attendance-status">' +
+                    '<option value="present">Present</option>' +
+                    '<option value="late">Late</option>' +
+                    '<option value="absent">Absent</option>' +
+                    '<option value="excused">Excused</option>' +
+                  '</select>' +
+                '</div>';
+                var footer = '<div class="panel-actions">' +
+                  '<button type="button" class="btn btn-secondary" data-close="1">Cancel</button>' +
+                  '<button type="button" class="btn btn-primary" id="confirm-attendance">Save</button>' +
+                  '</div>';
+                showModal({ title: 'Mark Attendance', bodyHtml: body, footerHtml: footer, opener: markBtn });
+                setTimeout(function(){
+                  var modalRoot = document.getElementById('modal-root');
+                  var confirm = modalRoot ? modalRoot.querySelector('#confirm-attendance') : null;
+                  var select = modalRoot ? modalRoot.querySelector('#attendance-status') : null;
+                  if(select){ select.focus(); }
+                  if(confirm){
+                    confirm.addEventListener('click', function(){
+                      var statusValue = select ? select.value : 'present';
+                      callServer('recordManualAttendance', [record.id, statusValue], function(res){
+                        var payloadResult = asPayload(res);
+                        if(isSuccess(res) || (payloadResult && payloadResult.message)){
+                          var message = (payloadResult && payloadResult.message) || (res && res.message) || 'Attendance recorded.';
+                          toast(message);
+                          closeModal();
+                        } else {
+                          toast('Unable to record attendance.');
+                        }
+                      });
+                    });
+                  }
+                }, 60);
+              });
+            }
+          } else {
+            container.innerHTML = '<p class="text-muted">Officer not found.</p>';
+          }
+        }, function(){ container.innerHTML = '<p class="text-muted">Unable to load profile.</p>'; });
       }
 
       google.script.run
@@ -2096,16 +2174,148 @@
             </div>
           </div>
 
-          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div class="card"><strong>Email</strong><div style="margin-top:6px">${p['Email Address (B)'] || p.Email || ''}</div></div>
-            <div class="card"><strong>Birthday</strong><div style="margin-top:6px">${p['Date of Birth (E)']||p.DateOfBirth||''}</div></div>
+      function renderEvents(list){
+        var container = $('#events-table');
+        if(!container){ return; }
+        if(!list || !list.length){ container.innerHTML = '<div class="list-empty">No events yet.</div>'; return; }
+        var html = '<table><thead><tr><th>Event</th><th>Date</th><th>Status</th><th></th></tr></thead><tbody>';
+        list.forEach(function(evt){
+          html += '<tr>' +
+            '<td>' + esc(evt.name || '') + '</td>' +
+            '<td>' + esc(evt.date || '') + '</td>' +
+            '<td><span class="status-chip ' + (evt.active ? '' : 'warn') + '">' + (evt.active ? 'Active' : 'Inactive') + '</span></td>' +
+            '<td><button class="btn btn-secondary" data-toggle-event="' + esc(evt.id || '') + '">' + (evt.active ? 'Deactivate' : 'Activate') + '</button></td>' +
+            '</tr>';
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+        $$('#events-table [data-toggle-event]').forEach(function(btn){
+          btn.addEventListener('click', function(){
+            var id = btn.getAttribute('data-toggle-event');
+            callServer('toggleEventActive', [id], function(res){
+              var payload = asPayload(res);
+              var message = (payload && payload.message) || (res && res.message) || 'Event updated.';
+              if(!isSuccess(res) && !(payload && payload.message)){
+                toast('Unable to update event.');
+                return;
+              }
+              toast(message);
+              loadEvents();
+            });
+          });
+        });
+      }
 
-            <div class="card"><strong>Age</strong><div style="margin-top:6px">${p['Age (F)']||p.Age||''}</div></div>
-            <div class="card"><strong>Gender / Pronouns</strong><div style="margin-top:6px">${p['Sex/Gender (G)']||p['Pronouns (H)']||''}</div></div>
+      function loadEvents(){
+        callServer('listEvents', [], function(res){
+          var payload = asPayload(res);
+          if(payload){ renderEvents(payload.events || payload); }
+        });
+        var createBtn = $('#btn-create-event');
+        if(createBtn && !createBtn.dataset.bound){
+          createBtn.dataset.bound = '1';
+          createBtn.addEventListener('click', function(){
+            var body = '<div class="form-stack">' +
+              '<label for="event-name">Event Name</label>' +
+              '<input id="event-name" type="text" />' +
+              '<label for="event-date">Date</label>' +
+              '<input id="event-date" type="date" />' +
+              '</div>';
+            var footer = '<div class="panel-actions">' +
+              '<button type="button" class="btn btn-secondary" data-close="1">Cancel</button>' +
+              '<button type="button" class="btn btn-primary" id="save-event">Save</button>' +
+              '</div>';
+            showModal({ title: 'Create Event', bodyHtml: body, footerHtml: footer, opener: createBtn });
+            var modalRoot = document.getElementById('modal-root');
+            setTimeout(function(){
+              var saveBtn = modalRoot ? modalRoot.querySelector('#save-event') : null;
+              var nameInput = modalRoot ? modalRoot.querySelector('#event-name') : null;
+              var dateInput = modalRoot ? modalRoot.querySelector('#event-date') : null;
+              if(nameInput){ nameInput.focus(); }
+              if(saveBtn){
+                saveBtn.addEventListener('click', function(){
+                  var payload = { name: nameInput.value.trim(), date: dateInput.value };
+                  if(!payload.name || !payload.date){ toast('Complete event details.'); return; }
+                  callServer('createEvent', [payload], function(res){
+                    var response = asPayload(res);
+                    var message = (response && response.message) || (res && res.message) || 'Event created.';
+                    if(!isSuccess(res) && !(response && response.message)){
+                      toast('Unable to create event.');
+                      return;
+                    }
+                    toast(message);
+                    closeModal();
+                    loadEvents();
+                  });
+                });
+              }
+            }, 80);
+          });
+        }
+      }
 
-            <div class="card"><strong>Contact Number</strong><div style="margin-top:6px">${p['Contact Number (J)']||p.Contact||''}</div></div>
-            <div class="card"><strong>Nationality</strong><div style="margin-top:6px">${p['Nationality (L)']||p.Nationality||''}</div></div>
-          </div>
+      function loadAnnouncements(){
+        callServer('listAnnouncements', [{}], function(res){
+          var list = $('#announcements-list');
+          if(!list){ return; }
+          list.innerHTML = '';
+          var payload = asPayload(res);
+          if(payload){
+            var items = payload.announcements || payload;
+            if(!items.length){ list.innerHTML = '<div class="list-empty">No announcements yet.</div>'; return; }
+            items.forEach(function(item){
+              var card = document.createElement('article');
+              card.className = 'card';
+              card.style.borderLeft = '6px solid ' + (item.isUnread ? 'var(--primary)' : 'rgba(0,0,0,0.1)');
+              card.innerHTML = '<h3>' + esc(item.title || '') + '</h3>' +
+                '<p>' + esc(item.body || '') + '</p>' +
+                '<p class="text-muted">' + esc(item.createdAt || '') + '</p>';
+              list.appendChild(card);
+            });
+          }
+        });
+        var createBtn = $('#btn-create-announcement');
+        if(createBtn && !createBtn.dataset.bound){
+          createBtn.dataset.bound = '1';
+          createBtn.addEventListener('click', function(){
+            var body = '<div class="form-stack">' +
+              '<label for="announcement-title">Title</label>' +
+              '<input id="announcement-title" type="text" />' +
+              '<label for="announcement-body">Message</label>' +
+              '<textarea id="announcement-body" rows="4"></textarea>' +
+              '</div>';
+            var footer = '<div class="panel-actions">' +
+              '<button type="button" class="btn btn-secondary" data-close="1">Cancel</button>' +
+              '<button type="button" class="btn btn-primary" id="save-announcement">Post</button>' +
+              '</div>';
+            showModal({ title: 'Create Announcement', bodyHtml: body, footerHtml: footer, opener: createBtn });
+            setTimeout(function(){
+              var modalRoot = document.getElementById('modal-root');
+              var saveBtn = modalRoot ? modalRoot.querySelector('#save-announcement') : null;
+              var titleInput = modalRoot ? modalRoot.querySelector('#announcement-title') : null;
+              var bodyInput = modalRoot ? modalRoot.querySelector('#announcement-body') : null;
+              if(titleInput){ titleInput.focus(); }
+            if(saveBtn){
+              saveBtn.addEventListener('click', function(){
+                var payload = { title: titleInput.value.trim(), body: bodyInput.value.trim() };
+                if(!payload.title || !payload.body){ toast('Complete announcement details.'); return; }
+                callServer('createAnnouncement', [payload], function(res){
+                  var response = asPayload(res);
+                  var message = (response && response.message) || (res && res.message) || 'Announcement posted.';
+                  if(!isSuccess(res) && !(response && response.message)){
+                    toast('Unable to post announcement.');
+                    return;
+                  }
+                  toast(message);
+                  closeModal();
+                  loadAnnouncements();
+                });
+              });
+              }
+            }, 80);
+          });
+        }
+      }
 
           <div style="margin-top:12px" class="card"><strong>About</strong><div style="margin-top:6px">${p.Bio || p.BioText || ''}</div></div>
         `;
