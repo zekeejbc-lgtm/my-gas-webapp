@@ -1,12 +1,12 @@
 # Change Log
 
 ## SearchPage.html
-- Rebuilt the modal helper with plain DOM APIs (`createElement`, `onclick`) and `var` declarations so the Apps Script HTML Service stops raising `Unexpected identifier 'modal'` and all login buttons remain interactive.
-- Extended `safeImageUrl` fallback coverage and swapped placeholder hosts to `placehold.co` to prevent `ERR_NAME_NOT_RESOLVED` console noise when sheet-driven media is blank or invalid.
-- Left the DOM wiring log (`✅ YSP Web App Initialized OK`) in place for deployment smoke tests after the compatibility fixes.
+- Applied a viewport-aware minimum height to the homepage panel and introduced the `.push-bottom` helper so the login return control anchors consistently on both mobile and desktop.
+- Upgraded contact buttons to share the `.btn-primary` styling, validated outbound URLs before opening new tabs, and guarded Gmail compose links behind the helper sanitizer.
+- Escaped multi-line project descriptions when building modal content, trimming empty lines and preventing HTML injection while preserving the fade/scale animation.
 
 ## QRScanner.html
-- No code changes this pass; prior DOMContentLoaded wiring and modal helpers remain valid.
+- No source edits required; retained the October 2025 blueprint implementation after syntax validation.
 
 ## Backend_Debug.js
-- Validation only; endpoints unchanged.
+- No modifications per scope (validation only).
