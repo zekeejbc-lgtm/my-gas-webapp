@@ -815,7 +815,13 @@
     }
 
     // modal helper
-    function showModal({title = '', bodyHtml = '', footerHtml = '', modalClass = '', opener = null}){
+    function showModal(options){
+      const opts = options || {};
+      const title = typeof opts.title === 'string' ? opts.title : '';
+      const bodyHtml = typeof opts.bodyHtml === 'string' ? opts.bodyHtml : '';
+      const footerHtml = typeof opts.footerHtml === 'string' ? opts.footerHtml : '';
+      const modalClass = typeof opts.modalClass === 'string' ? opts.modalClass : '';
+      const opener = opts.opener || null;
       if(!modalRoot) return;
       if(!modalRoot.hidden){
         if(modalState.escListener){
