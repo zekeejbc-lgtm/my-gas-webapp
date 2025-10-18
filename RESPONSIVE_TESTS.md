@@ -1,28 +1,23 @@
-# Responsive Test Checklist
+# Responsive Test Checklist (October 2025 Final Pass)
 
-All checks executed on the refreshed homepage and related navigation.
+Validated using a temporary local HTTP server (`python -m http.server`) and Playwright-driven viewport swaps across the key breakpoints defined in the blueprint.
 
 ## 360px (mobile portrait)
-- Guest login → Homepage: container fills the viewport, no horizontal scroll, contact cards stack with 16px gap, and the back button sits at the bottom without extra whitespace.
-- Project cards render in a single column; tapping a card opens the modal, image scales within the 16:9 frame, focus lands on the close button, and Back restores focus to the triggering card.
-- Facebook and Email buttons announce focus rings, open new tabs with the expected URLs, and are reachable by keyboard.
+- Login panel loads without horizontal scroll (`scrollWidth` = `clientWidth` = 360) and retains centered card alignment.
+- Contact buttons remain within a single column when visiting the homepage; the Back control sticks to the bottom via `.push-bottom`.
 
 ## 768px (tablet portrait)
-- Homepage sections stay centered within the container; mission/vision blocks read with comfortable margins and objectives list wraps without overflow.
-- Contact grid auto-adjusts to two equal cards; action buttons remain on one row with clear spacing.
-- Modal opens from the first project with fade/scale animation, ESC and backdrop clicks close it, and focus returns to the card.
+- Body width equals viewport (`scrollWidth` = 768); homepage containers stay centered with 16px side padding.
+- Project grid auto-fills two columns without overflow and the modal launches with focus on the close button.
 
-## 1024px (tablet landscape / small desktop)
-- Projects gallery displays two columns with consistent gaps, and the organizational chart image retains 16:9 aspect without stretching.
-- Switching panels (Homepage ↔ Login) updates the location hash (`#homepage`, `#login`) and restores the login focus state.
-- Keyboard tab order flows from menu → project cards → contact buttons without skips; Shift+Tab cycles inside the modal only.
+## 1024px (tablet landscape)
+- No horizontal overflow (`scrollWidth` = 1024). Homepage content maintains max-width 840px while project cards stretch evenly.
+- Back button remains anchored; modal two-column layout (media + copy) activates above 768px.
 
 ## 1440px (desktop)
-- Homepage content stays centered at max-width 1200px with ample side padding; cards drop shadows remain subtle and no bottom gap appears above the footer actions.
-- Project modal body reflows to a two-column layout (media + copy) while maintaining 90dvh max height.
-- Repeated reload of homepage content handles offline fallback gracefully (local preview shows placeholder copy, contact card notes disabled actions, and project area shows the offline message).
+- Layout stays centered (`scrollWidth` = 1440) with generous whitespace; panel height adheres to the viewport-based minimum without trailing gaps.
+- Contact buttons retain the primary styling and focus outlines at desktop scale.
 
-## Regression & Performance Notes
-- Verified buttons use `window.open` only after validating URLs and no console errors appear when data fields are missing or empty.
-- Confirmed modal teardown removes listeners between openings and `closeModal()` returns focus to the launcher across repeated cycles.
-- Ensured no edits touched `Code.gs` or `UserProfiles.gs` per blueprint scope.
+## Regression Notes
+- Reused modal helper keeps focus trapped and restores it to the triggering element after closing.
+- `openExternal` now blocks non-HTTP(S) URLs, preventing accidental navigation to unsupported protocols.
