@@ -412,6 +412,10 @@
       border:0;
     }
 
+    .guest-modal{ display:flex; flex-direction:column; gap:var(--space-sm); }
+    .guest-modal__status{ min-height:20px; font-size:0.92rem; color:var(--muted); transition:color .18s ease; }
+    .guest-modal__status.is-error{ color:var(--danger); }
+
     .info-grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
@@ -492,8 +496,8 @@
         <p id="login-status" class="status-message" aria-live="polite"></p>
 
         <div class="panel-actions">
-          <button id="login-btn" class="btn">Log In</button>
-          <button id="guest-login-btn" class="btn secondary">Log in as Guest</button>
+          <button id="login-btn" class="btn" type="button">Log In</button>
+          <button id="guest-login-btn" class="btn secondary" type="button">Log in as Guest</button>
         </div>
       </div>
     </section>
@@ -664,6 +668,16 @@
     const $ = s => document.querySelector(s);
     const $$ = s => Array.from(document.querySelectorAll(s));
     const panels = $$('.panel');
+    const panelHashMap = {
+      'login-panel': '#login',
+      'main-menu-panel': '#dashboard',
+      'homepage-panel': '#homepage',
+      'search-panel': '#search',
+      'announcements-panel': '#announcements',
+      'view-feedback-panel': '#feedback',
+      'view-logs-panel': '#logs',
+      'attendance-trans-panel': '#attendance'
+    };
     let appState = {
       currentUser: null,
       officerData: [],
@@ -781,10 +795,9 @@
       // small scroll to top for panel
       const t = $('#'+targetId);
       if(t) t.scrollTop = 0;
-      if(targetId === 'login-panel'){
-        location.hash = '#login';
-      } else if(targetId === 'homepage-panel'){
-        location.hash = '#homepage';
+      const hash = panelHashMap[targetId];
+      if(hash){
+        location.hash = hash;
       }
     }
 
@@ -999,10 +1012,83 @@
     }
 
     function handleGuestLogin(){
-      // Guest: show homepage without profile
-      appState.currentUser = { name:'Guest', role:'Guest', idCode: ''};
-      loadHomepage();
-      switchPanels('homepage-panel');
+      showModal({
+        title: 'Guest Access',
+        modalClass: 'guest-modal-shell',
+        bodyHtml: `
+          <div class="guest-modal">
+            <p>Enter your full name so we can record your visit in the access logs.</p>
+            <label for="guest-name-input" style="font-weight:600">Full Name</label>
+            <input id="guest-name-input" class="input-field" type="text" placeholder="e.g. Juan Dela Cruz" autocomplete="name" />
+            <p id="guest-modal-status" class="guest-modal__status" role="status" aria-live="polite"></p>
+          </div>
+        `,
+        footerHtml: `
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+            <button type="button" class="btn secondary" data-modal-close="true">Cancel</button>
+            <button type="button" class="btn" id="guest-continue-btn">Continue as Guest</button>
+          </div>
+        `,
+        opener: guestLoginBtn
+      });
+
+      requestAnimationFrame(() => {
+        const nameInput = document.getElementById('guest-name-input');
+        const continueBtn = document.getElementById('guest-continue-btn');
+        const statusEl = document.getElementById('guest-modal-status');
+        if(nameInput){
+          nameInput.focus();
+        }
+        const completeGuestLogin = (guestName) => {
+          appState.currentUser = { name: guestName, role: 'Guest', idCode: 'Visitor', position: 'Guest' };
+          closeModal({ skipFocusRestore: true });
+          loadHomepage();
+          switchPanels('homepage-panel');
+        };
+        const logAndContinue = (guestName) => {
+          if(window.google && google.script && google.script.run){
+            google.script.run
+              .withSuccessHandler(() => completeGuestLogin(guestName))
+              .withFailureHandler(err => {
+                console.warn('Guest logAccess failed', err);
+                completeGuestLogin(guestName);
+              })
+              .logAccess({ idCode: 'Visitor', name: guestName });
+          } else {
+            completeGuestLogin(guestName);
+          }
+        };
+        const handleContinue = () => {
+          if(!nameInput || !continueBtn) return;
+          const guestName = (nameInput.value || '').trim();
+          if(!guestName){
+            if(statusEl){
+              statusEl.textContent = 'Please enter your name to continue.';
+              statusEl.classList.add('is-error');
+            }
+            nameInput.focus();
+            return;
+          }
+          if(statusEl){
+            statusEl.textContent = 'Signing you in as a guest…';
+            statusEl.classList.remove('is-error');
+          }
+          continueBtn.disabled = true;
+          continueBtn.textContent = 'Signing in…';
+          logAndContinue(guestName);
+        };
+        if(continueBtn){
+          continueBtn.addEventListener('click', handleContinue);
+        }
+        if(nameInput){
+          nameInput.addEventListener('keydown', (evt) => {
+            if(evt.key === 'Enter'){
+              evt.preventDefault();
+              handleContinue();
+            }
+          });
+        }
+      });
     }
 
     // Eye toggle
