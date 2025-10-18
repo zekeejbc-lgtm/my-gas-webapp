@@ -1,0 +1,491 @@
+<script>
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
+  'use strict';
+
+  if (!root || !root.document) {
+    return;
+  }
+
+  var doc = root.document;
+  var YSP = (root.YSP = root.YSP || {});
+  YSP.state = YSP.state || { session: null };
+  var utils = (YSP.utils = YSP.utils || {});
+  var callServer = typeof utils.callServer === 'function' ? utils.callServer : function () {};
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var showFn = typeof root.show === 'function' ? root.show : function () {};
+  var showModalFn = typeof root.showModal === 'function' ? root.showModal : function () { return doc.createElement('div'); };
+  var closeModalFn = typeof root.closeModal === 'function' ? root.closeModal : function () {};
+  var select = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var escFn = typeof root.esc === 'function'
+    ? root.esc
+    : function (value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+  var setTimeoutFn = typeof root.setTimeout === 'function' ? root.setTimeout.bind(root) : function (fn) {
+    fn();
+  };
+  var bindDirectoryFn = typeof root.bindDirectory === 'function' ? root.bindDirectory : function () {};
+  var bindManualAttendanceFn = typeof root.bindManualAttendance === 'function' ? root.bindManualAttendance : function () {};
+  var setupManualAttendanceFn = typeof root.setupManualAttendance === 'function' ? root.setupManualAttendance : function () {};
+  var setupQrAttendanceFn = typeof root.setupQrAttendance === 'function' ? root.setupQrAttendance : function () {};
+  var loadHomepageFn = typeof root.loadHomepage === 'function' ? root.loadHomepage : function () {};
+  var loadMyAttendanceFn = typeof root.loadMyAttendance === 'function' ? root.loadMyAttendance : function () {};
+  var loadKpisFn = typeof root.loadKpis === 'function' ? root.loadKpis : function () {};
+  var loadEventsFn = typeof root.loadEvents === 'function' ? root.loadEvents : function () {};
+  var loadAnnouncementsFn = typeof root.loadAnnouncements === 'function' ? root.loadAnnouncements : function () {};
+  var loadMyFeedbackFn = typeof root.loadMyFeedback === 'function' ? root.loadMyFeedback : function () {};
+  var loadFeedbackAdminFn = typeof root.loadFeedbackAdmin === 'function' ? root.loadFeedbackAdmin : function () {};
+  var loadAccessLogsFn = typeof root.loadAccessLogs === 'function' ? root.loadAccessLogs : function () {};
+
+  var loginBound = false;
+  var qrCodeInstance = null;
+
+  function normalizeName(name) {
+    var value = String(name || '').trim();
+    if (!value) {
+      return 'Member';
+    }
+    return value.replace(/\s+/g, ' ');
+  }
+
+  function getRole(user) {
+    var role = user && (user.role || user.position || user.type);
+    return role ? String(role).toLowerCase() : '';
+  }
+
+  function isGuest(user) {
+    var role = getRole(user);
+    return role === 'guest' || role === 'visitor' || !!(user && user.isGuest);
+  }
+
+  function bindLogin() {
+    if (loginBound) {
+      return;
+    }
+    loginBound = true;
+    var usernameInput = select('#username');
+    var passwordInput = select('#password');
+    var loginBtn = select('#login-btn');
+    var guestBtn = select('#guest-login-btn');
+    var eyeToggle = select('#eye-toggle');
+
+    function toggleEye() {
+      if (!passwordInput || !eyeToggle) {
+        return;
+      }
+      var reveal = passwordInput.getAttribute('type') === 'password';
+      passwordInput.setAttribute('type', reveal ? 'text' : 'password');
+      eyeToggle.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+      eyeToggle.classList.toggle('is-visible', reveal);
+      eyeToggle.classList.add('is-animating');
+      setTimeoutFn(function () {
+        eyeToggle.classList.remove('is-animating');
+      }, 350);
+    }
+
+    if (eyeToggle) {
+      eyeToggle.addEventListener('click', function () {
+        toggleEye();
+      });
+    }
+
+    function handleSubmit(event) {
+      if (event && event.key === 'Enter') {
+        event.preventDefault();
+        doLogin();
+      }
+    }
+
+    if (usernameInput) {
+      usernameInput.addEventListener('keydown', handleSubmit);
+    }
+    if (passwordInput) {
+      passwordInput.addEventListener('keydown', handleSubmit);
+    }
+    if (loginBtn) {
+      loginBtn.addEventListener('click', function () {
+        doLogin();
+      });
+    }
+    if (guestBtn) {
+      guestBtn.addEventListener('click', function () {
+        openGuestModal(guestBtn);
+      });
+    }
+  }
+
+  function openGuestModal(opener) {
+    var panel = showModalFn({
+      title: 'Guest Login',
+      opener: opener,
+      bodyHtml:
+        '<p>Enter your name so we can personalize your visit.</p>' +
+        '<label class="form-group">Name<input id="guest-name" type="text" placeholder="Your name" /></label>',
+      footerHtml:
+        '<button type="button" class="btn btn-outline" data-close="1">Cancel</button>' +
+        '<button type="button" class="btn btn-primary" id="guest-submit">Continue</button>',
+    });
+    if (!panel || typeof panel.querySelector !== 'function') {
+      return;
+    }
+    var input = panel.querySelector('#guest-name');
+    var submit = panel.querySelector('#guest-submit');
+
+    function submitGuest() {
+      var name = normalizeName(input && input.value);
+      if (!name) {
+        toastFn('Please enter your name.');
+        return;
+      }
+      if (submit) {
+        submit.disabled = true;
+      }
+      callServer(
+        'guestLogin',
+        [name],
+        function (res) {
+          if (submit) {
+            submit.disabled = false;
+          }
+          closeModalFn();
+          if (res && res.success && res.user) {
+            res.user.isGuest = true;
+            setSession(res.user);
+            showFn('homepage-panel');
+            loadHomepageFn();
+          } else {
+            toastFn((res && res.message) || 'Unable to start guest session.');
+          }
+        },
+        function (err) {
+          if (submit) {
+            submit.disabled = false;
+          }
+          toastFn('Guest login failed.');
+          if (root.console && typeof root.console.error === 'function') {
+            root.console.error(err);
+          }
+        },
+        { success: true, user: { name: name, role: 'Guest', isGuest: true } }
+      );
+    }
+
+    if (submit) {
+      submit.addEventListener('click', submitGuest);
+    }
+    if (input) {
+      input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          submitGuest();
+        }
+      });
+      setTimeoutFn(function () {
+        if (typeof input.focus === 'function') {
+          input.focus();
+        }
+      }, 20);
+    }
+  }
+
+  function doLogin() {
+    var usernameInput = select('#username');
+    var passwordInput = select('#password');
+    var loginBtn = select('#login-btn');
+    var username = usernameInput ? usernameInput.value.trim() : '';
+    var password = passwordInput ? passwordInput.value.trim() : '';
+    if (!username || !password) {
+      toastFn('Enter both username and password.');
+      return;
+    }
+    if (loginBtn) {
+      loginBtn.disabled = true;
+    }
+    callServer(
+      'validateLogin',
+      [username, password],
+      function (res) {
+        if (loginBtn) {
+          loginBtn.disabled = false;
+        }
+        if (res && res.success && res.user) {
+          setSession(res.user);
+          showFn('main-menu-panel');
+        } else {
+          toastFn((res && res.message) || 'Invalid credentials.');
+        }
+      },
+      function (err) {
+        if (loginBtn) {
+          loginBtn.disabled = false;
+        }
+        toastFn('Login failed. Please try again.');
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+      },
+      {
+        success: true,
+        user: {
+          name: username.split('@')[0] || 'Member',
+          email: username,
+          role: 'Member',
+          id: 'YSP-0000',
+        },
+      }
+    );
+  }
+
+  function setSession(user) {
+    var safeUser = user || {};
+    YSP.state.session = safeUser;
+    root.__SESSION__ = safeUser;
+    var welcome = select('#welcome-name');
+    if (welcome) {
+      welcome.textContent = normalizeName(safeUser.name || safeUser.fullName || 'Member');
+    }
+    var passwordInput = select('#password');
+    if (passwordInput) {
+      passwordInput.value = '';
+      passwordInput.setAttribute('type', 'password');
+    }
+    var usernameInput = select('#username');
+    if (usernameInput) {
+      usernameInput.value = safeUser.email || '';
+    }
+    var eyeToggle = select('#eye-toggle');
+    if (eyeToggle) {
+      eyeToggle.classList.remove('is-visible');
+      eyeToggle.setAttribute('aria-pressed', 'false');
+    }
+    buildDashboard(safeUser);
+    buildProfile(safeUser);
+    loadHomepageFn();
+    bindDirectoryFn();
+    bindManualAttendanceFn();
+  }
+
+  function buildDashboard(user) {
+    var tilesRoot = select('#dashboard-tiles');
+    if (!tilesRoot || !doc) {
+      return;
+    }
+    tilesRoot.innerHTML = '';
+    var dashboardConfig = [
+      { id: 'home', label: 'Homepage', description: 'News, mission, projects and contacts.', icon: '🏠', target: 'homepage-panel', action: loadHomepageFn },
+      { id: 'profile', label: 'Profile & QR ID', description: 'View your membership details.', icon: '🪪', target: 'profile-panel', action: function () { buildProfile(user); } },
+      { id: 'qr-scan', label: 'QR Attendance', description: 'Scan member QR codes for events.', icon: '📷', target: 'qr-attendance-panel', action: setupQrAttendanceFn },
+      { id: 'manual', label: 'Manual Attendance', description: 'Search members and record attendance.', icon: '📝', target: 'manual-attendance-panel', action: function () { setupManualAttendanceFn(); bindManualAttendanceFn(); } },
+      { id: 'kpi', label: 'Attendance Dashboard', description: 'Charts of attendance trends.', icon: '📊', target: 'attendance-dashboard-panel', action: loadKpisFn },
+      { id: 'transparency', label: 'Attendance Transparency', description: 'Your attendance records.', icon: '📅', target: 'attendance-trans-panel', action: loadMyAttendanceFn },
+      { id: 'events', label: 'Manage Events', description: 'Create and manage activities.', icon: '🎪', target: 'manage-events-panel', action: loadEventsFn },
+      { id: 'directory', label: 'Directory', description: 'Find officers and members.', icon: '🧑‍🤝‍🧑', target: 'directory-panel', action: bindDirectoryFn },
+      { id: 'announcements', label: 'Announcements', description: 'Publish updates to members.', icon: '📣', target: 'announcements-panel', action: loadAnnouncementsFn },
+      { id: 'feedback', label: 'Submit Feedback', description: 'Share your thoughts with the council.', icon: '💬', target: 'submit-feedback-panel', action: loadMyFeedbackFn },
+      { id: 'feedback-admin', label: 'Feedback Inbox', description: 'Review feedback submissions.', icon: '📥', target: 'view-feedback-panel', action: loadFeedbackAdminFn },
+      { id: 'access-logs', label: 'Access Logs', description: 'Monitor sign-in activity.', icon: '🗒️', target: 'view-logs-panel', action: loadAccessLogsFn },
+    ];
+
+    var allowedTargets;
+    if (isGuest(user)) {
+      allowedTargets = {
+        'homepage-panel': true,
+        'directory-panel': true,
+        'submit-feedback-panel': true,
+        'attendance-trans-panel': true,
+      };
+    }
+
+    dashboardConfig
+      .filter(function (config) {
+        if (!allowedTargets) {
+          return true;
+        }
+        return !!allowedTargets[config.target];
+      })
+      .forEach(function (config) {
+        var tile = doc.createElement('button');
+        tile.type = 'button';
+        tile.className = 'tile';
+        tile.setAttribute('role', 'listitem');
+        tile.innerHTML =
+          '<span class="tile-icon" aria-hidden="true">' +
+          config.icon +
+          '</span>' +
+          '<span class="tile-title">' +
+          escFn(config.label) +
+          '</span>' +
+          '<span class="muted">' +
+          escFn(config.description) +
+          '</span>';
+        tile.addEventListener('click', function () {
+          try {
+            if (typeof config.action === 'function') {
+              config.action();
+            }
+          } catch (err) {
+            if (root.console && typeof root.console.error === 'function') {
+              root.console.error('Tile action failed', config.id, err);
+            }
+          }
+          showFn(config.target);
+        });
+        tilesRoot.appendChild(tile);
+      });
+
+    var logoutTile = doc.createElement('button');
+    logoutTile.type = 'button';
+    logoutTile.className = 'tile';
+    logoutTile.id = 'logout-tile';
+    logoutTile.innerHTML =
+      '<span class="tile-icon" aria-hidden="true">🚪</span>' +
+      '<span class="tile-title">Log Out</span>' +
+      '<span class="muted">Sign out from this device.</span>';
+    logoutTile.addEventListener('click', function () {
+      performLogout();
+    });
+    tilesRoot.appendChild(logoutTile);
+  }
+
+  function performLogout() {
+    callServer(
+      'logout',
+      [],
+      function () {
+        YSP.state.session = null;
+        root.__SESSION__ = null;
+        var usernameInput = select('#username');
+        if (usernameInput) {
+          usernameInput.value = '';
+        }
+        var passwordInput = select('#password');
+        if (passwordInput) {
+          passwordInput.value = '';
+          passwordInput.setAttribute('type', 'password');
+        }
+        var eyeToggle = select('#eye-toggle');
+        if (eyeToggle) {
+          eyeToggle.classList.remove('is-visible');
+          eyeToggle.setAttribute('aria-pressed', 'false');
+        }
+        showFn('login-panel');
+        toastFn('Signed out successfully.');
+      },
+      function (err) {
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to log out right now.');
+      },
+      { success: true }
+    );
+  }
+
+  function buildProfile(user) {
+    var profileName = select('#profile-name');
+    var profileRole = select('#profile-role');
+    var profileEmail = select('#profile-email');
+    var profileId = select('#profile-id');
+    var avatar = select('#profile-avatar');
+    var qrContainer = select('#qrid');
+    var downloadBtn = select('#btn-download-qr');
+
+    if (!qrContainer || !doc) {
+      return;
+    }
+
+    if (profileName) {
+      profileName.textContent = normalizeName(user && (user.fullName || user.name));
+    }
+    if (profileRole) {
+      profileRole.textContent = user && (user.role || user.position || 'Member');
+    }
+    if (profileEmail) {
+      profileEmail.textContent = user && (user.email || 'no-email@ysp.org');
+    }
+    if (profileId) {
+      profileId.textContent = user && (user.id || user.memberId || 'ID unavailable');
+    }
+    if (avatar) {
+      var avatarUrl = (user && user.avatarUrl) || 'https://placehold.co/400x400?text=Member';
+      avatar.src = avatarUrl;
+    }
+
+    qrContainer.innerHTML = '';
+    var QRCodeCtor = root.QRCode;
+    if (typeof QRCodeCtor === 'function') {
+      qrCodeInstance = new QRCodeCtor(qrContainer, {
+        text: String(user && (user.id || user.memberId || user.email || 'YSP')),
+        width: 180,
+        height: 180,
+        colorDark: '#1d1d1f',
+        colorLight: '#ffffff',
+      });
+    } else {
+      qrContainer.textContent = 'QR generator unavailable.';
+    }
+
+    if (downloadBtn && downloadBtn.dataset.bound !== '1') {
+      downloadBtn.dataset.bound = '1';
+      downloadBtn.addEventListener('click', function () {
+        var canvas = qrContainer.querySelector('canvas');
+        var img = qrContainer.querySelector('img');
+        var href = null;
+        if (canvas && canvas.toDataURL) {
+          href = canvas.toDataURL('image/png');
+        } else if (img && img.src) {
+          href = img.src;
+        }
+        if (!href) {
+          toastFn('QR image not ready yet.');
+          return;
+        }
+        var link = doc.createElement('a');
+        link.href = href;
+        link.download = (user && user.id ? user.id : 'ysp-id') + '-qr.png';
+        if (doc.body) {
+          doc.body.appendChild(link);
+          if (typeof link.click === 'function') {
+            link.click();
+          }
+          link.remove();
+        }
+      });
+    }
+  }
+
+  YSP.login = YSP.login || {};
+  YSP.login.bindLogin = bindLogin;
+  YSP.login.doLogin = doLogin;
+  YSP.login.setSession = setSession;
+  YSP.login.buildDashboard = buildDashboard;
+  YSP.login.buildProfile = buildProfile;
+
+  root.bindLogin = bindLogin;
+  root.doLogin = doLogin;
+  root.setSession = setSession;
+  root.buildDashboard = buildDashboard;
+  root.buildProfile = buildProfile;
+});
+</script>
