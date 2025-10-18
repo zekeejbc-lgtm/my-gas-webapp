@@ -743,33 +743,30 @@
       modal: null,
       panel: null
     };
-    const htmlEscapeMap = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
-    function escapeHtml(value){
-      const normalized = value == null ? '' : value;
-      return String(normalized).replace(/[&<>"']/g, function(ch){ return htmlEscapeMap[ch] || ch; });
-    }
-    function escapeAttr(value){ return escapeHtml(value); }
-    function textOrEmpty(value){ return typeof value === 'string' ? value.trim() : ''; }
-    function isValidHttpUrl(value){
+    const htmlEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, ch => htmlEscapeMap[ch] || ch);
+    const escapeAttr = value => escapeHtml(value);
+    const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
+    const isSafeHttpUrl = (value) => {
       try {
         const parsed = new URL(value);
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
       } catch(e){
         return false;
       }
-    }
-    function normalizeExternalUrl(value){
+    };
+    const normalizeExternalUrl = (value) => {
       const raw = textOrEmpty(value);
       if(!raw) return '';
       const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-      if(!isValidHttpUrl(withProtocol)) return '';
+      if(!isSafeHttpUrl(withProtocol)) return '';
       try {
         return new URL(withProtocol).toString();
       } catch(err){
         return '';
       }
-    }
-    function buildGmailComposeUrl(email){
+    };
+    const buildGmailComposeUrl = (email) => {
       const safeEmail = textOrEmpty(email);
       if(!safeEmail) return '';
       const compose = new URL('https://mail.google.com/mail/');
@@ -778,10 +775,9 @@
       compose.searchParams.set('to', safeEmail);
       compose.searchParams.set('su','[YSP] Issue Report');
       return compose.toString();
-    }
-    function openExternal(url){
-      const safeUrl = normalizeExternalUrl(url);
-      if(!safeUrl) return;
+    };
+    const openExternal = (url) => {
+      if(!isSafeHttpUrl(url)) return;
       try {
         const win = window.open(safeUrl, '_blank', 'noopener');
         if(win){ win.opener = null; }
@@ -1054,24 +1050,24 @@
         opener: guestLoginBtn
       });
 
-      requestAnimationFrame(function(){
+      requestAnimationFrame(() => {
         const nameInput = document.getElementById('guest-name-input');
         const continueBtn = document.getElementById('guest-continue-btn');
         const statusEl = document.getElementById('guest-modal-status');
         if(nameInput){
           nameInput.focus();
         }
-        function completeGuestLogin(guestName){
+        const completeGuestLogin = (guestName) => {
           appState.currentUser = { name: guestName, role: 'Guest', idCode: 'Visitor', position: 'Guest' };
           closeModal({ skipFocusRestore: true });
           loadHomepage();
           switchPanels('homepage-panel');
-        }
-        function logAndContinue(guestName){
+        };
+        const logAndContinue = (guestName) => {
           if(window.google && google.script && google.script.run){
             google.script.run
-              .withSuccessHandler(function(){ completeGuestLogin(guestName); })
-              .withFailureHandler(function(err){
+              .withSuccessHandler(() => completeGuestLogin(guestName))
+              .withFailureHandler(err => {
                 console.warn('Guest logAccess failed', err);
                 completeGuestLogin(guestName);
               })
@@ -1079,8 +1075,8 @@
           } else {
             completeGuestLogin(guestName);
           }
-        }
-        function handleContinue(){
+        };
+        const handleContinue = () => {
           if(!nameInput || !continueBtn) return;
           const guestName = (nameInput.value || '').trim();
           if(!guestName){
@@ -1098,12 +1094,12 @@
           continueBtn.disabled = true;
           continueBtn.textContent = 'Signing in…';
           logAndContinue(guestName);
-        }
+        };
         if(continueBtn){
           continueBtn.addEventListener('click', handleContinue);
         }
         if(nameInput){
-          nameInput.addEventListener('keydown', function(evt){
+          nameInput.addEventListener('keydown', (evt) => {
             if(evt.key === 'Enter'){
               evt.preventDefault();
               handleContinue();
