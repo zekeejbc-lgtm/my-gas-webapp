@@ -235,8 +235,12 @@
     .avatar { width:86px; height:86px; border-radius:50%; object-fit:cover; border:3px solid rgba(0,0,0,0.05); }
 
     /* homepage content */
-    #homepage-panel .panel-body { display:flex; flex-direction:column; min-height:100%; }
-    .homepage-layout { display:flex; flex-direction:column; gap:24px; min-height:100%; }
+    #homepage-panel .panel-body {
+      display:flex;
+      flex-direction:column;
+      min-height:min(100%, calc(100dvh - 180px));
+    }
+    .homepage-layout { display:flex; flex-direction:column; gap:24px; flex:1; }
     .homepage-layout .container { width:100%; }
     #homepage-content { text-align:justify; line-height:1.55; font-size:0.97rem; color:var(--text-dark); display:flex; flex-direction:column; gap:16px; }
     .homepage-section-block h3 { font-family:'Lexend',sans-serif; margin:0 0 8px; font-size:1.1rem; color:var(--primary); }
@@ -251,6 +255,7 @@
     .homepage-contact-grid .card p { margin:0; }
     .homepage-contact-grid .card h3 { font-family:'Lexend',sans-serif; margin:0; font-size:1.1rem; color:var(--primary); }
     .homepage-action-stack { display:flex; flex-wrap:wrap; gap:12px; }
+    .panel-actions.push-bottom { margin-top:auto; }
     #project-gallery { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; padding-block:12px; }
     .project-card {
       width:100%;
@@ -407,6 +412,10 @@
       border:0;
     }
 
+    .guest-modal{ display:flex; flex-direction:column; gap:var(--space-sm); }
+    .guest-modal__status{ min-height:20px; font-size:0.92rem; color:var(--muted); transition:color .18s ease; }
+    .guest-modal__status.is-error{ color:var(--danger); }
+
     .info-grid{
       display:grid;
       grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
@@ -487,8 +496,8 @@
         <p id="login-status" class="status-message" aria-live="polite"></p>
 
         <div class="panel-actions">
-          <button id="login-btn" class="btn">Log In</button>
-          <button id="guest-login-btn" class="btn secondary">Log in as Guest</button>
+          <button id="login-btn" class="btn" type="button">Log In</button>
+          <button id="guest-login-btn" class="btn secondary" type="button">Log in as Guest</button>
         </div>
       </div>
     </section>
@@ -564,7 +573,7 @@
           <div id="homepage-contacts" class="homepage-contact-grid" aria-live="polite"></div>
         </div>
 
-        <div class="panel-actions" style="margin-top:auto;">
+        <div class="panel-actions push-bottom">
           <button id="homepage-back-btn" class="btn secondary back-btn" data-target="login-panel">Back to Login</button>
         </div>
       </div>
@@ -655,10 +664,29 @@
   <!-- ---------------- JS: UI logic ---------------- -->
   <script>
   (function(){
+    function onReady(fn){
+      if(document.readyState === 'loading'){
+        document.addEventListener('DOMContentLoaded', fn);
+      } else {
+        fn();
+      }
+    }
+
+    onReady(function(){
     // Shortcuts + state
-    const $ = s => document.querySelector(s);
-    const $$ = s => Array.from(document.querySelectorAll(s));
+    function $(s){ return document.querySelector(s); }
+    function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
     const panels = $$('.panel');
+    const panelHashMap = {
+      'login-panel': '#login',
+      'main-menu-panel': '#dashboard',
+      'homepage-panel': '#homepage',
+      'search-panel': '#search',
+      'announcements-panel': '#announcements',
+      'view-feedback-panel': '#feedback',
+      'view-logs-panel': '#logs',
+      'attendance-trans-panel': '#attendance'
+    };
     let appState = {
       currentUser: null,
       officerData: [],
@@ -715,18 +743,33 @@
       modal: null,
       panel: null
     };
-    const attrEscapeMap = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    const escapeAttr = value => String(value ?? '').replace(/[&<>"']/g, ch => attrEscapeMap[ch] || ch);
-    const textOrEmpty = value => typeof value === 'string' ? value.trim() : '';
-    const isSafeHttpUrl = (value) => {
+    const htmlEscapeMap = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
+    function escapeHtml(value){
+      const normalized = value == null ? '' : value;
+      return String(normalized).replace(/[&<>"']/g, function(ch){ return htmlEscapeMap[ch] || ch; });
+    }
+    function escapeAttr(value){ return escapeHtml(value); }
+    function textOrEmpty(value){ return typeof value === 'string' ? value.trim() : ''; }
+    function isValidHttpUrl(value){
       try {
         const parsed = new URL(value);
         return parsed.protocol === 'http:' || parsed.protocol === 'https:';
       } catch(e){
         return false;
       }
-    };
-    const buildGmailComposeUrl = (email) => {
+    }
+    function normalizeExternalUrl(value){
+      const raw = textOrEmpty(value);
+      if(!raw) return '';
+      const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+      if(!isValidHttpUrl(withProtocol)) return '';
+      try {
+        return new URL(withProtocol).toString();
+      } catch(err){
+        return '';
+      }
+    }
+    function buildGmailComposeUrl(email){
       const safeEmail = textOrEmpty(email);
       if(!safeEmail) return '';
       const compose = new URL('https://mail.google.com/mail/');
@@ -735,20 +778,21 @@
       compose.searchParams.set('to', safeEmail);
       compose.searchParams.set('su','[YSP] Issue Report');
       return compose.toString();
-    };
-    const openExternal = (url) => {
-      if(!url) return;
+    }
+    function openExternal(url){
+      const safeUrl = normalizeExternalUrl(url);
+      if(!safeUrl) return;
       try {
-        const win = window.open(url, '_blank', 'noopener');
+        const win = window.open(safeUrl, '_blank', 'noopener');
         if(win){ win.opener = null; }
       } catch(err){
         console.warn('Unable to open link', err);
       }
-    };
+    }
 
     // Utilities
     function switchPanels(targetId){
-      panels.forEach(p => {
+      panels.forEach(function(p){
         if(p.id === targetId){
           p.classList.remove('hidden');
           p.classList.add('active');
@@ -764,28 +808,35 @@
       // small scroll to top for panel
       const t = $('#'+targetId);
       if(t) t.scrollTop = 0;
-      if(targetId === 'login-panel'){
-        location.hash = '#login';
-      } else if(targetId === 'homepage-panel'){
-        location.hash = '#homepage';
+      const hash = panelHashMap[targetId];
+      if(hash){
+        location.hash = hash;
       }
     }
 
-    function showStatusFor(idSelectorOrText, text, timeout=4200){
+    function showStatusFor(idSelectorOrText, text, timeout){
+      const numericTimeout = typeof timeout === 'number' ? timeout : Number(timeout);
+      const displayDuration = !isNaN(numericTimeout) ? numericTimeout : 4200;
       // convenience: if idSelectorOrText equals 'login' show in login-status
       const el = (typeof idSelectorOrText === 'string' && idSelectorOrText.startsWith('#')) ? document.querySelector(idSelectorOrText) : document.getElementById(idSelectorOrText + '-status');
       const target = el || (typeof idSelectorOrText === 'string' ? document.getElementById(idSelectorOrText) : null);
       if(target){
         target.textContent = text;
         target.classList.add('show');
-        setTimeout(()=> target.classList.remove('show'), timeout);
+        setTimeout(function(){ target.classList.remove('show'); }, displayDuration);
       } else {
         console.warn('Status element not found for', idSelectorOrText);
       }
     }
 
     // modal helper
-    function showModal({title = '', bodyHtml = '', footerHtml = '', modalClass = '', opener = null}){
+    function showModal(options){
+      const opts = options || {};
+      const title = typeof opts.title === 'string' ? opts.title : '';
+      const bodyHtml = typeof opts.bodyHtml === 'string' ? opts.bodyHtml : '';
+      const footerHtml = typeof opts.footerHtml === 'string' ? opts.footerHtml : '';
+      const modalClass = typeof opts.modalClass === 'string' ? opts.modalClass : '';
+      const opener = opts.opener || null;
       if(!modalRoot) return;
       if(!modalRoot.hidden){
         if(modalState.escListener){
@@ -835,7 +886,7 @@
       closeButton.className = 'modal__close';
       closeButton.setAttribute('aria-label', 'Close dialog');
       closeButton.innerHTML = '&times;';
-      closeButton.addEventListener('click', () => closeModal());
+      closeButton.addEventListener('click', function(){ closeModal(); });
 
       header.append(heading, closeButton);
 
@@ -847,11 +898,11 @@
       const footer = document.createElement('div');
       footer.className = 'modal__footer';
       footer.innerHTML = footerHtml;
-      footer.querySelectorAll('[data-modal-close]').forEach(el => {
+      footer.querySelectorAll('[data-modal-close]').forEach(function(el){
         if(el.tagName === 'BUTTON' && !el.hasAttribute('type')){
           el.setAttribute('type','button');
         }
-        el.addEventListener('click', () => closeModal());
+        el.addEventListener('click', function(){ closeModal(); });
       });
 
       panel.append(header, body, footer);
@@ -861,20 +912,20 @@
       modalRoot.append(backdrop, modal);
       modalRoot.hidden = false;
 
-      requestAnimationFrame(() => {
+      requestAnimationFrame(function(){
         backdrop.classList.add('is-open');
         modal.classList.add('is-open');
       });
 
       const focusableSelectors = 'a[href], area[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
-      let focusables = Array.from(panel.querySelectorAll(focusableSelectors)).filter(el => el.offsetParent !== null || el === closeButton);
+      let focusables = Array.from(panel.querySelectorAll(focusableSelectors)).filter(function(el){ return el.offsetParent !== null || el === closeButton; });
       if(!focusables.length){
         panel.setAttribute('tabindex', '-1');
         focusables = [panel];
       }
       focusables[0].focus();
 
-      const trapHandler = (event) => {
+      const trapHandler = function(event){
         if(event.key !== 'Tab') return;
         const first = focusables[0];
         const last = focusables[focusables.length - 1];
@@ -887,15 +938,15 @@
         }
       };
       panel.addEventListener('keydown', trapHandler);
-      modalState.trapCleanup = () => panel.removeEventListener('keydown', trapHandler);
+      modalState.trapCleanup = function(){ panel.removeEventListener('keydown', trapHandler); };
 
-      backdrop.addEventListener('click', (event) => {
+      backdrop.addEventListener('click', function(event){
         if(event.target === backdrop){
           closeModal();
         }
       });
 
-      const escListener = (event) => {
+      const escListener = function(event){
         if(event.key === 'Escape'){
           event.preventDefault();
           closeModal();
@@ -909,9 +960,10 @@
       modalState.panel = panel;
     }
 
-    function closeModal(options = {}){
+    function closeModal(options){
       if(!modalRoot || modalRoot.hidden) return;
-      const { skipFocusRestore = false } = options;
+      const opts = options || {};
+      const skipFocusRestore = !!opts.skipFocusRestore;
       const focusTarget = modalState.lastFocused;
 
       if(modalState.escListener){
@@ -930,7 +982,7 @@
         modalState.modal.classList.remove('is-open');
       }
 
-      setTimeout(() => {
+      setTimeout(function(){
         modalRoot.innerHTML = '';
         modalRoot.hidden = true;
         modalState.backdrop = null;
@@ -956,7 +1008,7 @@
 
       if(!window.google || !google.script){
         // Local preview
-        setTimeout(()=> {
+        setTimeout(function(){
           loginBtn.disabled = false;
           loginBtn.textContent = 'Log In';
           showStatusFor('login', 'Local preview: google.script.run not available. Deploy to Apps Script to test login.');
@@ -964,7 +1016,7 @@
         return;
       }
 
-      google.script.run.withSuccessHandler(resp => {
+      google.script.run.withSuccessHandler(function(resp){
         loginBtn.disabled = false;
         loginBtn.textContent = 'Log In';
         if(resp && resp.success){
@@ -973,7 +1025,7 @@
         } else {
           showStatusFor('login', resp && resp.message ? resp.message : 'Invalid credentials');
         }
-      }).withFailureHandler(err => {
+      }).withFailureHandler(function(err){
         loginBtn.disabled = false;
         loginBtn.textContent = 'Log In';
         console.error('checkLogin failed', err);
@@ -982,10 +1034,83 @@
     }
 
     function handleGuestLogin(){
-      // Guest: show homepage without profile
-      appState.currentUser = { name:'Guest', role:'Guest', idCode: ''};
-      loadHomepage();
-      switchPanels('homepage-panel');
+      showModal({
+        title: 'Guest Access',
+        modalClass: 'guest-modal-shell',
+        bodyHtml: `
+          <div class="guest-modal">
+            <p>Enter your full name so we can record your visit in the access logs.</p>
+            <label for="guest-name-input" style="font-weight:600">Full Name</label>
+            <input id="guest-name-input" class="input-field" type="text" placeholder="e.g. Juan Dela Cruz" autocomplete="name" />
+            <p id="guest-modal-status" class="guest-modal__status" role="status" aria-live="polite"></p>
+          </div>
+        `,
+        footerHtml: `
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+            <button type="button" class="btn secondary" data-modal-close="true">Cancel</button>
+            <button type="button" class="btn" id="guest-continue-btn">Continue as Guest</button>
+          </div>
+        `,
+        opener: guestLoginBtn
+      });
+
+      requestAnimationFrame(function(){
+        const nameInput = document.getElementById('guest-name-input');
+        const continueBtn = document.getElementById('guest-continue-btn');
+        const statusEl = document.getElementById('guest-modal-status');
+        if(nameInput){
+          nameInput.focus();
+        }
+        function completeGuestLogin(guestName){
+          appState.currentUser = { name: guestName, role: 'Guest', idCode: 'Visitor', position: 'Guest' };
+          closeModal({ skipFocusRestore: true });
+          loadHomepage();
+          switchPanels('homepage-panel');
+        }
+        function logAndContinue(guestName){
+          if(window.google && google.script && google.script.run){
+            google.script.run
+              .withSuccessHandler(function(){ completeGuestLogin(guestName); })
+              .withFailureHandler(function(err){
+                console.warn('Guest logAccess failed', err);
+                completeGuestLogin(guestName);
+              })
+              .logAccess({ idCode: 'Visitor', name: guestName });
+          } else {
+            completeGuestLogin(guestName);
+          }
+        }
+        function handleContinue(){
+          if(!nameInput || !continueBtn) return;
+          const guestName = (nameInput.value || '').trim();
+          if(!guestName){
+            if(statusEl){
+              statusEl.textContent = 'Please enter your name to continue.';
+              statusEl.classList.add('is-error');
+            }
+            nameInput.focus();
+            return;
+          }
+          if(statusEl){
+            statusEl.textContent = 'Signing you in as a guest…';
+            statusEl.classList.remove('is-error');
+          }
+          continueBtn.disabled = true;
+          continueBtn.textContent = 'Signing in…';
+          logAndContinue(guestName);
+        }
+        if(continueBtn){
+          continueBtn.addEventListener('click', handleContinue);
+        }
+        if(nameInput){
+          nameInput.addEventListener('keydown', function(evt){
+            if(evt.key === 'Enter'){
+              evt.preventDefault();
+              handleContinue();
+            }
+          });
+        }
+      });
     }
 
     // Eye toggle
@@ -1145,7 +1270,7 @@
       projectGallery.innerHTML = '';
       if(homepageContacts){ homepageContacts.innerHTML = ''; }
 
-      const renderStatus = (message) => {
+      function renderStatus(message){
         if(homepageContent){
           homepageContent.innerHTML = '';
           const info = document.createElement('p');
@@ -1154,9 +1279,11 @@
           homepageContent.appendChild(info);
         }
         projectGallery.innerHTML = '';
-      };
+      }
 
-      const renderContacts = (content, { offline = false } = {}) => {
+      function renderContacts(content, options){
+        const opts = options || {};
+        const offline = !!opts.offline;
         if(!homepageContacts) return;
         homepageContacts.innerHTML = '';
 
@@ -1172,13 +1299,14 @@
         actionStack.className = 'homepage-action-stack';
         let hasActions = false;
 
-        if(content.facebookUrl && isSafeHttpUrl(content.facebookUrl)){
+        const facebookLink = normalizeExternalUrl(content.facebookUrl);
+        if(facebookLink){
           const fbBtn = document.createElement('button');
           fbBtn.type = 'button';
           fbBtn.className = 'btn btn-primary';
           fbBtn.textContent = 'Open Facebook Page';
           fbBtn.setAttribute('aria-label', 'Open the YSP Tagum Facebook page in a new tab');
-          fbBtn.addEventListener('click', () => openExternal(content.facebookUrl));
+          fbBtn.addEventListener('click', () => openExternal(facebookLink));
           actionStack.appendChild(fbBtn);
           hasActions = true;
         }
@@ -1188,7 +1316,7 @@
           if(composeUrl){
             const emailBtn = document.createElement('button');
             emailBtn.type = 'button';
-            emailBtn.className = 'btn secondary';
+            emailBtn.className = 'btn btn-primary';
             emailBtn.textContent = 'Email YSP';
             emailBtn.setAttribute('aria-label', 'Compose an email to YSP Tagum');
             emailBtn.addEventListener('click', () => openExternal(composeUrl));
@@ -1216,7 +1344,7 @@
         devCard.append(devTitle, devName, devRole, devContact, devNote);
 
         homepageContacts.append(issueCard, devCard);
-      };
+      }
 
       const renderProjects = (projects) => {
         projectGallery.innerHTML = '';
@@ -1231,7 +1359,7 @@
         projects.forEach((project, index) => {
           const title = textOrEmpty(project.title) || `Project ${index + 1}`;
           const description = textOrEmpty(project.description);
-          const imageUrl = isSafeHttpUrl(project.imageUrl) ? project.imageUrl : '';
+          const imageUrl = isValidHttpUrl(project.imageUrl) ? project.imageUrl : '';
 
           const card = document.createElement('button');
           card.type = 'button';
@@ -1257,7 +1385,12 @@
           card.append(media, heading, copy);
 
           const openProject = () => {
-            const bodyParts = description ? description.split(/\n+/).map(line => `<p>${escapeAttr(line)}</p>`).join('') : '<p>Details coming soon.</p>';
+            const bodyParts = description
+              ? description.split(/\n+/).map(line => {
+                  const trimmed = line.trim();
+                  return trimmed ? `<p>${escapeHtml(trimmed)}</p>` : '';
+                }).filter(Boolean).join('')
+              : '<p>Details coming soon.</p>';
             const modalImage = escapeAttr(imageUrl || 'https://via.placeholder.com/960x540?text=YSP+Project');
             showModal({
               title,
@@ -1279,20 +1412,21 @@
         });
       };
 
-      const normalizeContent = (raw = {}) => {
+      function normalizeContent(raw){
+        const source = raw || {};
         const normalized = {
-          about: textOrEmpty(raw.aboutYSP || raw.about),
-          mission: textOrEmpty(raw.mission),
-          vision: textOrEmpty(raw.vision),
-          objectives: textOrEmpty(raw.objectives),
-          founderName: textOrEmpty(raw.founderName),
-          orgChartUrl: textOrEmpty(raw.orgChartUrl),
-          facebookUrl: textOrEmpty(raw.facebookUrl),
-          email: textOrEmpty(raw.email),
+          about: textOrEmpty(source.aboutYSP || source.about),
+          mission: textOrEmpty(source.mission),
+          vision: textOrEmpty(source.vision),
+          objectives: textOrEmpty(source.objectives),
+          founderName: textOrEmpty(source.founderName),
+          orgChartUrl: textOrEmpty(source.orgChartUrl),
+          facebookUrl: textOrEmpty(source.facebookUrl),
+          email: textOrEmpty(source.email),
           projects: []
         };
 
-        const incomingProjects = Array.isArray(raw.projects) ? raw.projects : [];
+        const incomingProjects = Array.isArray(source.projects) ? source.projects : [];
         if(incomingProjects.length){
           normalized.projects = incomingProjects.map((proj, idx) => ({
             title: textOrEmpty(proj.title) || `Project ${idx + 1}`,
@@ -1302,20 +1436,20 @@
         } else {
           let index = 1;
           const derived = [];
-          while(raw[`projectImageUrl_${index}`] || raw[`projectDesc_${index}`]){
+          while(source[`projectImageUrl_${index}`] || source[`projectDesc_${index}`]){
             derived.push({
               title: `Project ${index}`,
-              description: textOrEmpty(raw[`projectDesc_${index}`]),
-              imageUrl: textOrEmpty(raw[`projectImageUrl_${index}`])
+              description: textOrEmpty(source[`projectDesc_${index}`]),
+              imageUrl: textOrEmpty(source[`projectImageUrl_${index}`])
             });
             index += 1;
           }
           normalized.projects = derived.filter(p => p.description || p.imageUrl);
         }
         return normalized;
-      };
+      }
 
-      const renderOverview = (content) => {
+      function renderOverview(content){
         if(!homepageContent) return;
         homepageContent.innerHTML = '';
         const fragment = document.createDocumentFragment();
@@ -1377,7 +1511,7 @@
           fragment.appendChild(block);
         }
 
-        if(content.orgChartUrl && isSafeHttpUrl(content.orgChartUrl)){
+        if(content.orgChartUrl && isValidHttpUrl(content.orgChartUrl)){
           const block = document.createElement('div');
           block.className = 'homepage-section-block';
           const heading = document.createElement('h3');
@@ -1543,7 +1677,7 @@
     if(searchInput){
       searchInput.addEventListener('input', handleSearchInput);
       searchInput.addEventListener('keydown', handleSearchKeydown);
-      searchInput.addEventListener('blur', () => setTimeout(clearSuggestions, 120));
+      searchInput.addEventListener('blur', function(){ setTimeout(clearSuggestions, 120); });
     }
 
     function displayResult(officer){
@@ -1562,7 +1696,7 @@
       // allow admin to mark status manually
       const markBtn = document.getElementById('mark-att-btn');
       if(markBtn){
-        markBtn.onclick = () => {
+        markBtn.onclick = function(){
           // open modal to choose status and record
           showModal({
             title: 'Manual Attendance',
@@ -1578,20 +1712,20 @@
             </div>`,
             footerHtml: `<button class="btn" id="save-manual-att">Save</button> <button class="btn secondary" id="cancel-manual-att">Cancel</button>`
           });
-          setTimeout(()=> {
+          setTimeout(function(){
             document.getElementById('cancel-manual-att').onclick = closeModal;
-            document.getElementById('save-manual-att').onclick = () => {
+            document.getElementById('save-manual-att').onclick = function(){
               const status = document.getElementById('manual-att-status').value;
               closeModal();
               // call backend to record manual attendance (supply idCode and status)
               if(window.google && google.script){
-                google.script.run.withSuccessHandler(res => {
+                google.script.run.withSuccessHandler(function(res){
                   if(res && res.success) {
                     alert(`Recorded ${officer[0]} as ${status}`);
                   } else {
                     alert(res.message || 'Failed to record.');
                   }
-                }).withFailureHandler(err => { console.error(err); alert('Connection error.'); }).recordManualAttendance(officer[0], status);
+                }).withFailureHandler(function(err){ console.error(err); alert('Connection error.'); }).recordManualAttendance(officer[0], status);
               } else {
                 alert('(Local) Recorded ' + officer[0] + ' as ' + status);
               }
@@ -1712,7 +1846,7 @@
         bodyHtml: `<div style="max-height:60vh;overflow:auto"><p style="text-align:justify">${a.body}</p><p style="margin-top:10px"><em>Sent by: ${a.authorName || ''}</em></p></div>`,
         footerHtml: `<button class="btn secondary" id="close-ann-modal">Close</button>`
       });
-      setTimeout(()=> { const b = document.getElementById('close-ann-modal'); if(b) b.onclick = closeModal; }, 40);
+      setTimeout(function(){ const b = document.getElementById('close-ann-modal'); if(b) b.onclick = closeModal; }, 40);
       if(a.unread && appState.currentUser && a.unread[appState.currentUser.idCode]) markAnnouncementRead(a.id);
     }
 
@@ -1722,7 +1856,8 @@
     }
 
     // create announcement (only Admin/Auditor/Head)
-    createAnnBtn && (createAnnBtn.onclick = () => {
+    if(createAnnBtn){
+      createAnnBtn.onclick = function(){
       const role = appState.currentUser && appState.currentUser.role;
       if(!['Admin','Auditor','Head'].includes(role)){ alert('Only Admins, Auditors, Heads can create announcements.'); return; }
       showModal({
@@ -1736,9 +1871,9 @@
         </div>`,
         footerHtml: `<button class="btn" id="ann-send">Send</button><button class="btn secondary" id="ann-cancel">Cancel</button>`
       });
-      setTimeout(()=> {
+      setTimeout(function(){
         $('#ann-cancel').onclick = closeModal;
-        $('#ann-send').onclick = () => {
+        $('#ann-send').onclick = function(){
           const title = $('#ann-title').value.trim();
           const body = $('#ann-body').value.trim();
           const recipientsRaw = $('#ann-recipients').value.trim();
@@ -1757,7 +1892,7 @@
             loadAnnouncements();
             return;
           }
-          google.script.run.withSuccessHandler(res => {
+          google.script.run.withSuccessHandler(function(res){
             if(res && res.success){
               alert('Announcement created and emails queued.');
               closeModal();
@@ -1765,13 +1900,14 @@
             } else {
               alert(res.message || 'Failed to create announcement.');
             }
-          }).withFailureHandler(err => {
+          }).withFailureHandler(function(err){
             console.error(err);
             alert('Failed to create announcement (server error).');
           }).createAnnouncement(payload);
         };
       }, 40);
-    });
+      };
+    }
 
     // load unread badge
     function loadUnreadAnnouncements(){
@@ -1837,17 +1973,21 @@
     // ---------------- Initial wiring ----------------
     loginBtn.addEventListener('click', handleLogin);
     guestLoginBtn.addEventListener('click', handleGuestLogin);
-    $$('.back-btn').forEach(btn => btn.addEventListener('click', () => {
-      const t = btn.dataset.target;
-      if(!t) return;
-      if(t === 'login-panel'){
+    $$('.back-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const t = btn.dataset.target;
+        if(!t) return;
+        if(t === 'login-panel'){
+          switchPanels(t);
+          if(usernameInput){ setTimeout(function(){ usernameInput.focus(); }, 120); }
+          return;
+        }
         switchPanels(t);
-        if(usernameInput){ setTimeout(() => usernameInput.focus(), 120); }
-        return;
-      }
-      switchPanels(t);
-    }));
-    [usernameInput, passwordInput].forEach(inp => inp.addEventListener('keydown', e => { if(e.key === 'Enter') handleLogin(); }));
+      });
+    });
+    [usernameInput, passwordInput].forEach(function(inp){
+      inp.addEventListener('keydown', function(e){ if(e.key === 'Enter') handleLogin(); });
+    });
 
     // initial panel state
     panels.forEach(p => { if(p.id !== 'login-panel'){ p.classList.add('hidden'); p.style.display = 'none'; }});
@@ -1860,13 +2000,14 @@
 
     // If server has session info, optionally fetch (server-side session login)
     if(window.google && google.script && typeof google.script.run.getSession === 'function'){
-      google.script.run.withSuccessHandler(sess => {
+      google.script.run.withSuccessHandler(function(sess){
         if(sess && sess.user){
           appState.currentUser = sess.user;
           populateAfterLogin();
         }
-      }).withFailureHandler(err => console.warn('getSession unavailable', err)).getSession();
+      }).withFailureHandler(function(err){ console.warn('getSession unavailable', err); }).getSession();
     }
+    });
   })();
   </script>
 </body>
