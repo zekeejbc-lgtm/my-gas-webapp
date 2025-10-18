@@ -1,0 +1,123 @@
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
+  'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  if (!root.document) {
+    root.loadKpis = root.loadKpis || function () {};
+    root.renderKpiChart = root.renderKpiChart || function () {};
+    return;
+  }
+
+  var $ = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var callServer = root.YSP && root.YSP.utils && typeof root.YSP.utils.callServer === 'function'
+    ? root.YSP.utils.callServer
+    : function () {};
+
+  var chartInstance = null;
+
+  function loadKpis() {
+    callServer(
+      'getAttendanceKPIs',
+      [],
+      function (res) {
+        var data = res && res.data ? res.data : res;
+        renderKpiChart($('#kpi-chart'), data || {});
+      },
+      function (err) {
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load KPI data.');
+      },
+      {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+        present: [32, 28, 40, 36],
+        absent: [4, 6, 5, 3],
+      }
+    );
+  }
+
+  function renderKpiChart(canvas, kpi) {
+    var ctx = canvas && typeof canvas.getContext === 'function' ? canvas.getContext('2d') : null;
+    if (!ctx || typeof root.Chart !== 'function') {
+      return;
+    }
+    var labels = (kpi && kpi.labels) || ['Jan', 'Feb', 'Mar'];
+    var present = (kpi && kpi.present) || [0, 0, 0];
+    var absent = (kpi && kpi.absent) || [0, 0, 0];
+    if (chartInstance) {
+      chartInstance.data.labels = labels;
+      chartInstance.data.datasets[0].data = present;
+      chartInstance.data.datasets[1].data = absent;
+      chartInstance.update();
+      return;
+    }
+    chartInstance = new root.Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Present',
+            data: present,
+            backgroundColor: 'rgba(246, 66, 31, 0.85)',
+            borderRadius: 12,
+          },
+          {
+            label: 'Absent',
+            data: absent,
+            backgroundColor: 'rgba(29, 29, 31, 0.18)',
+            borderRadius: 12,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            stacked: false,
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.05)' },
+          },
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+          },
+        },
+      },
+    });
+  }
+
+  root.YSP = root.YSP || {};
+  root.YSP.kpis = root.YSP.kpis || {};
+  root.YSP.kpis.loadKpis = loadKpis;
+  root.YSP.kpis.renderKpiChart = renderKpiChart;
+
+  root.loadKpis = loadKpis;
+  root.renderKpiChart = renderKpiChart;
+});
