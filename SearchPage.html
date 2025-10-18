@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>YSP Tagum — Member App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -641,6 +641,36 @@
           </article>
         </section>
       </div>
+      <article class="card">
+        <h3>Objectives</h3>
+        <ul id="home-objectives" class="bullet-list"></ul>
+      </article>
+      <article class="card ratio-card">
+        <h3>Organizational Chart</h3>
+        <div class="ratio ratio-16x9">
+          <img id="home-org-chart" src="https://placehold.co/1280x720?text=Organizational+Chart" alt="Organizational chart" />
+        </div>
+      </article>
+      <section class="card" id="projects-section">
+        <header class="section-header">
+          <h3>Flagship Projects</h3>
+        </header>
+        <div id="projects-grid" class="grid three"></div>
+      </section>
+      <section class="grid two" id="contacts-section">
+        <article class="card">
+          <h3>Report Issues</h3>
+          <p class="muted">Reach us for support via Facebook or Email.</p>
+          <div class="button-stack">
+            <button type="button" class="btn btn-primary" id="contact-facebook">Open Facebook</button>
+            <button type="button" class="btn btn-outline" id="contact-email">Compose Email</button>
+          </div>
+        </article>
+        <article class="card">
+          <h3>Web App Developer</h3>
+          <p id="developer-info" class="muted">Maintained by YSP Tagum Digital Services.</p>
+        </article>
+      </section>
     </section>
 
     <section id="profile-panel" class="panel" aria-labelledby="profile-title">
@@ -690,6 +720,10 @@
           <div id="scan-log"></div>
         </div>
       </div>
+      <article class="card">
+        <h3>Scan Results</h3>
+        <div id="scan-output" class="scan-log" aria-live="polite"></div>
+      </article>
     </section>
 
     <section id="manual-attendance-panel" class="panel" aria-labelledby="manual-attendance-title">
@@ -709,6 +743,8 @@
           <input id="manual-member" type="text" placeholder="Search member" autocomplete="off" />
           <ul id="manual-suggestions" class="suggestion-list" hidden></ul>
         </div>
+      </div>
+    </section>
 
         <div class="panel-actions push-bottom">
           <button id="homepage-back-btn" class="btn secondary back-btn" data-target="login-panel">Back to Login</button>
@@ -736,6 +772,7 @@
       <div class="panel-body">
         <div id="attendance-table" aria-live="polite"></div>
       </div>
+      <article id="directory-result" class="card profile-card muted">Search to view member details.</article>
     </section>
 
     <section id="manage-events-panel" class="panel" aria-labelledby="manage-events-title">
@@ -749,6 +786,7 @@
         </div>
         <div id="events-table" aria-live="polite"></div>
       </div>
+      <div id="announcement-list" class="stack"></div>
     </section>
 
     <section id="directory-panel" class="panel" aria-labelledby="directory-title">
