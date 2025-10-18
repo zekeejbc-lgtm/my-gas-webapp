@@ -1,0 +1,314 @@
+(function (factory) {
+  var root;
+  if (typeof window !== 'undefined') {
+    root = window;
+  } else if (typeof self !== 'undefined') {
+    root = self;
+  } else if (typeof globalThis !== 'undefined') {
+    root = globalThis;
+  } else {
+    try {
+      root = Function('return this')();
+    } catch (err) {
+      root = {};
+    }
+  }
+  factory(root || {});
+})(function (root) {
+  'use strict';
+
+  if (!root) {
+    return;
+  }
+
+  if (!root.document) {
+    root.loadHomepage = root.loadHomepage || function () {};
+    root.renderHome = root.renderHome || function () {};
+    root.deriveProjectsFromFlat = root.deriveProjectsFromFlat || function () { return []; };
+    root.renderProjects = root.renderProjects || function () {};
+    root.openProjectModal = root.openProjectModal || function () {};
+    root.renderContacts = root.renderContacts || function () {};
+    return;
+  }
+
+  var doc = root.document;
+  var YSP = (root.YSP = root.YSP || {});
+  var utils = (YSP.utils = YSP.utils || {});
+  var callServer = typeof utils.callServer === 'function' ? utils.callServer : function () {};
+  var toastFn = typeof root.toast === 'function' ? root.toast : function () {};
+  var showModalFn = typeof root.showModal === 'function' ? root.showModal : function () { return doc.createElement('div'); };
+  var closeModalFn = typeof root.closeModal === 'function' ? root.closeModal : function () {};
+  var $ = typeof root.$ === 'function' ? root.$ : function () { return null; };
+  var escFn = typeof root.esc === 'function'
+    ? root.esc
+    : function (value) {
+        return String(value == null ? '' : value)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      };
+
+  var state = {
+    loaded: false,
+    data: null,
+  };
+
+  function loadHomepage(force) {
+    if (state.loaded && !force) {
+      renderHome(state.data || {});
+      return;
+    }
+    callServer(
+      'getHomepageContent',
+      [],
+      function (res) {
+        var payload = res && (res.data || res.home || res);
+        state.loaded = true;
+        state.data = payload || {};
+        renderHome(payload || {});
+      },
+      function (err) {
+        if (root.console && typeof root.console.error === 'function') {
+          root.console.error(err);
+        }
+        toastFn('Unable to load homepage right now.');
+        renderHome(state.data || {});
+      },
+      {
+        success: true,
+        data: {
+          about: 'Youth and Students for Peace (YSP) Tagum unites servant leaders dedicated to community impact.',
+          mission: 'To cultivate character, compassion, and competence among emerging leaders.',
+          vision: 'A generation of empowered youth creating sustainable peace initiatives.',
+          objectives: [
+            'Lead meaningful volunteer opportunities.',
+            'Strengthen partnerships with local communities.',
+            'Provide leadership development programs.',
+          ],
+          orgChartUrl: 'https://placehold.co/1280x720?text=YSP+Org+Chart',
+          facebookUrl: 'https://www.facebook.com',
+          email: 'ysp.tagum@gmail.com',
+          developer: 'Built by YSP Tagum Digital Services.',
+          projects: [
+            {
+              title: 'Peace Camp',
+              description: 'A youth leadership training focused on mediation and collaboration.',
+              imageUrl: 'https://placehold.co/640x360?text=Peace+Camp',
+            },
+            {
+              title: 'Community Cleanup',
+              description: 'Mobilizing volunteers to beautify key barangays.',
+              imageUrl: 'https://placehold.co/640x360?text=Cleanup+Drive',
+            },
+          ],
+        },
+      }
+    );
+  }
+
+  function renderHome(home) {
+    var aboutEl = $('#home-about');
+    var missionEl = $('#home-mission');
+    var visionEl = $('#home-vision');
+    var objectivesEl = $('#home-objectives');
+    var orgChart = $('#home-org-chart');
+    var developerInfo = $('#developer-info');
+
+    if (aboutEl) {
+      aboutEl.textContent = home && home.about ? home.about : 'Welcome to YSP Tagum.';
+    }
+    if (missionEl) {
+      missionEl.textContent = home && home.mission ? home.mission : 'Mission will appear here.';
+    }
+    if (visionEl) {
+      visionEl.textContent = home && home.vision ? home.vision : 'Vision will appear here.';
+    }
+    if (objectivesEl) {
+      objectivesEl.innerHTML = '';
+      var objectives = Array.isArray(home && home.objectives) ? home.objectives : [];
+      if (!objectives.length && home && typeof home.objectives === 'string') {
+        objectives = home.objectives.split(/\n+/);
+      }
+      if (!objectives.length) {
+        objectives = ['Promote peace initiatives.', 'Develop youth leadership skills.'];
+      }
+      objectives.forEach(function (item) {
+        if (!doc || typeof doc.createElement !== 'function') {
+          return;
+        }
+        var li = doc.createElement('li');
+        li.textContent = item;
+        objectivesEl.appendChild(li);
+      });
+    }
+    if (orgChart) {
+      orgChart.src = YSP.safeImage ? YSP.safeImage(home && home.orgChartUrl) : (home && home.orgChartUrl) || orgChart.src;
+    }
+    if (developerInfo) {
+      developerInfo.textContent = (home && home.developer) || 'Maintained by YSP Tagum Digital Services.';
+    }
+
+    renderProjects(deriveProjectsFromFlat(home));
+    renderContacts(home);
+  }
+
+  function deriveProjectsFromFlat(map) {
+    if (!map) {
+      return [];
+    }
+    if (Array.isArray(map.projects)) {
+      return map.projects;
+    }
+    var projects = [];
+    for (var key in map) {
+      if (!Object.prototype.hasOwnProperty.call(map, key)) {
+        continue;
+      }
+      var match = key.match(/^project(ImageUrl|Desc|Title)_(\d+)/i);
+      if (match) {
+        var index = Number(match[2]);
+        projects[index] = projects[index] || {};
+        if (/image/i.test(match[1])) {
+          projects[index].imageUrl = map[key];
+        } else if (/desc/i.test(match[1])) {
+          projects[index].description = map[key];
+        } else if (/title/i.test(match[1])) {
+          projects[index].title = map[key];
+        }
+      }
+    }
+    return projects.filter(function (project) {
+      return project && (project.title || project.description || project.imageUrl);
+    });
+  }
+
+  function renderProjects(projects) {
+    var grid = $('#projects-grid');
+    if (!grid) {
+      return;
+    }
+    grid.innerHTML = '';
+    if (!projects || !projects.length) {
+      grid.innerHTML = '<p class="muted">Projects will appear here soon.</p>';
+      return;
+    }
+    projects.forEach(function (project) {
+      if (!doc || typeof doc.createElement !== 'function') {
+        return;
+      }
+      var card = doc.createElement('button');
+      card.type = 'button';
+      card.className = 'project-card';
+      card.innerHTML =
+        '<img src="' +
+        escFn(project.imageUrl || 'https://placehold.co/640x360?text=YSP+Project') +
+        '" alt="' +
+        escFn(project.title || 'YSP Project') +
+        '" />' +
+        '<div class="project-body">' +
+        '<h4>' +
+        escFn(project.title || 'YSP Initiative') +
+        '</h4>' +
+        '<p>' +
+        escFn(project.description || 'More details coming soon.') +
+        '</p>' +
+        '</div>';
+      card.addEventListener('click', function (event) {
+        openProjectModal(project, event && event.currentTarget);
+      });
+      grid.appendChild(card);
+    });
+  }
+
+  function openProjectModal(project, opener) {
+    if (!project) {
+      return;
+    }
+    var safeProject = project || {};
+    var panel = showModalFn({
+      title: safeProject.title || 'Project Details',
+      opener: opener,
+      bodyHtml:
+        '<div class="ratio ratio-16x9 modal-image">' +
+        '<img src="' +
+        escFn(safeProject.imageUrl || 'https://placehold.co/960x540?text=YSP+Project') +
+        '" alt="' +
+        escFn(safeProject.title || 'Project image') +
+        '" />' +
+        '</div>' +
+        '<p class="muted">' +
+        escFn(safeProject.description || 'Project description will appear here.') +
+        '</p>',
+      footerHtml: '<button type="button" class="btn btn-primary" data-close="1">Close</button>',
+    });
+    return panel;
+  }
+
+  function renderContacts(home) {
+    var issuesCard = $('#contact-issues');
+    var developerCard = $('#contact-developer');
+    if (!issuesCard && !developerCard) {
+      return;
+    }
+    if (issuesCard) {
+      var fbUrl = YSP.safeUrl ? YSP.safeUrl(home && home.facebookUrl) : home && home.facebookUrl;
+      var email = home && home.email ? String(home.email).trim() : '';
+      var mailUrl = email
+        ? 'https://mail.google.com/mail/?view=cm&fs=1&to=' +
+          encodeURIComponent(email) +
+          '&su=%5BYSP%5D%20Issue%20Report'
+        : '';
+      issuesCard.innerHTML =
+        '<h3>Report Issues</h3>' +
+        '<p class="muted">Need help with the web app? Contact us.</p>' +
+        '<div class="btn-group">' +
+        '<button type="button" class="btn btn-primary" id="btn-contact-fb">Facebook</button>' +
+        '<button type="button" class="btn btn-outline" id="btn-contact-email">Email</button>' +
+        '</div>';
+      var fbBtn = $('#btn-contact-fb', issuesCard);
+      if (fbBtn) {
+        fbBtn.addEventListener('click', function () {
+          if (fbUrl) {
+            root.openSafe ? root.openSafe(fbUrl) : root.open(fbUrl, '_blank');
+          } else {
+            toastFn('Facebook link unavailable.');
+          }
+        });
+      }
+      var emailBtn = $('#btn-contact-email', issuesCard);
+      if (emailBtn) {
+        emailBtn.addEventListener('click', function () {
+          if (mailUrl) {
+            root.openSafe ? root.openSafe(mailUrl) : root.open(mailUrl, '_blank');
+          } else {
+            toastFn('Email unavailable.');
+          }
+        });
+      }
+    }
+    if (developerCard) {
+      developerCard.innerHTML =
+        '<h3>Web App Developer</h3>' +
+        '<p class="muted">' +
+        escFn((home && home.developer) || 'Maintained by YSP Tagum Digital Services.') +
+        '</p>';
+    }
+  }
+
+  YSP.homepage = YSP.homepage || {};
+  YSP.homepage.loadHomepage = loadHomepage;
+  YSP.homepage.renderHome = renderHome;
+  YSP.homepage.deriveProjectsFromFlat = deriveProjectsFromFlat;
+  YSP.homepage.renderProjects = renderProjects;
+  YSP.homepage.openProjectModal = openProjectModal;
+  YSP.homepage.renderContacts = renderContacts;
+
+  root.loadHomepage = loadHomepage;
+  root.renderHome = renderHome;
+  root.deriveProjectsFromFlat = deriveProjectsFromFlat;
+  root.renderProjects = renderProjects;
+  root.openProjectModal = openProjectModal;
+  root.renderContacts = renderContacts;
+});
