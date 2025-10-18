@@ -1,7 +1,13 @@
 # Change Log
 
 ## SearchPage.html
-- Implemented the blueprint homepage layout: container-based sections, project gallery card grid, split contact cards, and a back-to-login control so the panel fills the viewport without lingering whitespace.
-- Added UI tokens for `.container`, cards, buttons, and the redesigned modal system (backdrop, focus-trapped panel, 16:9 media wrappers) to satisfy accessibility, animation, and responsive requirements.
-- Rebuilt `loadHomepage()` to sanitize sheet data, derive project pairs when the array is missing, validate URLs before opening Facebook/Gmail compose actions, and surface resilient offline/error states.
-- Introduced safe helper utilities (`textOrEmpty`, `isSafeHttpUrl`, `buildGmailComposeUrl`, `openExternal`) plus hash-aware `switchPanels()` updates so navigation, action buttons, and modal focus restoration behave consistently across roles and devices.
+- Eliminated the remaining arrow callbacks and inline lambdas from the modal, navigation, and announcement helpers so every handler is declared with classic functions that the HTML Service parser accepts.
+- Added a `safeImageUrl` helper plus attribute escaping for avatars, project media, and org-chart imagery to prevent `ERR_NAME_NOT_RESOLVED` errors when sheet URLs are empty or malformed.
+- Extended every `google.script.run` invocation with paired failure handlers to surface backend errors gracefully in the UI and avoid silent button stalls.
+- Logged `✅ YSP Web App Initialized OK` after the DOM wiring finishes so deployment smoke tests can verify the sandboxed script completed without syntax errors.
+
+## QRScanner.html
+- No changes in this pass; previous compatibility hardening remains valid.
+
+## Backend_Debug.js
+- Validation only; no source edits required.
